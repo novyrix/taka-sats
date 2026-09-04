@@ -52,6 +52,17 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-04 — `lib/lightning/` (LightningProvider implementations) and `lib/collectors/`
+  introduced. Establishes the receive-only guarantee (ADR-0001, M1-10) at the one point every
+  provider and `attachByoAddress` funnel through: `lib/lightning/lnurlPay.ts` resolves a code
+  and throws `NotReceiveCapableError` for anything but a `payRequest` (in particular a
+  withdraw `LNURLw`) — before the code is ever stored on a collector row or written to a tag.
+  `FakeLightningProvider.pay()` re-validates the destination even though it was "already
+  resolved", so a future caller cannot bypass the check by skipping straight to `pay`.
+  `receive-only.test.ts` asserts this for every provider and asserts `PayoutDestination` has
+  no field a withdraw/callback primitive could hide in. No payout execution path exists yet
+  (M5); `pay()` on `BlinkProvider`/`LNbitsProvider` is unreachable from any route or worker
+  until then.
 - 2026-09-04 — `lib/auth/permissions.ts` introduced. Establishes: `payout:execute` exists
   as a scope but is in no role's set; `permissions.test.ts` fails the build if any human
   role gains it. Preserves separation of duties (ADR-003).
