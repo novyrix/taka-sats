@@ -1,0 +1,82 @@
+# Taka Sats — default settings (REQUIREMENTS §13.2)
+#
+# This file is committed and holds every tunable with a documented default.
+# Operators override values in a git-ignored `config/settings.toml` (only the
+# keys they change) or via `TAKASATS__SECTION__KEY` environment variables.
+# The merged result is Zod-validated at boot (`lib/config/`); an invalid or
+# out-of-range value stops the process. See `docs/CONFIGURATION.md`.
+#
+# SECRETS DO NOT BELONG HERE. Database URL, provider API keys, the LNbits admin
+# key, the Nostr private key, and object-storage credentials are environment
+# variables only. This file may name *which* provider, never a key.
+
+[programme]
+name           = "Taka Sats — Afribit Africa"
+timezone       = "Africa/Nairobi"        # IANA name; drives session windows and reporting
+fiat_currency  = "KES"                   # ISO 4217; the rate table and all reporting use this
+locales        = ["en", "sw", "sheng"]   # first-class UI locales
+default_locale = "en"                    # must be one of `locales`
+
+[custody]
+# 'byo'         = collector brings their own wallet (Blink Paycode / Lightning Address).
+#                 This is the shipped, non-custodial default (D-05).
+# 'provisioned' = server mints an LNbits wallet per collector (custodial — needs gate G1).
+default_address_source = "byo"
+provisioning_enabled   = false           # must be explicitly true to allow 'provisioned'
+# When enabling provisioning, paste the exact G1 acknowledgement string from
+# `lib/config/schema.ts` (PROVISIONING_ACKNOWLEDGEMENT). It is a deliberate
+# acknowledgement that the recorded legal review exists — not legal cover.
+provisioning_ack       = ""
+
+[lightning]
+float_provider = "blink"                 # blink | lnbits | fedimint — the operating-float rail
+
+[lightning.blink]
+api_url         = "https://api.blink.sv/graphql"
+float_wallet_id = ""                     # non-secret wallet id; the API key is an env var
+
+[lightning.lnbits]
+base_url        = "http://lnbits:5000"
+float_wallet_id = ""                     # non-secret wallet id; the admin key is an env var
+
+[lightning.fedimint]
+federation_invite = ""                   # Afribit's federation invite code (fedi.xyz)
+
+[money]
+rate_staleness_ttl_seconds = 900         # a payout will not run against a BTC rate older than this (D-18)
+exchange_sources           = ["kraken", "yadio"]  # >=2 independent sources; order = preference
+
+[rates]
+# Seed values for `material_rates` on the first migration only. Afterwards the
+# admin UI writes new versioned rows (FR-2.2). Units: fiat minor (KES cents) per kg.
+seed = [
+  { material = "PET",       rate_fiat_minor_per_kg = 2000 },
+  { material = "HDPE",      rate_fiat_minor_per_kg = 1500 },
+  { material = "aluminium", rate_fiat_minor_per_kg = 8000 },
+]
+
+[payouts]
+second_signoff_threshold_sats = 50000    # above this a distinct approver is required (FR-3.2)
+float_low_balance_alert_sats  = 200000    # the worker alerts admin below this (FR-7.2)
+auto_topup_enabled            = false
+
+[reconciliation]
+variance_tolerance_pct = 5               # paid-kg vs sold-kg variance above this is flagged (FR-3.5)
+
+[anomaly]
+identical_weight_repeat_count = 4         # N identical weights from one supervisor -> flag
+payout_concentration_gini     = 0.6       # payout skew above this over a session -> flag
+off_hours_grace_minutes       = 30        # events this far outside a session window -> flag
+
+[scheduling]
+coverage_gap_lead_time_hours = 12        # an unstaffed session within this window -> admin alert (FR-6.2)
+
+[transparency]
+amount_disclosure        = "bucketed"    # exact | bucketed | omitted (OQ-3)
+weight_bucket_kg         = 0.5           # bucket size for attestations and public figures
+public_map_jitter_metres = 50           # location fuzzing for public:read map points
+nostr_relays             = ["wss://relay.damus.io", "wss://nos.lol"]
+
+[ledger]
+checkpoint_interval_entries = 500        # sign a checkpoint every N ledger entries (§11.2)
+opentimestamps_enabled      = true       # also anchor checkpoints with OpenTimestamps
