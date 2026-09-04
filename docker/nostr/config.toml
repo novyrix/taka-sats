@@ -1,0 +1,11 @@
+[info]
+relay_url = "ws://localhost:8080/"
+name = "Taka Sats local relay"
+description = "Local development relay for Taka Sats attestations"
+
+[database]
+data_directory = "./db"
+
+[network]
+address = "0.0.0.0"
+port = 8080

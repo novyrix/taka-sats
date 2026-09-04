@@ -1,0 +1,44 @@
+services:
+  bitcoin-regtest:
+    image: lncm/bitcoind:v27.1
+    restart: unless-stopped
+    command:
+      - -regtest=1
+      - -server=1
+      - -txindex=1
+      - -rpcbind=0.0.0.0
+      - -rpcallowip=0.0.0.0/0
+      - -rpcuser=${BITCOIN_RPC_USER:?set BITCOIN_RPC_USER}
+      - -rpcpassword=${BITCOIN_RPC_PASSWORD:?set BITCOIN_RPC_PASSWORD}
+    ports:
+      - '${BITCOIN_RPC_PORT:-18443}:18443'
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - bitcoin-cli -regtest -rpcuser=$${BITCOIN_RPC_USER} -rpcpassword=$${BITCOIN_RPC_PASSWORD} getblockchaininfo
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    environment:
+      BITCOIN_RPC_USER: ${BITCOIN_RPC_USER:?set BITCOIN_RPC_USER}
+      BITCOIN_RPC_PASSWORD: ${BITCOIN_RPC_PASSWORD:?set BITCOIN_RPC_PASSWORD}
+    volumes:
+      - bitcoin-regtest-data:/data/.bitcoin
+
+  lnbits:
+    image: lnbits/lnbits:latest
+    restart: unless-stopped
+    environment:
+      LNBITS_DATABASE_URL: postgresql://${POSTGRES_USER:?set POSTGRES_USER}:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:?set POSTGRES_DB}
+      LNBITS_ADMIN_UI: 'true'
+      LNBITS_BACKEND_WALLET_CLASS: FakeWallet
+    ports:
+      - '${LNBITS_PORT:-5000}:5000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bitcoin-regtest:
+        condition: service_healthy
+
+volumes:
+  bitcoin-regtest-data:
