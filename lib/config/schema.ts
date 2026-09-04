@@ -39,6 +39,11 @@ const custodySchema = z.object({
   provisioning_ack: z.string(),
 });
 
+const authSchema = z.object({
+  /** How long a supervisor's signed-in session survives, incl. fully offline (§3.1, ADR-0002). */
+  session_max_age_days: z.int().positive(),
+});
+
 const lightningSchema = z.object({
   float_provider: z.enum(['blink', 'lnbits', 'fedimint']),
   blink: z.object({
@@ -106,6 +111,7 @@ export const settingsSchema = z
   .object({
     programme: programmeSchema,
     custody: custodySchema,
+    auth: authSchema,
     lightning: lightningSchema,
     money: moneySchema,
     rates: ratesSchema,

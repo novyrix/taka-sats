@@ -28,6 +28,13 @@ provisioning_enabled   = false           # must be explicitly true to allow 'pro
 # acknowledgement that the recorded legal review exists — not legal cover.
 provisioning_ack       = ""
 
+[auth]
+# How long a signed-in supervisor session survives, including fully offline
+# (§3.1, ADR-0002) — a JWT session, not a server-side lookup, so this is the
+# only place the duration is decided. Balance re-auth friction in the field
+# against a lost/stolen-device window (see docs/THREAT_MODEL.md T6/R1).
+session_max_age_days = 30
+
 [lightning]
 float_provider = "blink"                 # blink | lnbits | fedimint — the operating-float rail
 

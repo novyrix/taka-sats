@@ -40,6 +40,7 @@ Every key there carries a comment. Summary of the sections:
 |---|---|
 | `[programme]` | Name, timezone, fiat currency (ISO 4217), UI locales, default locale |
 | `[custody]` | `byo` vs `provisioned` address source; the provisioning enable flag + G1 acknowledgement |
+| `[auth]` | Supervisor session lifetime (JWT-based, survives offline) |
 | `[lightning]` | `float_provider` (`blink` \| `lnbits` \| `fedimint`) and each provider's non-secret settings |
 | `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2) |
 | `[rates]` | `seed` rows for `material_rates` on the first migration only — history lives in the DB afterwards |

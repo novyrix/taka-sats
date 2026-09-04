@@ -21,6 +21,7 @@ export type Role = (typeof ROLES)[number];
 
 export const SCOPES = [
   'collector:enrol', // enrol a collector, issue/replace a tag
+  'collector:read', // look up a collector's record (staff-facing, not the public/partner surface)
   'collection:record', // record a collection event
   'tag:revoke', // revoke a tag mapping
   'session:configure', // configure sessions, rates, thresholds
@@ -43,6 +44,7 @@ export type SystemOnlyScope = (typeof SYSTEM_ONLY_SCOPES)[number];
 
 const supervisorScopes = [
   'collector:enrol',
+  'collector:read',
   'collection:record',
   'session:metrics:read:own',
 ] as const satisfies readonly Scope[];
@@ -53,6 +55,7 @@ export const ROLE_SCOPES: Readonly<Record<Role, readonly Scope[]>> = Object.free
   hub_lead: [...supervisorScopes, 'payout:approve'],
   admin: [
     'collector:enrol',
+    'collector:read',
     'collection:record',
     'tag:revoke',
     'session:configure',

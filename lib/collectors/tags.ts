@@ -47,6 +47,17 @@ export async function reissueTag(db: Database, input: ReissueTagInput): Promise<
       throw new CollectorNotFoundError(parsed.collectorId);
     }
 
+    // Resending the same reissue request is a no-op (REQUIREMENTS §10.1).
+    if (collector.nfcTagId === parsed.newTagId) {
+      const [current] = await tx
+        .select()
+        .from(tagHistory)
+        .where(and(eq(tagHistory.collectorId, parsed.collectorId), isNull(tagHistory.revokedAt)));
+      if (current) {
+        return current;
+      }
+    }
+
     const now = new Date();
     await tx
       .update(tagHistory)

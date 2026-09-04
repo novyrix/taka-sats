@@ -5,6 +5,7 @@
  * ID, phone, DOB, address, or literacy step — the earn-first principle.
  */
 
+import { eq } from 'drizzle-orm';
 import { getSettings } from '@/lib/config';
 import type { Database } from '@/lib/db/client';
 import { collectors } from '@/lib/db/schema';
@@ -33,13 +34,28 @@ export async function enrolCollector(
     throw new ProvisioningDisabledError();
   }
 
-  const [row] = await db
+  const [inserted] = await db
     .insert(collectors)
-    .values({ alias: parsed.alias, addressSource, enrolledAt: new Date() })
+    .values({
+      ...(parsed.id ? { id: parsed.id } : {}),
+      alias: parsed.alias,
+      addressSource,
+      enrolledAt: new Date(),
+    })
+    .onConflictDoNothing({ target: collectors.id })
     .returning();
 
-  if (!row) {
-    throw new Error('enrolCollector: insert returned no row');
+  if (inserted) {
+    return inserted;
   }
-  return row;
+
+  // A conflict is only possible when the caller supplied `id` and it already
+  // exists — an idempotent resend returns the original row (REQUIREMENTS §10.1).
+  if (parsed.id) {
+    const [existing] = await db.select().from(collectors).where(eq(collectors.id, parsed.id));
+    if (existing) {
+      return existing;
+    }
+  }
+  throw new Error('enrolCollector: insert returned no row and no existing row was found');
 }

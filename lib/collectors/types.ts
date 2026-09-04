@@ -10,8 +10,13 @@ export type TagHistoryRecord = InferSelectModel<typeof tagHistory>;
 export const addressSourceSchema = z.enum(['byo', 'provisioned']);
 export type AddressSource = z.infer<typeof addressSourceSchema>;
 
-/** §7.1: the only required field is an alias. */
+/**
+ * §7.1: the only required field is an alias. `id` is optional client-supplied
+ * idempotency (REQUIREMENTS §10.1) — resending the same `id` returns the
+ * original row rather than creating a second collector.
+ */
 export const enrolCollectorInputSchema = z.object({
+  id: z.uuid().optional(),
   alias: z.string().trim().min(1, 'alias is required').max(200),
   addressSource: addressSourceSchema.optional(),
 });

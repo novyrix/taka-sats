@@ -1,0 +1,253 @@
+{
+  "id": "983524cd-ba4c-4287-be3d-97376e56b3a2",
+  "prevId": "28de8fd3-6f34-416b-a8d4-0ef53eb9a2f0",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.collectors": {
+      "name": "collectors",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "alias": {
+          "name": "alias",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nfc_tag_id": {
+          "name": "nfc_tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_source": {
+          "name": "address_source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'byo'"
+        },
+        "lightning_address": {
+          "name": "lightning_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lnurl_pay_raw": {
+          "name": "lnurl_pay_raw",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "lnbits_wallet_id": {
+          "name": "lnbits_wallet_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enrolled_at": {
+          "name": "enrolled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "collectors_nfc_tag_id_unique": {
+          "name": "collectors_nfc_tag_id_unique",
+          "nullsNotDistinct": false,
+          "columns": ["nfc_tag_id"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "collectors_address_source_check": {
+          "name": "collectors_address_source_check",
+          "value": "\"collectors\".\"address_source\" in ('byo', 'provisioned')"
+        },
+        "collectors_status_check": {
+          "name": "collectors_status_check",
+          "value": "\"collectors\".\"status\" in ('active', 'revoked')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.supervisors": {
+      "name": "supervisors",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'supervisor'"
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "locale": {
+          "name": "locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'en'"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "supervisors_phone_unique": {
+          "name": "supervisors_phone_unique",
+          "nullsNotDistinct": false,
+          "columns": ["phone"]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "supervisors_role_check": {
+          "name": "supervisors_role_check",
+          "value": "\"supervisors\".\"role\" in ('supervisor', 'hub_lead', 'admin')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.tag_history": {
+      "name": "tag_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "collector_id": {
+          "name": "collector_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tag_id": {
+          "name": "tag_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "issued_at": {
+          "name": "issued_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "tag_history_active_tag_id_idx": {
+          "name": "tag_history_active_tag_id_idx",
+          "columns": [
+            {
+              "expression": "tag_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"tag_history\".\"revoked_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "tag_history_collector_id_collectors_id_fk": {
+          "name": "tag_history_collector_id_collectors_id_fk",
+          "tableFrom": "tag_history",
+          "tableTo": "collectors",
+          "columnsFrom": ["collector_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

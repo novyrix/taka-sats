@@ -16,7 +16,7 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { check, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 
 /**
  * A collector: alias-only identity (§7.1). Requires no ID, phone, or address.
@@ -71,5 +71,31 @@ export const tagHistory = pgTable(
     uniqueIndex('tag_history_active_tag_id_idx')
       .on(table.tagId)
       .where(sql`${table.revokedAt} is null`),
+  ],
+);
+
+/**
+ * A staff user (§3.1): supervisor, hub_lead, or admin. Authenticates via
+ * Auth.js credentials (M2-1, pulled forward to unblock M1-4's RBAC-gated
+ * routes). `phone` is the login identifier. Long-lived JWT sessions (no
+ * `sessions` table — see `lib/auth/`) are what let the PWA stay usable
+ * through an extended offline period (§3.1, ADR-0002).
+ */
+export const supervisors = pgTable(
+  'supervisors',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    name: text('name').notNull(),
+    phone: text('phone').notNull().unique(),
+    /** 'supervisor' | 'hub_lead' | 'admin' (§3.2, lib/auth/permissions.ts Role). */
+    role: text('role').notNull().default('supervisor'),
+    /** `scrypt` hash, `salt:hash` hex (lib/auth/password.ts). Never logged. */
+    passwordHash: text('password_hash').notNull(),
+    locale: text('locale').notNull().default('en'),
+    active: boolean('active').notNull().default(true),
+    lastLoginAt: timestamp('last_login_at', { withTimezone: true }),
+  },
+  (table) => [
+    check('supervisors_role_check', sql`${table.role} in ('supervisor', 'hub_lead', 'admin')`),
   ],
 );

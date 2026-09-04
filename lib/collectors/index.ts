@@ -15,6 +15,7 @@ export {
   TagAlreadyActiveError,
   TagRevokedError,
 } from './errors';
+export { findCollectorById } from './lookup';
 export {
   findActiveTagMapping,
   isTagRevoked,
@@ -22,12 +23,17 @@ export {
   revokeTag,
   type ActiveTagMapping,
 } from './tags';
-export type {
-  AddressSource,
-  AttachByoAddressInput,
-  CollectorRecord,
-  EnrolCollectorInput,
-  ReissueTagInput,
-  RevokeTagInput,
-  TagHistoryRecord,
+export {
+  addressSourceSchema,
+  attachByoAddressInputSchema,
+  enrolCollectorInputSchema,
+  reissueTagInputSchema,
+  revokeTagInputSchema,
+  type AddressSource,
+  type AttachByoAddressInput,
+  type CollectorRecord,
+  type EnrolCollectorInput,
+  type ReissueTagInput,
+  type RevokeTagInput,
+  type TagHistoryRecord,
 } from './types';
