@@ -77,7 +77,7 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
   });
 
   it('is idempotent on a repeated client id (REQUIREMENTS §10.1)', async () => {
-    const id = '11111111-1111-1111-1111-111111111111';
+    const id = '11111111-1111-4111-8111-111111111111';
     const first = await POST(postRequest({ id, alias: 'Amina' }));
     const second = await POST(postRequest({ id, alias: 'Amina (retry)' }));
 

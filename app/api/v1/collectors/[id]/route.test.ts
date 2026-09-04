@@ -28,8 +28,8 @@ function getRequest(id: string): NextRequest {
 describe('GET /api/v1/collectors/:id — auth (no DB required)', () => {
   it('401s with no session', async () => {
     authMock.mockResolvedValue(null);
-    const response = await GET(getRequest('11111111-1111-1111-1111-111111111111'), {
-      params: Promise.resolve({ id: '11111111-1111-1111-1111-111111111111' }),
+    const response = await GET(getRequest('11111111-1111-4111-8111-111111111111'), {
+      params: Promise.resolve({ id: '11111111-1111-4111-8111-111111111111' }),
     });
     expect(response.status).toBe(401);
   });
@@ -68,8 +68,8 @@ describe.skipIf(!hasDatabase)('GET /api/v1/collectors/:id — integration', () =
   });
 
   it('404s for an unknown id', async () => {
-    const response = await GET(getRequest('99999999-9999-9999-9999-999999999999'), {
-      params: Promise.resolve({ id: '99999999-9999-9999-9999-999999999999' }),
+    const response = await GET(getRequest('99999999-9999-4999-8999-999999999999'), {
+      params: Promise.resolve({ id: '99999999-9999-4999-8999-999999999999' }),
     });
     expect(response.status).toBe(404);
   });

@@ -1,4 +1,4 @@
-FROM node:24.20.0-alpine3.22 AS base
+FROM node:24.20.0-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -15,7 +15,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-FROM node:24.20.0-alpine3.22 AS app
+FROM node:24.20.0-alpine AS app
 WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -30,7 +30,7 @@ USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
 
-FROM node:24.20.0-alpine3.22 AS worker
+FROM node:24.20.0-alpine AS worker
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --chown=node:node worker/runner.mjs ./worker/runner.mjs

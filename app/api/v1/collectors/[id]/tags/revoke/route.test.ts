@@ -32,14 +32,14 @@ function postRequest(id: string, body: unknown = {}): NextRequest {
 describe('POST /api/v1/collectors/:id/tags/revoke — auth (no DB required)', () => {
   it('403s for supervisor (admin-only — §3.2)', async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    const id = '11111111-1111-1111-1111-111111111111';
+    const id = '11111111-1111-4111-8111-111111111111';
     const response = await POST(postRequest(id), { params: Promise.resolve({ id }) });
     expect(response.status).toBe(403);
   });
 
   it('403s for hub_lead too — only admin holds tag:revoke', async () => {
     authMock.mockResolvedValue(sessionFor('hub_lead'));
-    const id = '11111111-1111-1111-1111-111111111111';
+    const id = '11111111-1111-4111-8111-111111111111';
     const response = await POST(postRequest(id), { params: Promise.resolve({ id }) });
     expect(response.status).toBe(403);
   });

@@ -6,19 +6,21 @@
  * and there is no public sign-up (§3.1: staff are provisioned, not
  * self-registered).
  *
- *   DATABASE_URL=postgresql://… node scripts/create-supervisor.ts \
+ *   DATABASE_URL=postgresql://… pnpm db:create-supervisor -- \
  *     --name "Ronnie" --phone "+254700000000" --role admin --password "<a strong password>"
  *
  * The password is read from the `--password` flag or, if omitted, the
- * `SUPERVISOR_PASSWORD` env var — never logged either way. Relative imports
- * only (like `migrate.ts`) so this runs under plain `node`, no bundler.
+ * `SUPERVISOR_PASSWORD` env var — never logged either way. Run via `tsx`
+ * (not plain `node`) so the `@/` alias and extensionless relative imports
+ * resolve exactly like the rest of the codebase — Node's native
+ * type-stripping loader does neither.
  */
 
 import { eq } from 'drizzle-orm';
-import { hashPassword } from '../lib/auth/password';
-import { isRole } from '../lib/auth/permissions';
-import { getDb } from '../lib/db/client';
-import { supervisors } from '../lib/db/schema';
+import { isRole } from '@/lib/auth/permissions';
+import { hashPassword } from '@/lib/auth/password';
+import { closeDb, getDb } from '@/lib/db/client';
+import { supervisors } from '@/lib/db/schema';
 
 function readFlag(name: string): string | undefined {
   const index = process.argv.indexOf(`--${name}`);
@@ -45,23 +47,29 @@ async function main(): Promise<void> {
   }
 
   const db = getDb();
-  const [existing] = await db
-    .select({ id: supervisors.id })
-    .from(supervisors)
-    .where(eq(supervisors.phone, phone));
-  if (existing) {
-    console.error(`A supervisor with phone ${phone} already exists (id ${existing.id}).`);
-    process.exitCode = 1;
-    return;
+  try {
+    const [existing] = await db
+      .select({ id: supervisors.id })
+      .from(supervisors)
+      .where(eq(supervisors.phone, phone));
+    if (existing) {
+      console.error(`A supervisor with phone ${phone} already exists (id ${existing.id}).`);
+      process.exitCode = 1;
+      return;
+    }
+
+    const passwordHash = await hashPassword(password);
+    const [row] = await db
+      .insert(supervisors)
+      .values({ name, phone, role, passwordHash })
+      .returning({ id: supervisors.id, role: supervisors.role });
+
+    console.log(`Created ${row?.role} "${name}" (id ${row?.id}).`);
+  } finally {
+    // A one-shot script: close the pool so the process exits instead of
+    // hanging on the open connection (the long-running app never does this).
+    await closeDb();
   }
-
-  const passwordHash = await hashPassword(password);
-  const [row] = await db
-    .insert(supervisors)
-    .values({ name, phone, role, passwordHash })
-    .returning({ id: supervisors.id, role: supervisors.role });
-
-  console.log(`Created ${row?.role} "${name}" (id ${row?.id}).`);
 }
 
 main().catch((error: unknown) => {

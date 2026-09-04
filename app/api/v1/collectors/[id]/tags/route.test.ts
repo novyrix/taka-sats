@@ -32,7 +32,7 @@ function postRequest(id: string, body: unknown): NextRequest {
 describe('POST /api/v1/collectors/:id/tags — auth (no DB required)', () => {
   it("403s for a role without collector:enrol (partner can't reissue)", async () => {
     authMock.mockResolvedValue(sessionFor('partner'));
-    const id = '11111111-1111-1111-1111-111111111111';
+    const id = '11111111-1111-4111-8111-111111111111';
     const response = await POST(postRequest(id, { newTagId: 'TAG-001' }), {
       params: Promise.resolve({ id }),
     });
@@ -65,7 +65,7 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/tags — integration'
   });
 
   it('404s for an unknown collector', async () => {
-    const id = '99999999-9999-9999-9999-999999999999';
+    const id = '99999999-9999-4999-8999-999999999999';
     const response = await POST(postRequest(id, { newTagId: 'TAG-002' }), {
       params: Promise.resolve({ id }),
     });

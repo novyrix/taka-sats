@@ -10,7 +10,7 @@
  */
 
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import postgres, { type Sql } from 'postgres';
 import * as schema from './schema';
 
 export type Database = ReturnType<typeof createDatabase>;
@@ -32,4 +32,17 @@ export function getDb(): Database {
     instance = createDatabase(url);
   }
   return instance;
+}
+
+/**
+ * Close the pooled connection and drop the singleton. The long-running app
+ * server never calls this — it's for one-shot scripts (`scripts/*.ts`) that
+ * would otherwise hang after finishing because open pool connections keep
+ * the event loop alive.
+ */
+export async function closeDb(): Promise<void> {
+  if (instance) {
+    await (instance.$client as Sql).end();
+    instance = undefined;
+  }
 }

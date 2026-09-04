@@ -21,13 +21,22 @@ import {
 
 const UNIQUE_VIOLATION = '23505';
 
+/** The Postgres error code, whether raised directly or wrapped by Drizzle's `DrizzleQueryError` (`.cause`). */
+function pgErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) {
+    return undefined;
+  }
+  if ('code' in error && typeof error.code === 'string') {
+    return error.code;
+  }
+  if ('cause' in error) {
+    return pgErrorCode((error as { cause?: unknown }).cause);
+  }
+  return undefined;
+}
+
 function isUniqueViolation(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    (error as { code?: unknown }).code === UNIQUE_VIOLATION
-  );
+  return pgErrorCode(error) === UNIQUE_VIOLATION;
 }
 
 /**

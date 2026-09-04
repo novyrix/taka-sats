@@ -13,9 +13,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node scripts/migrate.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
-    "db:create-supervisor": "node scripts/create-supervisor.ts",
+    "db:create-supervisor": "tsx scripts/create-supervisor.ts",
     "check:design": "node scripts/check-colour-pairing.mjs",
     "commitlint": "commitlint",
     "prepare": "husky"
@@ -55,6 +55,7 @@
     "husky": "^9.1.7",
     "prettier": "^3.9.6",
     "tailwindcss": "^4",
+    "tsx": "^4.23.13",
     "typescript": "^5",
     "typescript-eslint": "^8.69.0",
     "vitest": "^4.1.11"

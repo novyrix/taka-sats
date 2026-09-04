@@ -12,6 +12,9 @@ The Docker Compose path runs the same Next.js code used by Vercel with local Pos
 
 ```powershell
 Copy-Item .env.example .env
+# Replace the AUTH_SECRET and CRON_SECRET placeholders with real random values —
+# the app will not boot with the committed placeholder text:
+#   AUTH_SECRET generated with: openssl rand -base64 32
 docker compose up --build --wait
 docker compose ps
 ```
@@ -19,6 +22,15 @@ docker compose ps
 Open `http://localhost:3000`. MinIO's console is available at `http://localhost:9001`.
 
 The committed defaults are for local development only. Change every password in `.env` before exposing the stack outside the host. `.env` is ignored by Git.
+
+No supervisor account exists until you create one (there is no public sign-up, §3.1). The
+`app`/`worker` images are pruned production builds with no dev tooling, so admin scripts run
+via the profile-gated `tools` service instead (built from the `builder` stage):
+
+```powershell
+docker compose --env-file .env run --rm tools scripts/create-supervisor.ts `
+  --name "Your Name" --phone "+254700000000" --role admin --password "<a strong password>"
+```
 
 ## Services
 
@@ -29,6 +41,7 @@ The committed defaults are for local development only. Change every password in 
 | `minio` | R2-compatible object storage | `9000`, `9001` |
 | `worker` | Background-worker process scaffold | internal only |
 | `relay` | Local Nostr relay | `8080` |
+| `tools` | One-off admin scripts (profile-gated, not started by `up`) | — |
 
 ## Check and stop the stack
 
