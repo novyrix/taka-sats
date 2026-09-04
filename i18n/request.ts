@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { getRequestConfig } from 'next-intl/server';
 import { headers } from 'next/headers';
 import { getSettings } from '@/lib/config';

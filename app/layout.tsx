@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import type { Metadata } from 'next';
 import { Hanken_Grotesk, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';

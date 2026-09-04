@@ -1,0 +1,44 @@
+name: Bug report
+description: Something behaves incorrectly
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Surface
+      options:
+        - Supervisor PWA
+        - Admin dashboard
+        - Public site
+        - HTTP API (/api/v1)
+        - Worker / jobs
+        - Deploy (Docker or Vercel)
+        - Other / unsure
+    validations:
+      required: true
+  - type: input
+    id: deploy
+    attributes:
+      label: Deploy path & version
+      placeholder: docker compose @ commit abc1234 / Vercel prod
+  - type: textarea
+    id: context
+    attributes:
+      label: Logs / screenshots
+      description: Never paste secrets, API keys, Lightning addresses, or full payout objects.

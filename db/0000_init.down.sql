@@ -1,0 +1,3 @@
+-- Down migration for 0000_init (Code Style Guide §8: every migration is reversible).
+-- The baseline is empty, so its rollback is a no-op. Every later migration ships
+-- a non-trivial paired `<tag>.down.sql` that cleanly reverses its `up`.

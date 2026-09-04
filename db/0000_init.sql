@@ -1,0 +1,5 @@
+-- Baseline migration (M0-6). Intentionally empty: it establishes the migration
+-- harness only. Table clusters arrive with their milestones (REQUIREMENTS §9).
+--
+-- `up`   — this file, applied by `pnpm db:migrate`.
+-- `down` — the paired `0000_init.down.sql`, hand-written (Code Style Guide §8).

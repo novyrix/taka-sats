@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { CircleCheck, FileCheck2, ShieldCheck, WifiOff } from 'lucide-react';
 import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';

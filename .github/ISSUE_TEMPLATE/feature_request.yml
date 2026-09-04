@@ -1,0 +1,35 @@
+name: Feature request / change
+description: Propose a change to scope or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: The need this addresses. Who is blocked, and on what.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: input
+    id: maps-to
+    attributes:
+      label: Maps to
+      description: ROADMAP milestone/issue, REQUIREMENTS FR/US, or decision (D-xx) this relates to.
+      placeholder: ROADMAP M2-4 / REQUIREMENTS FR-2.2
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: constraints
+    attributes:
+      label: Constraints check
+      options:
+        - label: Does not hardcode an operational value (D-21) — new tunables go in `config/`.
+        - label: Does not add a payout path reachable by a human role (Code Style Guide §9).
+        - label: Keeps the collector critical path reading-free (NFR 7.1).
