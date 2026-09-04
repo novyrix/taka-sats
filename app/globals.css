@@ -1,26 +1,119 @@
 @import 'tailwindcss';
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --brand-bitcoin: #f7931a;
+  --brand-bitcoin-deep: #c4700c;
+  --brand-green: #3e6336;
+  --brand-green-deep: #2a4525;
+  --brand-green-tint: #89a86c;
+  --brand-ink: #141414;
+  --brand-cream: #faf8f4;
+  --brand-rule: #dedede;
+  --background: var(--brand-cream);
+  --foreground: var(--brand-ink);
+  --card: #ffffff;
+  --card-foreground: var(--brand-ink);
+  --popover: #ffffff;
+  --popover-foreground: var(--brand-ink);
+  --primary: var(--brand-green);
+  --primary-foreground: #ffffff;
+  --secondary: rgb(62 99 54 / 0.08);
+  --secondary-foreground: var(--brand-green-deep);
+  --muted: rgb(20 20 20 / 0.04);
+  --muted-foreground: rgb(20 20 20 / 0.6);
+  --accent: rgb(62 99 54 / 0.1);
+  --accent-foreground: var(--brand-green-deep);
+  --destructive: #b4232b;
+  --destructive-foreground: #ffffff;
+  --success: var(--brand-green-tint);
+  --success-foreground: var(--brand-green-deep);
+  --border: var(--brand-rule);
+  --input: var(--brand-rule);
+  --ring: var(--brand-green);
+  --radius: 0.5rem;
+  --fill-bitcoin: var(--brand-bitcoin);
+  --fill-bitcoin-pressed: var(--brand-bitcoin-deep);
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-body: var(--font-hanken-grotesk), ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+:root[data-theme='dark'] {
+  --background: var(--brand-ink);
+  --foreground: #f4f2ee;
+  --card: var(--brand-green-deep);
+  --card-foreground: #f4f2ee;
+  --primary: var(--brand-green-tint);
+  --primary-foreground: var(--brand-ink);
+  --muted: rgb(255 255 255 / 0.06);
+  --muted-foreground: rgb(255 255 255 / 0.64);
+  --border: rgb(255 255 255 / 0.12);
+  --ring: var(--brand-green-tint);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-fill-bitcoin: var(--fill-bitcoin);
+  --color-fill-bitcoin-pressed: var(--fill-bitcoin-pressed);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
 }
 
 body {
+  min-height: 100vh;
+  margin: 0;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--brand-green-tint);
+  color: var(--brand-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

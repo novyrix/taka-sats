@@ -1,0 +1,24 @@
+{
+  "Metadata": {
+    "title": "Taka Sats",
+    "description": "An offline-first waste-to-Bitcoin programme for verified collection and Lightning payouts."
+  },
+  "Home": {
+    "brandAlt": "Taka Sats",
+    "eyebrow": "Waste to Bitcoin · Earn first",
+    "title": "Verified collection. Transparent payout.",
+    "description": "Taka Sats is the open, offline-first foundation for turning verified recycling work into traceable Lightning payouts.",
+    "status": "Foundation online",
+    "baselineTitle": "Implementation has started",
+    "baselineDescription": "The requirements are aligned, strict TypeScript is enforced, and the first deployment path is running.",
+    "offlineTitle": "Offline first",
+    "offlineDescription": "Core supervisor work will save locally before any network request.",
+    "verificationTitle": "Evidence linked",
+    "verificationDescription": "Collection, photo evidence, and payout records share one append-only audit trail.",
+    "custodyTitle": "Non-custodial default",
+    "custodyDescription": "Collectors bring a receive address; custodial provisioning stays disabled until legal review.",
+    "nextLabel": "Next foundation issue",
+    "nextValue": "Project structure and OSS controls"
+  },
+  "translationStatus": "complete"
+}
