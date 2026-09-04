@@ -2,7 +2,8 @@
 
 Thanks for helping build an open, offline-first waste-to-Bitcoin system. This document
 covers how the project is run. How code is _written_ is [`Initial assets/Taka_Sats_Code_Style_Guide.md`](Initial%20assets/Taka_Sats_Code_Style_Guide.md);
-what to build and in what order is [`docs/ROADMAP.md`](docs/ROADMAP.md).
+how the UI is built is [`docs/DESIGN.md`](docs/DESIGN.md) (canonical — compose from its §6
+inventory, don't hand-roll); what to build and in what order is [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Before you start
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Hanken_Grotesk, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages, getTranslations } from 'next-intl/server';
@@ -36,8 +36,15 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t('title'),
     description: t('description'),
+    manifest: '/manifest.webmanifest',
+    appleWebApp: { capable: true, title: t('title'), statusBarStyle: 'default' },
   };
 }
+
+export const viewport: Viewport = {
+  themeColor: '#3E6336',
+  colorScheme: 'light',
+};
 
 type RootLayoutProps = {
   readonly children: ReactNode;

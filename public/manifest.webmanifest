@@ -1,0 +1,14 @@
+{
+  "name": "Taka Sats",
+  "short_name": "Taka Sats",
+  "description": "Offline-first waste-to-Bitcoin collection and Lightning payouts.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#3E6336",
+  "background_color": "#FAF8F4",
+  "icons": [
+    { "src": "/taka-sats-logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

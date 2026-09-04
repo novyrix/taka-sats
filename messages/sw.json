@@ -20,5 +20,13 @@
     "nextLabel": "Next foundation issue",
     "nextValue": "Project structure and OSS controls"
   },
+  "Status": {
+    "queued": "Queued",
+    "syncing": "Syncing",
+    "confirmed": "Confirmed",
+    "needs_attention": "Needs attention",
+    "failed": "Failed",
+    "pending_payout": "Pending payout"
+  },
   "translationStatus": "TODO(afribit)"
 }
