@@ -17,10 +17,12 @@
 
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -140,5 +142,106 @@ export const anomalyFlags = pgTable(
       'anomaly_flags_review_outcome_check',
       sql`${table.reviewOutcome} is null or ${table.reviewOutcome} in ('confirmed', 'dismissed')`,
     ),
+  ],
+);
+
+// ── SESSIONS, RATES & PARTNERS (M2) ──────────────────────────────────────
+
+/**
+ * A sponsoring partner (Trezor / Blink / Fedi …). Reads are scoped to the
+ * sessions they sponsor and are aggregate-only (§3.1, NFR 7.4). Login is
+ * `login_email` + password (M2-1).
+ */
+export const partners = pgTable('partners', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  contact: text('contact'),
+  loginEmail: text('login_email').unique(),
+  /** `scrypt` hash (lib/auth/password.ts); null until a login is set up. Never logged. */
+  passwordHash: text('password_hash'),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
+ * A collection session: a place + time window with assigned supervisors and
+ * an active rate set (FR-8.1). `status` moves scheduled → active → closed.
+ */
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    location: text('location').notNull(),
+    /** Optional polygon for geo scope (FR-6.1). GeoJSON-ish; shape validated in `lib/`. */
+    geoBounds: jsonb('geo_bounds'),
+    scheduledStart: timestamp('scheduled_start', { withTimezone: true }).notNull(),
+    scheduledEnd: timestamp('scheduled_end', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('scheduled'),
+    sponsorPartnerId: uuid('sponsor_partner_id').references(() => partners.id),
+  },
+  (table) => [
+    check('sessions_status_check', sql`${table.status} in ('scheduled', 'active', 'closed')`),
+    check('sessions_window_check', sql`${table.scheduledEnd} > ${table.scheduledStart}`),
+  ],
+);
+
+/** Which supervisors may act in which session (FR-6.1). */
+export const sessionSupervisors = pgTable(
+  'session_supervisors',
+  {
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => sessions.id, { onDelete: 'cascade' }),
+    supervisorId: uuid('supervisor_id')
+      .notNull()
+      .references(() => supervisors.id),
+  },
+  (table) => [primaryKey({ columns: [table.sessionId, table.supervisorId] })],
+);
+
+/**
+ * The versioned rate table (D-14, §8.3). Never overwritten: a rate change
+ * inserts a new row and closes the prior one's `effective_to`. Fiat minor
+ * units per kg — sats are computed at payout time, never stored here.
+ * Seeded from `[rates].seed` on the first apply (M2-4).
+ */
+export const materialRates = pgTable(
+  'material_rates',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    material: text('material').notNull(),
+    /** e.g. KES cents per kg. `bigint` (never float) — Code Style Guide §8. */
+    rateFiatMinor: bigint('rate_fiat_minor', { mode: 'number' }).notNull(),
+    fiatCurrency: text('fiat_currency').notNull().default('KES'),
+    effectiveFrom: timestamp('effective_from', { withTimezone: true }).notNull(),
+    /** NULL = currently active. */
+    effectiveTo: timestamp('effective_to', { withTimezone: true }),
+  },
+  (table) => [
+    check('material_rates_rate_check', sql`${table.rateFiatMinor} >= 0`),
+    // At most one open (active) rate per material at a time.
+    uniqueIndex('material_rates_active_material_idx')
+      .on(table.material)
+      .where(sql`${table.effectiveTo} is null`),
+  ],
+);
+
+/**
+ * Standing supervisor→location rotations (FR-3.7). Future session assignment
+ * reflects these (M2-8).
+ */
+export const supervisorRotations = pgTable(
+  'supervisor_rotations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    supervisorId: uuid('supervisor_id')
+      .notNull()
+      .references(() => supervisors.id),
+    location: text('location').notNull(),
+    windowStart: timestamp('window_start', { withTimezone: true }).notNull(),
+    windowEnd: timestamp('window_end', { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    check('supervisor_rotations_window_check', sql`${table.windowEnd} > ${table.windowStart}`),
   ],
 );

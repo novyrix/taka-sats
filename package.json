@@ -16,6 +16,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:create-supervisor": "tsx scripts/create-supervisor.ts",
+    "db:seed": "tsx scripts/seed.ts",
     "check:design": "node scripts/check-colour-pairing.mjs",
     "worker": "tsx worker/runner.ts",
     "commitlint": "commitlint",
