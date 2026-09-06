@@ -57,12 +57,16 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/address — integrati
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   afterAll(async () => {
     globalThis.fetch = originalFetch;
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   function stubLnurl(tag: 'payRequest' | 'withdrawRequest') {

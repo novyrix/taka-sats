@@ -14,7 +14,12 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { errorResponse } from '@/lib/api/errors';
 import { requireScope } from '@/lib/auth/session';
-import { findActiveTagMapping, isTagRevoked, TagRevokedError } from '@/lib/collectors';
+import {
+  findActiveTagMapping,
+  isTagRevoked,
+  recordRevokedTapAttempt,
+  TagRevokedError,
+} from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
 
 const paramsSchema = z.object({ tagId: z.string().trim().min(1) });
@@ -34,6 +39,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams): Promi
     }
 
     if (await isTagRevoked(db, tagId)) {
+      await recordRevokedTapAttempt(db, tagId);
       throw new TagRevokedError(tagId);
     }
     return NextResponse.json(

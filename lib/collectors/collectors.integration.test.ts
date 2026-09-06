@@ -35,11 +35,15 @@ describe.skipIf(!hasDatabase)('lib/collectors (integration)', () => {
   const provider = new FakeLightningProvider();
 
   beforeEach(async () => {
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   afterAll(async () => {
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   it('enrols a collector with only an alias', async () => {

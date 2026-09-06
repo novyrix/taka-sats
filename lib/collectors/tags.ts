@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The physical-tag lifecycle (§7.2–7.3): reissue, revoke, and the lookups the
- * PWA/API use to reject a revoked tap (M1-9 groundwork — the `anomaly_flags`
- * write itself lands with the M6-1 migration).
+ * The physical-tag lifecycle (§7.2–7.3): reissue, revoke, the lookups the
+ * PWA/API use to resolve a tap, and the revoked-tap logging (M1-9).
  */
 
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
-import { collectors, tagHistory } from '@/lib/db/schema';
+import { anomalyFlags, collectors, tagHistory } from '@/lib/db/schema';
 import { CollectorNotFoundError, TagAlreadyActiveError } from './errors';
 import {
   type CollectorRecord,
@@ -160,4 +159,16 @@ export async function findActiveTagMapping(
 export async function isTagRevoked(db: Database, tagId: string): Promise<boolean> {
   const rows = await db.select().from(tagHistory).where(eq(tagHistory.tagId, tagId));
   return rows.length > 0 && rows.every((row) => row.revokedAt !== null);
+}
+
+/**
+ * Log an attempt to use a revoked tag (§7.3, FR-1.4, M1-9). Writes an
+ * `anomaly_flags` row for human review — it never blocks anything by itself.
+ */
+export async function recordRevokedTapAttempt(db: Database, tagId: string): Promise<void> {
+  await db.insert(anomalyFlags).values({
+    flagType: 'revoked_tag_tap',
+    context: { tagId },
+    detectedAt: new Date(),
+  });
 }

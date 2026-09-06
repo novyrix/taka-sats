@@ -19,6 +19,7 @@ export { findCollectorById, searchCollectorsByAlias, type CollectorSummary } fro
 export {
   findActiveTagMapping,
   isTagRevoked,
+  recordRevokedTapAttempt,
   reissueTag,
   revokeTag,
   type ActiveTagMapping,

@@ -17,6 +17,7 @@ import {
   searchCollectorsByAlias,
 } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
+import { enqueueProvisionCollectorWallet } from '@/lib/jobs';
 
 const searchSchema = z.object({
   q: z.string().trim().min(1).max(120),
@@ -47,6 +48,13 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const input = enrolCollectorInputSchema.parse(body);
 
     const collector = await enrolCollector(getDb(), input);
+
+    // Path B: enqueue the LNbits provisioning job (M1-6). The worker drains
+    // it; enrolment does not block on LNbits. Inert on the default (BYO) path.
+    if (collector.addressSource === 'provisioned') {
+      await enqueueProvisionCollectorWallet({ collectorId: collector.id });
+    }
+
     return NextResponse.json({ collector }, { status: 201 });
   } catch (error) {
     return errorResponse(error);

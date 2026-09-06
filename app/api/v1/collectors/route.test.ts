@@ -68,11 +68,15 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   afterAll(async () => {
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   it('enrols a collector and returns 201', async () => {

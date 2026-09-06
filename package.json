@@ -17,6 +17,7 @@
     "db:studio": "drizzle-kit studio",
     "db:create-supervisor": "tsx scripts/create-supervisor.ts",
     "check:design": "node scripts/check-colour-pairing.mjs",
+    "worker": "tsx worker/runner.ts",
     "commitlint": "commitlint",
     "prepare": "husky"
   },
@@ -32,6 +33,7 @@
     "next-auth": "5.0.0-beta.32",
     "next-intl": "^4.14.2",
     "next-themes": "^0.4.6",
+    "pg-boss": "^12.30.0",
     "postgres": "^3.4.9",
     "radix-ui": "^1.6.7",
     "react": "19.2.8",

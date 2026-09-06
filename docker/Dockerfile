@@ -30,9 +30,9 @@ USER nextjs
 EXPOSE 3000
 CMD ["node", "server.js"]
 
-FROM node:24.20.0-alpine AS worker
+# The worker runs `lib/jobs` handlers, which need the full source + dev deps
+# (tsx). Reuse the `builder` stage rather than a pruned copy.
+FROM builder AS worker
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --chown=node:node worker/runner.mjs ./worker/runner.mjs
-USER node
-CMD ["node", "worker/runner.mjs"]
+CMD ["pnpm", "exec", "tsx", "worker/runner.ts"]

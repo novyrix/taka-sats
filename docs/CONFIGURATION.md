@@ -25,7 +25,8 @@ starts on a half-valid config. The validated object is deep-frozen and exported 
 
 ## Secrets are never in TOML
 
-`DATABASE_URL`, `BLINK_API_KEY`, `LNBITS_ADMIN_KEY`, `NOSTR_PRIVATE_KEY`, `AUTH_SECRET`,
+`DATABASE_URL`, `BLINK_API_KEY`, `LNBITS_ADMIN_KEY`, `LNBITS_USERMANAGER_KEY`,
+`NOSTR_PRIVATE_KEY`, `AUTH_SECRET`,
 and object-storage credentials are environment variables only. `settings.toml` may name
 *which* provider (`float_provider = "lnbits"`), never a key. See `.env.example`.
 `lib/lightning/index.ts` reads exactly the one secret its configured provider needs

@@ -557,14 +557,19 @@ reconciliation_reports (
 
 anomaly_flags (
   id                  UUID PRIMARY KEY,
-  collection_event_id UUID REFERENCES collection_events(id),
+  collection_event_id UUID REFERENCES collection_events(id),  -- nullable (a revoked_tag_tap has no event)
   flag_type           TEXT NOT NULL,
       -- identical_weight_repeat | payout_concentration | off_hours
       -- | revoked_tag_tap | gps_outlier | rate_change_during_queue
+  context             JSONB,                      -- NEW (M1-9): investigation detail, e.g. { tag_id }
   detected_at         TIMESTAMPTZ NOT NULL,
   reviewed_by         UUID REFERENCES supervisors(id),
   review_outcome      TEXT                        -- confirmed | dismissed
 )
+
+> Created early (minimal) at M1-9 for `revoked_tag_tap`: the
+> `collection_event_id` FK is added with `collection_events` (M3/M4); the
+> detectors that populate the other `flag_type`s are M6-4.
 
 -- ── LEDGER (canonical append-only chain, D-13) ─────────────────────
 ledger_entries (                                 -- NEW

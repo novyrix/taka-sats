@@ -13,7 +13,17 @@ import { getSettings } from '@/lib/config';
 import { BlinkProvider } from './BlinkProvider';
 import { FedimintProvider } from './FedimintProvider';
 import type { LightningProvider } from './LightningProvider';
-import { LNbitsProvider } from './LNbitsProvider';
+import { type CollectorWalletProvisioner, LNbitsProvider } from './LNbitsProvider';
+
+function lnbitsProvider(env: Readonly<Record<string, string | undefined>>): LNbitsProvider {
+  const { lightning } = getSettings();
+  return new LNbitsProvider({
+    baseUrl: lightning.lnbits.base_url,
+    floatWalletId: lightning.lnbits.float_wallet_id,
+    adminKey: env.LNBITS_ADMIN_KEY ?? '',
+    ...(env.LNBITS_USERMANAGER_KEY ? { usermanagerKey: env.LNBITS_USERMANAGER_KEY } : {}),
+  });
+}
 
 export function getLightningProvider(
   env: Readonly<Record<string, string | undefined>> = process.env,
@@ -28,14 +38,21 @@ export function getLightningProvider(
         apiKey: env.BLINK_API_KEY ?? '',
       });
     case 'lnbits':
-      return new LNbitsProvider({
-        baseUrl: lightning.lnbits.base_url,
-        floatWalletId: lightning.lnbits.float_wallet_id,
-        adminKey: env.LNBITS_ADMIN_KEY ?? '',
-      });
+      return lnbitsProvider(env);
     case 'fedimint':
       return new FedimintProvider({ federationInvite: lightning.fedimint.federation_invite });
   }
+}
+
+/**
+ * The per-collector wallet provisioner (M1-6). Only LNbits provisions —
+ * `custody.provisioning_enabled` gates whether it is ever used, and gate G1
+ * gates real funds.
+ */
+export function getCollectorWalletProvisioner(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): CollectorWalletProvisioner {
+  return lnbitsProvider(env);
 }
 
 export type { LightningProvider } from './LightningProvider';

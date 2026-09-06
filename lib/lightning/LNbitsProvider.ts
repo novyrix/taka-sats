@@ -24,6 +24,15 @@ import type {
 } from './LightningProvider';
 import { requestInvoiceFor, resolveLnurlPay } from './lnurlPay';
 
+/**
+ * The one method a per-collector provisioning job needs (M1-6). Kept as a
+ * narrow interface here (not the whole `LightningProvider`) so a test can
+ * stub it and so `lib/jobs` depends on `lib/lightning`, not the reverse.
+ */
+export interface CollectorWalletProvisioner {
+  createCollectorWallet(userLabel: string): Promise<{ lnbitsWalletId: string; lnurlp: string }>;
+}
+
 export type LNbitsProviderConfig = {
   /** e.g. http://lnbits:5000 (settings.lightning.lnbits.base_url). */
   readonly baseUrl: string;
@@ -31,6 +40,12 @@ export type LNbitsProviderConfig = {
   readonly floatWalletId: string;
   /** The float wallet's admin key. From the environment only — `LNBITS_ADMIN_KEY`. */
   readonly adminKey: string;
+  /**
+   * The `usermanager` extension admin key, for minting per-collector wallets
+   * (M1-6 / gate G1). Environment only — `LNBITS_USERMANAGER_KEY`. Distinct
+   * from the float `adminKey`.
+   */
+  readonly usermanagerKey?: string;
 };
 
 async function lnbitsFetch<T>(
@@ -109,18 +124,22 @@ export class LNbitsProvider implements LightningProvider {
   }
 
   /**
-   * Provision a per-collector wallet + LNURLp (§7.1 Path B, M1-6). Requires a
-   * separate usermanager admin key with permission to create users/wallets —
-   * distinct from the float wallet's admin key.
+   * Provision a per-collector wallet + LNURLp (§7.1 Path B, M1-6). Uses the
+   * `usermanager` extension key from config — distinct from the float
+   * `adminKey`. Implements `CollectorWalletProvisioner` (lib/jobs).
    */
   async createCollectorWallet(
     userLabel: string,
-    usermanagerAdminKey: string,
   ): Promise<{ lnbitsWalletId: string; lnurlp: string }> {
+    if (!this.config.usermanagerKey) {
+      throw new PaymentFailedError(
+        'LNBITS_USERMANAGER_KEY is not set — required to provision a collector wallet',
+      );
+    }
     const user = await lnbitsFetch<UsermanagerUser>(
       this.config.baseUrl,
       '/usermanager/api/v1/users',
-      usermanagerAdminKey,
+      this.config.usermanagerKey,
       { method: 'POST', body: JSON.stringify({ user_name: userLabel, wallet_name: 'collector' }) },
     );
     const wallet = user.wallets[0];

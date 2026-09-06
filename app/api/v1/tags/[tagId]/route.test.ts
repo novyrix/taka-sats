@@ -10,6 +10,7 @@ vi.mock('@/auth', () => ({ auth: vi.fn() }));
 import { auth } from '@/auth';
 import { enrolCollector, reissueTag, revokeTag } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
+import { anomalyFlags } from '@/lib/db/schema';
 import { GET } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
@@ -43,11 +44,15 @@ describe.skipIf(!hasDatabase)('GET /api/v1/tags/:tagId — integration', () => {
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   afterAll(async () => {
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   it('resolves an active tag to its collector (200)', async () => {
@@ -69,6 +74,12 @@ describe.skipIf(!hasDatabase)('GET /api/v1/tags/:tagId — integration', () => {
     expect(response.status).toBe(410);
     const body = await response.json();
     expect(body.error.code).toBe('tag_revoked');
+
+    // The attempt is logged for review (M1-9), never silently.
+    const flags = await db.select().from(anomalyFlags);
+    expect(flags).toHaveLength(1);
+    expect(flags[0]?.flagType).toBe('revoked_tag_tap');
+    expect(flags[0]?.context).toEqual({ tagId: 'TAG-GONE' });
   });
 
   it('404s for a tag that was never issued', async () => {

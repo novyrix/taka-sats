@@ -52,11 +52,15 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/tags/revoke — integ
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('admin'));
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   afterAll(async () => {
-    await db.execute(sql`truncate table tag_history, collectors restart identity cascade`);
+    await db.execute(
+      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
+    );
   });
 
   it("revokes the collector's current tag when no tagId is given", async () => {

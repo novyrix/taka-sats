@@ -16,7 +16,16 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { boolean, check, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 
 /**
  * A collector: alias-only identity (§7.1). Requires no ID, phone, or address.
@@ -97,5 +106,39 @@ export const supervisors = pgTable(
   },
   (table) => [
     check('supervisors_role_check', sql`${table.role} in ('supervisor', 'hub_lead', 'admin')`),
+  ],
+);
+
+/**
+ * Anomaly flags (REQUIREMENTS §9). Written by fraud detectors (M6-4) and by
+ * the revoked-tag-tap handler (M1-9). A flag never auto-blocks anything —
+ * it is queued for human review (ADR-0006 spirit).
+ *
+ * Minimal here for M1-9: `collection_event_id` is a plain column (its FK to
+ * `collection_events` is added with that table in M3/M4). `context` (jsonb)
+ * is a §9 extension — investigation detail, e.g. the tapped `tag_id`.
+ */
+export const anomalyFlags = pgTable(
+  'anomaly_flags',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** nullable — a revoked-tap flag has no event; FK added with `collection_events`. */
+    collectionEventId: uuid('collection_event_id'),
+    flagType: text('flag_type').notNull(),
+    context: jsonb('context'),
+    detectedAt: timestamp('detected_at', { withTimezone: true }).notNull().defaultNow(),
+    reviewedBy: uuid('reviewed_by').references(() => supervisors.id),
+    /** 'confirmed' | 'dismissed' (null until reviewed). */
+    reviewOutcome: text('review_outcome'),
+  },
+  (table) => [
+    check(
+      'anomaly_flags_flag_type_check',
+      sql`${table.flagType} in ('identical_weight_repeat', 'payout_concentration', 'off_hours', 'revoked_tag_tap', 'gps_outlier', 'rate_change_during_queue')`,
+    ),
+    check(
+      'anomaly_flags_review_outcome_check',
+      sql`${table.reviewOutcome} is null or ${table.reviewOutcome} in ('confirmed', 'dismissed')`,
+    ),
   ],
 );
