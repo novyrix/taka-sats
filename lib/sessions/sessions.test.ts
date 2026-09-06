@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { getDb } from '@/lib/db/client';
 import { supervisors } from '@/lib/db/schema';
+import { createRotation } from '@/lib/rotations';
 import {
   createSession,
   createSessionInputSchema,
@@ -61,12 +62,12 @@ describe.skipIf(!hasDatabase)('lib/sessions (integration)', () => {
 
   beforeEach(async () => {
     await db.execute(
-      sql`truncate table session_supervisors, sessions, supervisors restart identity cascade`,
+      sql`truncate table session_supervisors, sessions, supervisor_rotations, supervisors restart identity cascade`,
     );
   });
   afterAll(async () => {
     await db.execute(
-      sql`truncate table session_supervisors, sessions, supervisors restart identity cascade`,
+      sql`truncate table session_supervisors, sessions, supervisor_rotations, supervisors restart identity cascade`,
     );
   });
 
@@ -92,6 +93,47 @@ describe.skipIf(!hasDatabase)('lib/sessions (integration)', () => {
 
     const fetched = await getSession(db, created.id);
     expect(fetched?.supervisorIds.sort()).toEqual([s1, s2].sort());
+  });
+
+  it('createSession unions explicit supervisors with anyone rostered by a rotation (M2-8)', async () => {
+    const explicit = await makeSupervisor('Ada');
+    const rostered = await makeSupervisor('Brian');
+    await createRotation(db, {
+      supervisorId: rostered,
+      location: 'Kibera Hub',
+      windowStart: new Date('2026-06-01T00:00:00Z'),
+      windowEnd: new Date('2026-06-30T00:00:00Z'),
+    });
+
+    const created = await createSession(db, {
+      location: 'Kibera Hub',
+      scheduledStart: new Date('2026-06-10T08:00:00Z'),
+      scheduledEnd: new Date('2026-06-10T14:00:00Z'),
+      supervisorIds: [explicit],
+    });
+    expect(created.supervisorIds.sort()).toEqual([explicit, rostered].sort());
+
+    // applyRotations:false keeps only the explicit list
+    const opted = await createSession(
+      db,
+      {
+        location: 'Kibera Hub',
+        scheduledStart: new Date('2026-06-11T08:00:00Z'),
+        scheduledEnd: new Date('2026-06-11T14:00:00Z'),
+        supervisorIds: [explicit],
+      },
+      { applyRotations: false },
+    );
+    expect(opted.supervisorIds).toEqual([explicit]);
+
+    // a different location gets nobody from the rotation
+    const elsewhere = await createSession(db, {
+      location: 'Mathare Yard',
+      scheduledStart: new Date('2026-06-10T08:00:00Z'),
+      scheduledEnd: new Date('2026-06-10T14:00:00Z'),
+      supervisorIds: [],
+    });
+    expect(elsewhere.supervisorIds).toEqual([]);
   });
 
   it('patches fields and replaces the supervisor set', async () => {

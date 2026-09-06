@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils';
  */
 const ITEMS = [
   { key: 'sessions', href: '/sessions', enabled: true },
+  { key: 'rotations', href: '/rotations', enabled: true },
   { key: 'collectors', href: '/collectors', enabled: false },
   { key: 'payouts', href: '/payouts', enabled: false },
   { key: 'treasury', href: '/treasury', enabled: false },

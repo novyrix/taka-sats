@@ -22,6 +22,7 @@ import {
 import { InvalidLightningAddressError, NotReceiveCapableError } from '@/lib/lightning/errors';
 import { ExchangeFeedError, StaleRateError } from '@/lib/money/rates';
 import { RateError } from '@/lib/rates';
+import { RotationError } from '@/lib/rotations';
 import { NoActiveSessionError, SessionError } from '@/lib/sessions';
 
 export type ApiErrorBody = {
@@ -77,7 +78,11 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   if (error instanceof InvalidLightningAddressError) {
     return json(422, 'invalid_lightning_address', error.message);
   }
-  if (error instanceof RateError || error instanceof SessionError) {
+  if (
+    error instanceof RateError ||
+    error instanceof SessionError ||
+    error instanceof RotationError
+  ) {
     return json(422, 'unprocessable', error.message);
   }
   if (error instanceof NoActiveSessionError) {

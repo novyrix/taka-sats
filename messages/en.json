@@ -88,6 +88,7 @@
   "Admin": {
     "nav": {
       "sessions": "Sessions",
+      "rotations": "Rotations",
       "collectors": "Collectors",
       "payouts": "Payouts",
       "treasury": "Treasury",
@@ -134,6 +135,33 @@
         "window": "Enter a start and an end time.",
         "order": "The end time must be after the start time.",
         "generic": "Couldn't create the session. Check the details and try again."
+      }
+    },
+    "rotations": {
+      "title": "Rotations",
+      "intro": "Roster a supervisor to a location for a window. New sessions whose location and window overlap a rotation auto-assign the rostered supervisor.",
+      "empty": "No rotations yet.",
+      "add": "Add rotation",
+      "adding": "Adding…",
+      "remove": "Remove",
+      "field": {
+        "supervisor": "Supervisor",
+        "supervisorNone": "Choose a supervisor",
+        "location": "Location",
+        "locationPlaceholder": "e.g. Kibera Hub",
+        "start": "Window start",
+        "end": "Window end"
+      },
+      "col": {
+        "supervisor": "Supervisor",
+        "location": "Location",
+        "window": "Window"
+      },
+      "error": {
+        "missing": "Pick a supervisor and fill in the location and window.",
+        "order": "The window end must be after the start.",
+        "generic": "Couldn't add the rotation. Check the details and try again.",
+        "deleteFailed": "Couldn't remove that rotation."
       }
     }
   },

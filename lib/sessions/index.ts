@@ -11,6 +11,7 @@ import { and, desc, eq, gt, type InferSelectModel, inArray, lte } from 'drizzle-
 import { z } from 'zod';
 import type { Database, Queryable } from '@/lib/db/client';
 import { sessions, sessionSupervisors } from '@/lib/db/schema';
+import { rotationSupervisorsFor } from '@/lib/rotations';
 
 export type SessionRecord = InferSelectModel<typeof sessions>;
 export type SessionWithSupervisors = SessionRecord & { readonly supervisorIds: string[] };
@@ -92,9 +93,19 @@ async function replaceSupervisors(
   }
 }
 
+export type CreateSessionOptions = {
+  /**
+   * Union the explicit `supervisorIds` with anyone rostered for this
+   * location+window via `supervisor_rotations` (M2-8). Default `true`; pass
+   * `false` to assign only the explicit list.
+   */
+  readonly applyRotations?: boolean;
+};
+
 export async function createSession(
   db: Database,
   input: CreateSessionInput,
+  options: CreateSessionOptions = {},
 ): Promise<SessionWithSupervisors> {
   const parsed = createSessionInputSchema.parse(input);
 
@@ -113,8 +124,15 @@ export async function createSession(
     if (!row) {
       throw new SessionError('createSession: insert returned no row');
     }
-    await replaceSupervisors(tx, row.id, parsed.supervisorIds);
-    return { ...row, supervisorIds: [...new Set(parsed.supervisorIds)] };
+
+    const rostered =
+      (options.applyRotations ?? true)
+        ? await rotationSupervisorsFor(tx, row.location, row.scheduledStart, row.scheduledEnd)
+        : [];
+    const supervisorIds = [...new Set([...parsed.supervisorIds, ...rostered])];
+
+    await replaceSupervisors(tx, row.id, supervisorIds);
+    return { ...row, supervisorIds };
   });
 }
 

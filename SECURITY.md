@@ -54,6 +54,17 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-06 — Supervisor rotations (M2-8, FR-3.7). New CRUD routes
+  (`GET`/`POST /api/v1/rotations`, `DELETE /api/v1/rotations/:id`) all behind
+  `requireScope('session:configure')` (admin only) — no RBAC-matrix change. The one
+  authorization-relevant behaviour change: `lib/sessions.createSession` now **unions** the
+  explicit `supervisorIds` with anyone rostered for the session's location+window
+  (`rotationSupervisorsFor`, window-overlap, exact location match). Those auto-assigned
+  supervisors then pass M2-7's `requireActiveSession` for that session — i.e. a rotation can
+  grant a supervisor the ability to act in a session without the session's creator listing
+  them explicitly. Bounded by: admin-only rotation writes, exact location-string match, and
+  the M2-7 window/active checks still apply. `applyRotations: false` opts a `createSession`
+  call out. `payout:execute` unaffected.
 - 2026-09-06 — Session access window (M2-7, FR-6.1). New authz gate, not a scope
   change: `lib/sessions/requireActiveSession(db, actor)` throws `NoActiveSessionError`
   (→ 403 `no_active_session`) when `actor.role === 'supervisor'` and there is no session
