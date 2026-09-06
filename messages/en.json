@@ -63,5 +63,21 @@
     "doneTitle": "{alias} is enrolled.",
     "enrolAnother": "Enrol another"
   },
+  "Lookup": {
+    "title": "Find a collector",
+    "tapButton": "Tap their tag",
+    "scanning": "Ready — hold the tag to the phone",
+    "holdTag": "Hold the tag to the phone",
+    "scanError": "Couldn't start the tag reader. Search by name instead.",
+    "nfcUnavailable": "This phone can't read tags — search by name.",
+    "tagRevoked": "That tag was revoked. Search by name instead.",
+    "tagUnknown": "No collector is mapped to that tag.",
+    "searchLabel": "Search by name",
+    "searchPlaceholder": "Start typing a name…",
+    "searching": "Searching…",
+    "noMatches": "No collectors match that.",
+    "noTag": "no tag",
+    "lookUpAnother": "Look up another"
+  },
   "translationStatus": "complete"
 }

@@ -10,7 +10,7 @@ import { auth } from '@/auth';
 import { getDb } from '@/lib/db/client';
 import { collectors } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
-import { POST } from './route';
+import { GET, POST } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
 
@@ -29,6 +29,10 @@ function postRequest(body: unknown): NextRequest {
   });
 }
 
+function getRequest(qs: string): NextRequest {
+  return new NextRequest(`http://localhost/api/v1/collectors${qs}`);
+}
+
 describe('POST /api/v1/collectors — auth (no DB required)', () => {
   it('401s with no session', async () => {
     authMock.mockResolvedValue(null);
@@ -44,6 +48,16 @@ describe('POST /api/v1/collectors — auth (no DB required)', () => {
     expect(response.status).toBe(403);
     const body = await response.json();
     expect(body.error.code).toBe('forbidden');
+  });
+
+  it('GET ?q= 400s without a query', async () => {
+    authMock.mockResolvedValue(sessionFor('supervisor'));
+    expect((await GET(getRequest(''))).status).toBe(400);
+  });
+
+  it('GET ?q= 403s for partner (needs collector:read)', async () => {
+    authMock.mockResolvedValue(sessionFor('partner'));
+    expect((await GET(getRequest('?q=am'))).status).toBe(403);
   });
 });
 
@@ -89,5 +103,17 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
 
     const rows = await db.select().from(collectors);
     expect(rows).toHaveLength(1);
+  });
+
+  it('GET ?q= returns alias matches (case-insensitive)', async () => {
+    await POST(postRequest({ alias: 'Amina Otieno' }));
+    await POST(postRequest({ alias: 'Brian Kamau' }));
+    await POST(postRequest({ alias: 'Aminata' }));
+
+    const response = await GET(getRequest('?q=amin'));
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    const aliases = (body.collectors as { alias: string }[]).map((c) => c.alias).sort();
+    expect(aliases).toEqual(['Amina Otieno', 'Aminata']);
   });
 });

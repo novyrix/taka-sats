@@ -54,3 +54,23 @@ export async function writeTagAndReadSerial(url: string, signal?: AbortSignal): 
 
   return serial;
 }
+
+/**
+ * Start a tag read (M1-8): `onSerial` fires with the NTAG hardware serial
+ * every time a tag is presented, until `signal` aborts. Rejects if Web NFC
+ * is unavailable or the scan cannot start (caller falls back to alias
+ * search, G2).
+ */
+export async function startTagScan(
+  onSerial: (serial: string) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const Reader = getNdefReader();
+  if (!Reader) {
+    throw new Error('Web NFC is not available on this device');
+  }
+
+  const reader = new Reader();
+  reader.addEventListener('reading', (event) => onSerial(event.serialNumber));
+  await reader.scan({ signal });
+}

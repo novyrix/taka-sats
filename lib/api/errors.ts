@@ -17,6 +17,7 @@ import {
   CollectorNotFoundError,
   ProvisioningDisabledError,
   TagAlreadyActiveError,
+  TagRevokedError,
 } from '@/lib/collectors';
 import { InvalidLightningAddressError, NotReceiveCapableError } from '@/lib/lightning/errors';
 
@@ -60,6 +61,9 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof TagAlreadyActiveError) {
     return json(409, 'conflict', error.message);
+  }
+  if (error instanceof TagRevokedError) {
+    return json(410, 'tag_revoked', error.message);
   }
   if (error instanceof ProvisioningDisabledError) {
     return json(403, 'forbidden', error.message);
