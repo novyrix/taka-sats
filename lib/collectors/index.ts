@@ -15,7 +15,12 @@ export {
   TagAlreadyActiveError,
   TagRevokedError,
 } from './errors';
-export { findCollectorById, searchCollectorsByAlias, type CollectorSummary } from './lookup';
+export {
+  findCollectorById,
+  listActiveCollectors,
+  searchCollectorsByAlias,
+  type CollectorSummary,
+} from './lookup';
 export {
   findActiveTagMapping,
   isTagRevoked,

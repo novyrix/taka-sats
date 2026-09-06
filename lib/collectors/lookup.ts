@@ -5,6 +5,13 @@ import type { Database } from '@/lib/db/client';
 import { collectors } from '@/lib/db/schema';
 import type { CollectorRecord } from './types';
 
+const SUMMARY = {
+  id: collectors.id,
+  alias: collectors.alias,
+  nfcTagId: collectors.nfcTagId,
+  status: collectors.status,
+} as const;
+
 export async function findCollectorById(db: Database, id: string): Promise<CollectorRecord | null> {
   const [row] = await db.select().from(collectors).where(eq(collectors.id, id));
   return row ?? null;
@@ -24,14 +31,26 @@ export async function searchCollectorsByAlias(
   limit = 20,
 ): Promise<CollectorSummary[]> {
   return db
-    .select({
-      id: collectors.id,
-      alias: collectors.alias,
-      nfcTagId: collectors.nfcTagId,
-      status: collectors.status,
-    })
+    .select(SUMMARY)
     .from(collectors)
     .where(ilike(collectors.alias, `%${query}%`))
     .orderBy(desc(collectors.enrolledAt))
     .limit(Math.min(Math.max(limit, 1), 100));
+}
+
+/**
+ * Every active collector, capped, for the PWA to cache before going offline
+ * (M3-2/M3-3). Newest first so a truncated cache still holds the collectors a
+ * supervisor is most likely to have just enrolled.
+ */
+export async function listActiveCollectors(
+  db: Database,
+  limit = 5000,
+): Promise<CollectorSummary[]> {
+  return db
+    .select(SUMMARY)
+    .from(collectors)
+    .where(eq(collectors.status, 'active'))
+    .orderBy(desc(collectors.enrolledAt))
+    .limit(Math.min(Math.max(limit, 1), 20_000));
 }

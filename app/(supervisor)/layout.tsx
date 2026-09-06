@@ -3,7 +3,9 @@
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
 import { auth } from '@/auth';
+import { BottomNav } from '@/components/supervisor/BottomNav';
 import { CurrentSessionBadge } from '@/components/supervisor/session-context';
+import { SyncStatusIndicator } from '@/components/weigh/SyncStatusIndicator';
 
 /**
  * Supervisor PWA shell (DESIGN §5.1 — thumb-first single column). Every route
@@ -24,7 +26,9 @@ export default async function SupervisorLayout({ children }: { readonly children
           <CurrentSessionBadge />
         </span>
       </header>
+      <SyncStatusIndicator />
       <main className="flex-1 px-4 py-6">{children}</main>
+      <BottomNav />
     </div>
   );
 }

@@ -55,6 +55,15 @@ export async function sha256Hex(input: string): Promise<string> {
   return toHex(digest);
 }
 
+/**
+ * Lowercase hex SHA-256 of raw bytes — the on-device photo hash (D-12, M3-5).
+ * Computed from the image bytes before any upload.
+ */
+export async function sha256HexBytes(bytes: ArrayBuffer | Uint8Array): Promise<string> {
+  const buffer = bytes instanceof Uint8Array ? (bytes.buffer as ArrayBuffer) : bytes;
+  return toHex(await crypto.subtle.digest('SHA-256', buffer));
+}
+
 /** Lowercase hex SHA-256 of the canonical serialisation of `payload`. */
 export async function contentHash(payload: Canonicalizable): Promise<string> {
   return sha256Hex(canonicalize(payload));

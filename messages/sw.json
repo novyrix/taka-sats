@@ -165,5 +165,43 @@
       }
     }
   },
+  "SupervisorNav": {
+    "weigh": "Weigh",
+    "enrol": "Enrol",
+    "lookup": "Lookup"
+  },
+  "Weigh": {
+    "title": "Weigh",
+    "loading": "Loading session…",
+    "blockedTitle": "Can't start weighing",
+    "offlineCache": "Working from your last synced copy — new collectors and rate changes won't show until you reconnect.",
+    "queued": "{count} queued",
+    "tapButton": "Tap their tag",
+    "scanning": "Ready — hold the tag to the phone",
+    "holdTag": "Hold the tag to the phone",
+    "scanError": "Couldn't start the tag reader. Search by name instead.",
+    "nfcUnavailable": "This phone can't read tags — search by name.",
+    "tagUnknownOffline": "That tag isn't in your synced list. Search by name.",
+    "searchLabel": "Search by name",
+    "searchPlaceholder": "Start typing a name…",
+    "noMatches": "No collectors match that.",
+    "noTag": "no tag",
+    "noRates": "No materials have a rate for this session.",
+    "changeCollector": "Not them? Start over",
+    "deleteDigit": "Delete last digit",
+    "weightNext": "Next",
+    "photoTake": "Take the photo",
+    "photoRetake": "Retake the photo",
+    "geoUnavailable": "Location unavailable",
+    "geoReasonLabel": "Why is location unavailable?",
+    "geoReasonPlaceholder": "e.g. GPS off, indoors, permission denied",
+    "geoReasonRequired": "Enter a reason before saving.",
+    "saving": "Saving…",
+    "confirm": "Confirm",
+    "back": "Back",
+    "savedQueued": "Saved — queued",
+    "weighAnother": "Weigh another",
+    "saveFailed": "Couldn't save. Try again."
+  },
   "translationStatus": "TODO(afribit)"
 }

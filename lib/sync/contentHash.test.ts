@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { describe, expect, it } from 'vitest';
-import { canonicalize, contentHash, sha256Hex } from './contentHash';
+import { canonicalize, contentHash, sha256Hex, sha256HexBytes } from './contentHash';
 
 describe('canonicalize', () => {
   it('sorts object keys at every level and emits no whitespace', () => {
@@ -36,6 +36,16 @@ describe('sha256Hex', () => {
   });
   it('matches the known vector for "abc"', async () => {
     expect(await sha256Hex('abc')).toBe(
+      'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    );
+  });
+});
+
+describe('sha256HexBytes (the on-device photo hash)', () => {
+  it('hashes raw bytes, matching the string hash of the same content', async () => {
+    const bytes = new TextEncoder().encode('abc');
+    expect(await sha256HexBytes(bytes)).toBe(await sha256Hex('abc'));
+    expect(await sha256HexBytes(bytes.buffer)).toBe(
       'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
     );
   });

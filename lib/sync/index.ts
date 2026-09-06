@@ -7,7 +7,7 @@
  * `./store` and `./capture` are browser/worker only.
  */
 
-export { canonicalize, contentHash, sha256Hex } from './contentHash';
+export { canonicalize, contentHash, sha256Hex, sha256HexBytes } from './contentHash';
 export type { Canonicalizable } from './contentHash';
 export {
   assembleCollectionEvent,
@@ -16,6 +16,7 @@ export {
   type AssembleOptions,
 } from './events';
 export { captureCollectionEvent } from './capture';
+export { primeWeighCache, type PrimeResult } from './prime';
 export {
   cacheCollectors,
   closeSyncDb,
