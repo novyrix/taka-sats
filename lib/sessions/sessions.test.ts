@@ -7,9 +7,12 @@ import { supervisors } from '@/lib/db/schema';
 import {
   createSession,
   createSessionInputSchema,
+  currentSessionForSupervisor,
   getSession,
   listSessions,
+  NoActiveSessionError,
   patchSession,
+  requireActiveSession,
 } from './index';
 
 describe('createSessionInputSchema (no DB)', () => {
@@ -135,5 +138,53 @@ describe.skipIf(!hasDatabase)('lib/sessions (integration)', () => {
     expect(
       await patchSession(db, '00000000-0000-0000-0000-000000000000', { status: 'closed' }),
     ).toBeNull();
+  });
+
+  describe('currentSessionForSupervisor / requireActiveSession (M2-7)', () => {
+    const now = new Date('2026-06-10T10:00:00Z');
+    const openWindow = {
+      scheduledStart: new Date('2026-06-10T08:00:00Z'),
+      scheduledEnd: new Date('2026-06-10T14:00:00Z'),
+    };
+
+    it('returns the assigned session only when active and in-window', async () => {
+      const sup = await makeSupervisor('Brian');
+
+      // assigned but still 'scheduled' → not yet
+      const s = await createSession(db, { location: 'Hub', ...openWindow, supervisorIds: [sup] });
+      expect(await currentSessionForSupervisor(db, sup, now)).toBeNull();
+
+      // now active and in-window → yes
+      await patchSession(db, s.id, { status: 'active' });
+      expect((await currentSessionForSupervisor(db, sup, now))?.id).toBe(s.id);
+
+      // active but `now` past the end → no
+      const after = new Date('2026-06-10T15:00:00Z');
+      expect(await currentSessionForSupervisor(db, sup, after)).toBeNull();
+    });
+
+    it('a different supervisor, or an unassigned one, gets nothing', async () => {
+      const sup = await makeSupervisor('Brian');
+      const other = await makeSupervisor('Chris');
+      const s = await createSession(db, { location: 'Hub', ...openWindow, supervisorIds: [sup] });
+      await patchSession(db, s.id, { status: 'active' });
+
+      expect(await currentSessionForSupervisor(db, other, now)).toBeNull();
+    });
+
+    it('requireActiveSession: throws for a shift-less supervisor, passes others through', async () => {
+      const sup = await makeSupervisor('Brian');
+
+      await expect(
+        requireActiveSession(db, { id: sup, role: 'supervisor' }, now),
+      ).rejects.toBeInstanceOf(NoActiveSessionError);
+
+      // hub_lead / admin are not shift-bound
+      expect(await requireActiveSession(db, { id: sup, role: 'admin' }, now)).toBeNull();
+
+      const s = await createSession(db, { location: 'Hub', ...openWindow, supervisorIds: [sup] });
+      await patchSession(db, s.id, { status: 'active' });
+      expect((await requireActiveSession(db, { id: sup, role: 'supervisor' }, now))?.id).toBe(s.id);
+    });
   });
 });

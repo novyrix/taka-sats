@@ -54,6 +54,18 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-06 — Session access window (M2-7, FR-6.1). New authz gate, not a scope
+  change: `lib/sessions/requireActiveSession(db, actor)` throws `NoActiveSessionError`
+  (→ 403 `no_active_session`) when `actor.role === 'supervisor'` and there is no session
+  that is assigned to them, `status='active'`, and open at `now` (`currentSessionForSupervisor`,
+  window end exclusive). `hub_lead`/`admin` are not shift-bound and pass through. Wired into
+  `POST /api/v1/collectors` (the only supervisor-initiated write today); M3's
+  `collection:record` route must call the same helper. `POST /collectors/:id/{address,tags}`
+  are **not** gated yet — they are sub-steps reached only after a gated `POST /collectors`
+  in the enrol flow; standalone use (e.g. a later tag reissue) by an unassigned supervisor
+  is a known gap tracked in AGENTS §10. The PWA mirrors the gate in the UI
+  (`components/supervisor/session-context.tsx` `<SessionGate>`) but the server check is
+  authoritative. `payout:execute` unaffected; the RBAC matrix (`permissions.ts`) is unchanged.
 - 2026-09-06 — Sessions + rates API, exchange feed, partner login (M2-5, M2-9, M2-1).
   RBAC-enforcement code touched: `lib/auth/permissions.ts` gains two fine-grained staff read
   scopes, `rates:read` and `session:read`, granted to `supervisor` / `hub_lead` / `admin`

@@ -18,6 +18,7 @@ import {
 } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
 import { enqueueProvisionCollectorWallet } from '@/lib/jobs';
+import { requireActiveSession } from '@/lib/sessions';
 
 const searchSchema = z.object({
   q: z.string().trim().min(1).max(120),
@@ -42,12 +43,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
-    await requireScope('collector:enrol');
+    const actor = await requireScope('collector:enrol');
+
+    const db = getDb();
+    // M2-7: a plain `supervisor` may only enrol while they have an active
+    // assigned session; `hub_lead`/`admin` are not shift-bound.
+    await requireActiveSession(db, actor);
 
     const body: unknown = await request.json().catch(() => ({}));
     const input = enrolCollectorInputSchema.parse(body);
 
-    const collector = await enrolCollector(getDb(), input);
+    const collector = await enrolCollector(db, input);
 
     // Path B: enqueue the LNbits provisioning job (M1-6). The worker drains
     // it; enrolment does not block on LNbits. Inert on the default (BYO) path.

@@ -2,12 +2,16 @@
 
 import { getTranslations } from 'next-intl/server';
 import { EnrolFlow } from '@/components/enrol/EnrolFlow';
+import { SessionGate } from '@/components/supervisor/session-context';
 import { getSettings } from '@/lib/config';
 
 /**
  * Enrol a collector (DESIGN §11.2, ROADMAP M1-5/M1-7). One alias field, then
  * "Scan their wallet QR" (BYO — the default) or, only when
  * `custody.provisioning_enabled`, "Issue a wallet".
+ *
+ * Wrapped in `<SessionGate>` (M2-7): a plain `supervisor` can only enrol
+ * inside an active assigned session — the API enforces the same rule.
  */
 export default async function EnrolPage() {
   const t = await getTranslations('Enrol');
@@ -16,7 +20,9 @@ export default async function EnrolPage() {
   return (
     <div className="space-y-6">
       <h1 className="font-display text-xl font-bold tracking-[-0.02em]">{t('title')}</h1>
-      <EnrolFlow provisioningEnabled={provisioningEnabled} />
+      <SessionGate>
+        <EnrolFlow provisioningEnabled={provisioningEnabled} />
+      </SessionGate>
     </div>
   );
 }

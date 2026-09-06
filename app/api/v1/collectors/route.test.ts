@@ -8,15 +8,15 @@ vi.mock('@/auth', () => ({ auth: vi.fn() }));
 
 import { auth } from '@/auth';
 import { getDb } from '@/lib/db/client';
-import { collectors } from '@/lib/db/schema';
+import { collectors, sessions, sessionSupervisors, supervisors } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import { GET, POST } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
 
-function sessionFor(role: string): Session {
+function sessionFor(role: string, id = 'actor-1'): Session {
   return {
-    user: { id: 'actor-1', role: role as never, locale: 'en' },
+    user: { id, role: role as never, locale: 'en' },
     expires: '2099-01-01T00:00:00.000Z',
   };
 }
@@ -63,20 +63,39 @@ describe('POST /api/v1/collectors — auth (no DB required)', () => {
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 
+const TRUNCATE = sql`truncate table anomaly_flags, tag_history, collectors, session_supervisors, sessions, supervisors restart identity cascade`;
+
 describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)', () => {
   const db = hasDatabase ? getDb() : undefined!;
+  let supId = '';
 
   beforeEach(async () => {
-    authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await db.execute(TRUNCATE);
+    // M2-7: a plain supervisor enrols only inside an active assigned session.
+    const [sup] = await db
+      .insert(supervisors)
+      .values({
+        name: 'Brian',
+        phone: `+2547${Math.floor(Math.random() * 1e8)}`,
+        passwordHash: 'x:y',
+      })
+      .returning({ id: supervisors.id });
+    supId = sup!.id;
+    const [ses] = await db
+      .insert(sessions)
+      .values({
+        location: 'Kibera Hub',
+        status: 'active',
+        scheduledStart: new Date(Date.now() - 3_600_000),
+        scheduledEnd: new Date(Date.now() + 3_600_000),
+      })
+      .returning({ id: sessions.id });
+    await db.insert(sessionSupervisors).values({ sessionId: ses!.id, supervisorId: supId });
+    authMock.mockResolvedValue(sessionFor('supervisor', supId));
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await db.execute(TRUNCATE);
   });
 
   it('enrols a collector and returns 201', async () => {
@@ -119,5 +138,19 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
     const body = await response.json();
     const aliases = (body.collectors as { alias: string }[]).map((c) => c.alias).sort();
     expect(aliases).toEqual(['Amina Otieno', 'Aminata']);
+  });
+
+  it('403 no_active_session when a supervisor has no session to act in (M2-7)', async () => {
+    await db.execute(sql`truncate table session_supervisors restart identity cascade`);
+    const response = await POST(postRequest({ alias: 'Amina' }));
+    expect(response.status).toBe(403);
+    expect((await response.json()).error.code).toBe('no_active_session');
+  });
+
+  it('an admin enrols without any active session (not shift-bound)', async () => {
+    await db.execute(sql`truncate table session_supervisors, sessions restart identity cascade`);
+    authMock.mockResolvedValue(sessionFor('admin', supId));
+    const response = await POST(postRequest({ alias: 'Amina' }));
+    expect(response.status).toBe(201);
   });
 });

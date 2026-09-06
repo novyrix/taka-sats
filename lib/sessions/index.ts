@@ -7,7 +7,7 @@
  * layer); reads are scoped there too. Framework-free apart from Drizzle (D-04).
  */
 
-import { and, desc, eq, type InferSelectModel, inArray } from 'drizzle-orm';
+import { and, desc, eq, gt, type InferSelectModel, inArray, lte } from 'drizzle-orm';
 import { z } from 'zod';
 import type { Database, Queryable } from '@/lib/db/client';
 import { sessions, sessionSupervisors } from '@/lib/db/schema';
@@ -19,6 +19,18 @@ export class SessionError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'SessionError';
+  }
+}
+
+/**
+ * A `supervisor` tried to act (enrol, weigh) with no session they may act in
+ * right now (ROADMAP M2-7, FR-6.1, US-6.1). `hub_lead`/`admin` are not
+ * shift-bound and never hit this.
+ */
+export class NoActiveSessionError extends Error {
+  constructor(message = 'No active session assigned to you right now') {
+    super(message);
+    this.name = 'NoActiveSessionError';
   }
 }
 
@@ -180,4 +192,59 @@ export async function listSessions(
     .from(sessions)
     .where(conditions.length > 0 ? and(...conditions) : undefined)
     .orderBy(desc(sessions.scheduledStart));
+}
+
+/**
+ * The one session a supervisor may act in **right now** (ROADMAP M2-7,
+ * FR-6.1): they are assigned to it, its `status` is `active`, and `now` is
+ * within `[scheduledStart, scheduledEnd)`. Null when there is none — the
+ * caller (an API route, later the weigh flow) then refuses the action for a
+ * plain `supervisor`. The window end is exclusive, matching `rateActiveAt`.
+ */
+export async function currentSessionForSupervisor(
+  db: Database,
+  supervisorId: string,
+  now: Date = new Date(),
+): Promise<SessionWithSupervisors | null> {
+  const rows = await db
+    .select({ session: sessions })
+    .from(sessions)
+    .innerJoin(sessionSupervisors, eq(sessionSupervisors.sessionId, sessions.id))
+    .where(
+      and(
+        eq(sessionSupervisors.supervisorId, supervisorId),
+        eq(sessions.status, 'active'),
+        lte(sessions.scheduledStart, now),
+        gt(sessions.scheduledEnd, now),
+      ),
+    )
+    .orderBy(desc(sessions.scheduledStart))
+    .limit(1);
+
+  const row = rows[0]?.session;
+  if (!row) {
+    return null;
+  }
+  return { ...row, supervisorIds: await supervisorIdsFor(db, row.id) };
+}
+
+/**
+ * Enforce M2-7 for a write a `supervisor` performs in the PWA. `hub_lead` and
+ * `admin` are not shift-bound and pass through. Returns the active session
+ * (or null for the non-shift-bound roles) so a caller can record its id.
+ * @throws {NoActiveSessionError} a `supervisor` with no session to act in now.
+ */
+export async function requireActiveSession(
+  db: Database,
+  actor: { readonly id: string; readonly role: string },
+  now: Date = new Date(),
+): Promise<SessionWithSupervisors | null> {
+  if (actor.role !== 'supervisor') {
+    return null;
+  }
+  const session = await currentSessionForSupervisor(db, actor.id, now);
+  if (!session) {
+    throw new NoActiveSessionError();
+  }
+  return session;
 }

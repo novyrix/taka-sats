@@ -79,6 +79,12 @@
     "noTag": "no tag",
     "lookUpAnother": "Look up another"
   },
+  "Session": {
+    "active": "active",
+    "none": "No active session",
+    "noActiveSession": "No active session",
+    "noActiveSessionHint": "You can enrol and weigh collectors only during a session you're assigned to. Ask an admin to start your session, or check back at its start time."
+  },
   "Admin": {
     "nav": {
       "sessions": "Sessions",
