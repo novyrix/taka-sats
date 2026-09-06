@@ -79,5 +79,57 @@
     "noTag": "no tag",
     "lookUpAnother": "Look up another"
   },
+  "Admin": {
+    "nav": {
+      "sessions": "Sessions",
+      "collectors": "Collectors",
+      "payouts": "Payouts",
+      "treasury": "Treasury",
+      "reconciliation": "Reconciliation",
+      "anomalies": "Anomalies",
+      "reports": "Reports",
+      "apiKeys": "API keys",
+      "settings": "Settings"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "new": "New session",
+      "empty": "No sessions yet. Create one to get started.",
+      "col": {
+        "location": "Location",
+        "window": "Window",
+        "status": "Status"
+      },
+      "state": {
+        "scheduled": "Scheduled",
+        "active": "Active",
+        "closed": "Closed"
+      }
+    },
+    "newSession": {
+      "title": "New session",
+      "back": "Back to sessions",
+      "field": {
+        "location": "Location",
+        "locationPlaceholder": "e.g. Kibera Hub",
+        "start": "Starts",
+        "end": "Ends",
+        "supervisors": "Assigned supervisors",
+        "noSupervisors": "No supervisors on the roster yet.",
+        "sponsor": "Sponsoring partner",
+        "sponsorNone": "None",
+        "geo": "Geo boundary (optional)",
+        "geoHint": "A GeoJSON Polygon. Taps outside it get flagged for review."
+      },
+      "submit": "Create session",
+      "submitting": "Creating…",
+      "error": {
+        "geoJson": "That geo boundary isn't valid JSON.",
+        "window": "Enter a start and an end time.",
+        "order": "The end time must be after the start time.",
+        "generic": "Couldn't create the session. Check the details and try again."
+      }
+    }
+  },
   "translationStatus": "complete"
 }
