@@ -115,7 +115,7 @@ export function WeighCollectorStep({
               <button
                 type="button"
                 onClick={() => onResolved(c)}
-                className="flex w-full items-center justify-between py-3 text-left hover:bg-accent/40"
+                className="flex min-h-[52px] w-full items-center justify-between px-1 py-3 text-left hover:bg-accent/40 active:bg-accent/60"
               >
                 <span className="font-medium">{c.alias}</span>
                 <span className="font-mono text-xs text-muted-foreground">

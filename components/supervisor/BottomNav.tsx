@@ -2,7 +2,7 @@
 
 'use client';
 
-import { ClipboardList, Scale, Search } from 'lucide-react';
+import { ClipboardList, ListChecks, Scale, Search } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -11,12 +11,13 @@ import { cn } from '@/lib/utils';
 
 /**
  * The supervisor PWA bottom tab bar (DESIGN §5.1 — "at most a 3–4 item bottom
- * tab bar"). Queue and Session tabs arrive with M3-9 / the sync UI.
+ * tab bar": Weigh · Enrol · Lookup · Session).
  */
 const TABS: { href: string; key: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
   { href: '/weigh', key: 'weigh', Icon: Scale },
   { href: '/enrol', key: 'enrol', Icon: ClipboardList },
   { href: '/lookup', key: 'lookup', Icon: Search },
+  { href: '/session', key: 'session', Icon: ListChecks },
 ];
 
 export function BottomNav() {
@@ -24,7 +25,7 @@ export function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="sticky bottom-0 z-10 grid grid-cols-3 border-t border-border bg-background">
+    <nav className="sticky bottom-0 z-10 grid grid-cols-4 border-t border-border bg-background">
       {TABS.map(({ href, key, Icon }) => {
         const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
@@ -33,11 +34,12 @@ export function BottomNav() {
             href={href}
             aria-current={active ? 'page' : undefined}
             className={cn(
-              'flex flex-col items-center gap-1 py-2.5 font-display text-[11px] font-medium uppercase tracking-[0.02em]',
+              // ≥56px tall (M3-12 one-handed pass — comfortably in the thumb zone).
+              'flex min-h-[56px] flex-col items-center justify-center gap-1 py-2 font-display text-[11px] font-medium uppercase tracking-[0.02em] active:bg-accent/40',
               active ? 'text-primary' : 'text-muted-foreground',
             )}
           >
-            <Icon aria-hidden="true" className="size-5" />
+            <Icon aria-hidden="true" className="size-6" />
             {t(key)}
           </Link>
         );

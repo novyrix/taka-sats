@@ -168,7 +168,8 @@
   "SupervisorNav": {
     "weigh": "Weigh",
     "enrol": "Enrol",
-    "lookup": "Lookup"
+    "lookup": "Lookup",
+    "session": "Session"
   },
   "Weigh": {
     "title": "Weigh",
@@ -202,6 +203,17 @@
     "savedQueued": "Saved — queued",
     "weighAnother": "Weigh another",
     "saveFailed": "Couldn't save. Try again."
+  },
+  "SessionSummary": {
+    "title": "This session",
+    "loading": "Loading…",
+    "events": "Collections",
+    "kg": "Total kg",
+    "sats": "Indicative sats",
+    "walkIns": "Walk-ins",
+    "syncNow": "Sync now ({count})",
+    "allSynced": "Everything is synced",
+    "empty": "Nothing recorded yet."
   },
   "translationStatus": "TODO(afribit)"
 }

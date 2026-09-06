@@ -198,7 +198,13 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
               ))}
             </div>
           )}
-          <Button type="button" variant="ghost" size="sm" onClick={resetForNext}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={resetForNext}
+          >
             {t('changeCollector')}
           </Button>
         </div>
@@ -282,7 +288,13 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
           >
             {busy ? t('saving') : t('confirm')}
           </Button>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setStep('weight')}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-[44px]"
+            onClick={() => setStep('weight')}
+          >
             {t('back')}
           </Button>
         </div>

@@ -17,6 +17,7 @@ export {
 } from './events';
 export { captureCollectionEvent } from './capture';
 export { primeWeighCache, type PrimeResult } from './prime';
+export { sessionSummary, type SessionSummary } from './summary';
 export {
   cacheCollectors,
   closeSyncDb,

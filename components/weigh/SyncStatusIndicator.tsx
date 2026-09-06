@@ -3,6 +3,7 @@
 'use client';
 
 import { CircleDashed } from 'lucide-react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { countEventsByState } from '@/lib/sync';
@@ -34,13 +35,15 @@ export function SyncStatusIndicator() {
     return null;
   }
 
+  // Tapping the bar opens the queue (DESIGN §11.3).
   return (
-    <div
+    <Link
+      href="/session"
       role="status"
-      className="sticky top-0 z-10 flex items-center gap-2 border-b border-border bg-background px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.02em] text-muted-foreground"
+      className="sticky top-0 z-10 flex min-h-[44px] items-center gap-2 border-b border-border bg-background px-4 py-2 font-display text-xs font-medium uppercase tracking-[0.02em] text-muted-foreground active:bg-accent/40"
     >
       <CircleDashed aria-hidden="true" className="size-4 shrink-0" />
       <span>{t('queued', { count: queued })}</span>
-    </div>
+    </Link>
   );
 }
