@@ -30,12 +30,12 @@
   },
   "Login": {
     "title": "Sign in",
-    "subtitle": "For supervisors, hub leads, and admins.",
-    "phone": "Phone number",
+    "subtitle": "For supervisors, hub leads, admins, and partners.",
+    "identifier": "Phone or email",
     "password": "Password",
     "signIn": "Sign in",
     "signingIn": "Signing in…",
-    "invalid": "That phone number and password don't match."
+    "invalid": "Those sign-in details don’t match."
   },
   "Enrol": {
     "title": "Enrol a collector",

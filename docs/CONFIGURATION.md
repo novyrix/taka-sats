@@ -43,7 +43,7 @@ Every key there carries a comment. Summary of the sections:
 | `[custody]` | `byo` vs `provisioned` address source; the provisioning enable flag + G1 acknowledgement |
 | `[auth]` | Supervisor session lifetime (JWT-based, survives offline) |
 | `[lightning]` | `float_provider` (`blink` \| `lnbits` \| `fedimint`) and each provider's non-secret settings |
-| `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2) |
+| `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2); the per-source divergence tolerance |
 | `[rates]` | `seed` rows for `material_rates` on the first migration only — history lives in the DB afterwards |
 | `[payouts]` | Second-sign-off threshold, low-float alert threshold, auto-topup flag |
 | `[reconciliation]` | Paid-kg vs sold-kg variance tolerance |

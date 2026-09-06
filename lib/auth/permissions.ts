@@ -23,6 +23,8 @@ export const SCOPES = [
   'collector:enrol', // enrol a collector, issue/replace a tag
   'collector:read', // look up a collector's record (staff-facing, not the public/partner surface)
   'collection:record', // record a collection event
+  'rates:read', // read the current material rates + history (staff — the weigh flow needs this)
+  'session:read', // read session config (assigned/all, scoped in the handler)
   'tag:revoke', // revoke a tag mapping
   'session:configure', // configure sessions, rates, thresholds
   'payout:approve', // approve an above-threshold payout that is not your own submission
@@ -46,6 +48,8 @@ const supervisorScopes = [
   'collector:enrol',
   'collector:read',
   'collection:record',
+  'rates:read',
+  'session:read',
   'session:metrics:read:own',
 ] as const satisfies readonly Scope[];
 
@@ -57,6 +61,8 @@ export const ROLE_SCOPES: Readonly<Record<Role, readonly Scope[]>> = Object.free
     'collector:enrol',
     'collector:read',
     'collection:record',
+    'rates:read',
+    'session:read',
     'tag:revoke',
     'session:configure',
     'payout:approve',

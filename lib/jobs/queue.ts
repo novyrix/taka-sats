@@ -13,6 +13,7 @@ import { PgBoss } from 'pg-boss';
 import {
   JOB_PROVISION_COLLECTOR_WALLET,
   JOB_QUEUES,
+  JOB_REFRESH_EXCHANGE_RATE,
   type ProvisionCollectorWalletPayload,
 } from './types';
 
@@ -63,4 +64,10 @@ export async function enqueueProvisionCollectorWallet(
     // One outstanding provisioning job per collector at a time.
     singletonKey: payload.collectorId,
   });
+}
+
+/** Enqueue an exchange-rate refresh (the Vercel Cron bridge; the worker also self-schedules). */
+export async function enqueueRefreshExchangeRate(): Promise<void> {
+  const boss = await getBoss();
+  await boss.send(JOB_REFRESH_EXCHANGE_RATE, {}, { retryLimit: 2, singletonKey: 'refresh' });
 }

@@ -50,8 +50,9 @@ float_wallet_id = ""                     # non-secret wallet id; the admin key i
 federation_invite = ""                   # Afribit's federation invite code (fedi.xyz)
 
 [money]
-rate_staleness_ttl_seconds = 900         # a payout will not run against a BTC rate older than this (D-18)
-exchange_sources           = ["kraken", "yadio"]  # >=2 independent sources; order = preference
+rate_staleness_ttl_seconds   = 900       # a payout will not run against a BTC rate older than this (D-18)
+exchange_sources             = ["yadio", "coingecko"]  # >=2 independent; known: yadio | coingecko | fake
+rate_deviation_tolerance_pct = 10        # reject a snapshot if a source deviates more than this % from the median
 
 [rates]
 # Seed values for `material_rates` on the first migration only. Afterwards the

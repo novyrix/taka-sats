@@ -22,10 +22,11 @@ import { isRole } from '@/lib/auth/permissions';
 import { verifyPassword } from '@/lib/auth/password';
 import { getSettings } from '@/lib/config';
 import { getDb } from '@/lib/db/client';
-import { supervisors } from '@/lib/db/schema';
+import { partners, supervisors } from '@/lib/db/schema';
 
 const credentialsSchema = z.object({
-  phone: z.string().trim().min(1),
+  /** A supervisor's phone or a partner's login email. */
+  identifier: z.string().trim().min(1),
   password: z.string().min(1),
 });
 
@@ -43,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        phone: { label: 'Phone', type: 'text' },
+        identifier: { label: 'Phone or email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(raw) {
@@ -51,19 +52,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) {
           return null;
         }
-
+        const { identifier, password } = parsed.data;
         const db = getDb();
+
+        // A partner logs in with an email; staff with a phone number.
+        if (identifier.includes('@')) {
+          const [partner] = await db
+            .select()
+            .from(partners)
+            .where(eq(partners.loginEmail, identifier.toLowerCase()));
+          if (!partner || !partner.active || !partner.passwordHash) {
+            return null;
+          }
+          if (!(await verifyPassword(password, partner.passwordHash))) {
+            return null;
+          }
+          return { id: partner.id, name: partner.name, role: 'partner' as const, locale: 'en' };
+        }
+
         const [supervisor] = await db
           .select()
           .from(supervisors)
-          .where(eq(supervisors.phone, parsed.data.phone));
-
+          .where(eq(supervisors.phone, identifier));
         if (!supervisor || !supervisor.active) {
           return null;
         }
-
-        const valid = await verifyPassword(parsed.data.password, supervisor.passwordHash);
-        if (!valid) {
+        if (!(await verifyPassword(password, supervisor.passwordHash))) {
           return null;
         }
         // The DB CHECK constraint already guarantees this, but a route that

@@ -20,6 +20,8 @@ const EXPECTED: Record<Scope, Row> = {
   'collector:enrol': row({ supervisor: true, hub_lead: true, admin: true }),
   'collector:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'collection:record': row({ supervisor: true, hub_lead: true, admin: true }),
+  'rates:read': row({ supervisor: true, hub_lead: true, admin: true }),
+  'session:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'tag:revoke': row({ admin: true }),
   'session:configure': row({ admin: true }),
   'payout:approve': row({ hub_lead: true, admin: true }),

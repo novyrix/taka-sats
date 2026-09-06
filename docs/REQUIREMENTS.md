@@ -147,6 +147,8 @@ Decisions made to unblock the build. Each can be revisited, but code is written 
 | Generate partner/funder report | — | — | ✅ | own scope |
 | Manage API keys | — | — | ✅ | — |
 
+Beyond the summary above, `lib/auth/permissions.ts` defines a few fine-grained **read** scopes for the staff surface — `collector:read`, `rates:read`, `session:read` — held by `supervisor` / `hub_lead` / `admin` (never `partner`, whose reads go through the PII-filtered aggregate surface, §10.1). `lib/auth/rbac-matrix.test.ts` asserts the full `(role × scope)` table and fails the build if any scope widens.
+
 **Enforcement (Code Style Guide §9.3–9.4):** the payout-execution scope does not exist in any human role's permission set. Payout destination is *always* resolved server-side from the tapped tag's mapping and is never accepted from a request body. Both facts are covered by a unit test that fails the build if violated.
 
 ---

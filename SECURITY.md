@@ -54,6 +54,26 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-06 — Sessions + rates API, exchange feed, partner login (M2-5, M2-9, M2-1).
+  RBAC-enforcement code touched: `lib/auth/permissions.ts` gains two fine-grained staff read
+  scopes, `rates:read` and `session:read`, granted to `supervisor` / `hub_lead` / `admin`
+  and to no other role — `partner` does **not** hold them; `rbac-matrix.test.ts` pins the
+  full row for each. `lib/auth/session.ts` gains `requireAnyScope([...])` (deny-by-default,
+  same 401-then-403 shape as `requireScope`) and widens `Actor.kind` to
+  `'supervisor' | 'partner'`. `auth.ts` gains a second credentials branch: an `identifier`
+  containing `@` is looked up in `partners` by `login_email` (lowercased) and signs in with
+  `role: 'partner'`; the phone branch is unchanged and still refuses any row whose `role`
+  fails `isRole()` or equals `'partner'`. Partner passwords are `scrypt`-hashed by the same
+  `lib/auth/password.ts` path; there is no self-service partner sign-up (`scripts/create-partner.ts`
+  only). Write routes stay admin-only: `POST /api/v1/rates`, `POST /api/v1/sessions`,
+  `PATCH /api/v1/sessions/[id]` all `requireScope('session:configure')` (in `admin` alone).
+  `GET /api/v1/sessions` and `/sessions/[id]` scope visibility to the actor — `admin` sees
+  all, a `partner` sees only sessions whose `sponsor_partner_id` is its own id, a supervisor
+  sees only sessions it is assigned to; a mismatch is a 403 (`ForbiddenError('session:read')`),
+  not a 404. `payout:execute` remains in no role — unaffected. New exchange feed
+  (`lib/money/rates/`) only reads/writes `exchange_rate_snapshots` and does no sats
+  arithmetic; `requireFreshRate()` is the guard M5's payout path will call for the
+  rate-staleness property (still unused — no payout path exists yet).
 - 2026-09-04 — Auth.js credentials login (`auth.ts`) + `lib/auth/session.ts` + the first
   `/api/v1` routes (`app/api/v1/collectors/**`), pulled forward from M2-1/M2-2 to unblock
   M1-4. Establishes: every route resolves its actor via `requireScope(scope)`, which is

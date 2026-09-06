@@ -8,9 +8,10 @@
 import { z } from 'zod';
 
 export const JOB_PROVISION_COLLECTOR_WALLET = 'provision-collector-wallet';
+export const JOB_REFRESH_EXCHANGE_RATE = 'refresh-exchange-rate';
 
 /** Every job queue the app knows about — created on boss start (pg-boss ≥10 needs this). */
-export const JOB_QUEUES = [JOB_PROVISION_COLLECTOR_WALLET] as const;
+export const JOB_QUEUES = [JOB_PROVISION_COLLECTOR_WALLET, JOB_REFRESH_EXCHANGE_RATE] as const;
 
 export const provisionCollectorWalletPayloadSchema = z.object({
   collectorId: z.uuid(),

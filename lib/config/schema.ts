@@ -61,8 +61,10 @@ const lightningSchema = z.object({
 
 const moneySchema = z.object({
   rate_staleness_ttl_seconds: z.int().positive(),
-  /** ≥2 independent sources (D-18); array order is preference order. */
+  /** ≥2 independent sources (D-18); array order is preference order. Known: `yadio`, `coingecko`, `fake`. */
   exchange_sources: z.array(nonEmpty).min(2),
+  /** Reject a snapshot if any source's reading deviates more than this % from the median. */
+  rate_deviation_tolerance_pct: z.number().positive().max(100),
 });
 
 const rateSeedSchema = z.object({

@@ -23,7 +23,7 @@ export function LoginForm() {
 
     const form = new FormData(event.currentTarget);
     const result = await signIn('credentials', {
-      phone: String(form.get('phone') ?? ''),
+      identifier: String(form.get('identifier') ?? ''),
       password: String(form.get('password') ?? ''),
       redirect: false,
     });
@@ -40,8 +40,15 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-5">
       <div className="space-y-1.5">
-        <Label htmlFor="phone">{t('phone')}</Label>
-        <Input id="phone" name="phone" type="tel" autoComplete="username" required autoFocus />
+        <Label htmlFor="identifier">{t('identifier')}</Label>
+        <Input
+          id="identifier"
+          name="identifier"
+          type="text"
+          autoComplete="username"
+          required
+          autoFocus
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="password">{t('password')}</Label>

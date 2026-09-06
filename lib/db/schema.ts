@@ -20,7 +20,9 @@ import {
   bigint,
   boolean,
   check,
+  index,
   jsonb,
+  numeric,
   pgTable,
   primaryKey,
   text,
@@ -243,5 +245,28 @@ export const supervisorRotations = pgTable(
   },
   (table) => [
     check('supervisor_rotations_window_check', sql`${table.windowEnd} > ${table.windowStart}`),
+  ],
+);
+
+/**
+ * A point-in-time BTC↔fiat rate (US-7.3, D-18, ROADMAP M2-9). A payout will
+ * not run against a snapshot older than `settings.money.rate_staleness_ttl_seconds`.
+ * `rate` is `quote` units per 1 `base` (e.g. KES per BTC); `numeric` (never
+ * float) — Code Style Guide §8. `sources` records each feed's raw reading.
+ */
+export const exchangeRateSnapshots = pgTable(
+  'exchange_rate_snapshots',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    base: text('base').notNull(),
+    quote: text('quote').notNull(),
+    rate: numeric('rate').notNull(),
+    /** `[{ source, rate }]` — the individual feed readings this snapshot aggregates. */
+    sources: jsonb('sources').notNull(),
+    fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('exchange_rate_snapshots_rate_check', sql`${table.rate} > 0`),
+    index('exchange_rate_snapshots_pair_time_idx').on(table.base, table.quote, table.fetchedAt),
   ],
 );

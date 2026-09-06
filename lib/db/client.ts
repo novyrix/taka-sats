@@ -15,6 +15,12 @@ import * as schema from './schema';
 
 export type Database = ReturnType<typeof createDatabase>;
 
+/** The transaction handle passed to `db.transaction(async (tx) => …)`. */
+export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+/** Anything you can run queries on — the pooled client or a transaction. */
+export type Queryable = Database | Tx;
+
 function createDatabase(connectionString: string) {
   const client = postgres(connectionString, { prepare: false });
   return drizzle(client, { schema });
