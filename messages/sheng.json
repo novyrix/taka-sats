@@ -28,5 +28,40 @@
     "failed": "Failed",
     "pending_payout": "Pending payout"
   },
+  "Login": {
+    "title": "Sign in",
+    "subtitle": "For supervisors, hub leads, and admins.",
+    "phone": "Phone number",
+    "password": "Password",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "invalid": "That phone number and password don't match."
+  },
+  "Enrol": {
+    "title": "Enrol a collector",
+    "aliasLabel": "Their name or alias",
+    "aliasPlaceholder": "e.g. Amina",
+    "scanButton": "Scan their wallet QR",
+    "issueWalletButton": "Issue a wallet",
+    "provisioningTodo": "Wallet provisioning isn't wired up yet.",
+    "scanTitle": "Point the camera at their receive QR",
+    "scanHint": "A Blink Paycode, a Lightning Address, or an LNURL-pay code.",
+    "cameraError": "Couldn't open the camera. Paste the code instead.",
+    "manualCodeLabel": "…or paste the code",
+    "useCodeButton": "Use this code",
+    "enrolFailed": "Couldn't create the collector. Try again.",
+    "receiveOnlyOk": "Receive-only address — good to use.",
+    "withdrawRejected": "That's a withdraw code. Ask for their receive QR instead.",
+    "addressInvalid": "Couldn't read that as a receive address. Try again.",
+    "writeTagButton": "Hold a blank tag to the phone",
+    "manualTagLabel": "Tag ID (printed on the card)",
+    "manualTagPlaceholder": "e.g. 04:A2:2B:…",
+    "registerTagButton": "Register this tag",
+    "tagFailed": "Couldn't register the tag. Try another.",
+    "nfcFailed": "Tag write failed. Try again, or enter the ID by hand.",
+    "skipTag": "Skip — attach a tag later",
+    "doneTitle": "{alias} is enrolled.",
+    "enrolAnother": "Enrol another"
+  },
   "translationStatus": "TODO(afribit)"
 }

@@ -39,6 +39,9 @@ async function lnbitsFetch<T>(
   apiKey: string,
   init?: RequestInit,
 ): Promise<T> {
+  if (!apiKey) {
+    throw new PaymentFailedError(`An LNbits API key is not set — required for ${path}`);
+  }
   const response = await fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {

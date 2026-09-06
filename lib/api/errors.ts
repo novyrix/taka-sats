@@ -12,12 +12,13 @@
 
 import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
+import { ForbiddenError, UnauthorizedError } from '@/lib/auth/session';
 import {
   CollectorNotFoundError,
   ProvisioningDisabledError,
   TagAlreadyActiveError,
 } from '@/lib/collectors';
-import { ForbiddenError, UnauthorizedError } from '@/lib/auth/session';
+import { InvalidLightningAddressError, NotReceiveCapableError } from '@/lib/lightning/errors';
 
 export type ApiErrorBody = {
   readonly error: {
@@ -62,6 +63,12 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof ProvisioningDisabledError) {
     return json(403, 'forbidden', error.message);
+  }
+  if (error instanceof NotReceiveCapableError) {
+    return json(422, 'not_receive_capable', error.message);
+  }
+  if (error instanceof InvalidLightningAddressError) {
+    return json(422, 'invalid_lightning_address', error.message);
   }
 
   console.error('[api] unhandled error', error instanceof Error ? error.name : typeof error);

@@ -79,6 +79,9 @@ export class BlinkProvider implements LightningProvider {
   constructor(private readonly config: BlinkProviderConfig) {}
 
   private async graphql<T>(query: string, variables: Record<string, unknown>): Promise<T> {
+    if (!this.config.apiKey) {
+      throw new PaymentFailedError('BLINK_API_KEY is not set — required to move funds via Blink');
+    }
     const response = await fetch(this.config.apiUrl, {
       method: 'POST',
       headers: {
