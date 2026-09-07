@@ -8,7 +8,12 @@ import { type ChangeEvent, useCallback, useEffect, useRef, useState } from 'reac
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { captureCollectionEvent, primeWeighCache, sha256HexBytes } from '@/lib/sync';
+import {
+  captureCollectionEvent,
+  drainPhotoQueue,
+  primeWeighCache,
+  sha256HexBytes,
+} from '@/lib/sync';
 import type { CachedCollector, CachedSessionConfig, GeoFix } from '@/types/domain';
 import { QUEUE_CHANGED_EVENT } from './SyncStatusIndicator';
 import { WeighCollectorStep } from './WeighCollectorStep';
@@ -48,6 +53,7 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
   const [rate, setRate] = useState<Rate | null>(null);
   const [weightKg, setWeightKg] = useState(0);
   const [photoSha256, setPhotoSha256] = useState<string | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [geo, setGeo] = useState<GeoFix | null>(null);
   const [geoReason, setGeoReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -79,6 +85,7 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
     setRate(null);
     setWeightKg(0);
     setPhotoSha256(null);
+    setPhotoFile(null);
     setGeo(null);
     setGeoReason('');
     setError(null);
@@ -93,6 +100,7 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
     setError(null);
     // On-device hash of the exact bytes (D-12). Downscale/compress is M3-5.
     setPhotoSha256(await sha256HexBytes(await file.arrayBuffer()));
+    setPhotoFile(file);
     if (!geo) {
       setGeo(await requestGeo());
     }
@@ -104,7 +112,7 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
       : 0;
 
   async function confirm(): Promise<void> {
-    if (!collector || !rate || !config || !photoSha256) {
+    if (!collector || !rate || !config || !photoSha256 || !photoFile) {
       return;
     }
     const resolvedGeo: GeoFix =
@@ -119,21 +127,28 @@ export function WeighFlow({ supervisorId }: { readonly supervisorId: string }) {
     setBusy(true);
     setError(null);
     try {
-      await captureCollectionEvent({
-        collectorId: collector.id,
-        supervisorId,
-        sessionId: config.sessionId,
-        material: rate.material,
-        weightKg,
-        rateId: rate.rateId,
-        rateFiatMinor: rate.rateFiatMinor,
-        exchangeRate: config.exchangeRate,
-        photoSha256,
-        geo: resolvedGeo,
-        registrationType: collector.nfcTagId ? 'tap' : 'walk_in',
-      });
+      await captureCollectionEvent(
+        {
+          collectorId: collector.id,
+          supervisorId,
+          sessionId: config.sessionId,
+          material: rate.material,
+          weightKg,
+          rateId: rate.rateId,
+          rateFiatMinor: rate.rateFiatMinor,
+          exchangeRate: config.exchangeRate,
+          photoSha256,
+          geo: resolvedGeo,
+          registrationType: collector.nfcTagId ? 'tap' : 'walk_in',
+        },
+        { blob: photoFile, sha256: photoSha256, contentType: photoFile.type || 'image/jpeg' },
+      );
       window.dispatchEvent(new Event(QUEUE_CHANGED_EVENT));
       setStep('done');
+      // Opportunistic — the queue survives if this fails or we're offline.
+      if (navigator.onLine) {
+        void drainPhotoQueue().then(() => window.dispatchEvent(new Event(QUEUE_CHANGED_EVENT)));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : t('saveFailed'));
     } finally {

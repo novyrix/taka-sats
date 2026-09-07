@@ -24,6 +24,7 @@ import { ExchangeFeedError, StaleRateError } from '@/lib/money/rates';
 import { RateError } from '@/lib/rates';
 import { RotationError } from '@/lib/rotations';
 import { NoActiveSessionError, SessionError } from '@/lib/sessions';
+import { StorageConfigError } from '@/lib/storage';
 
 export type ApiErrorBody = {
   readonly error: {
@@ -87,6 +88,9 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof NoActiveSessionError) {
     return json(403, 'no_active_session', error.message);
+  }
+  if (error instanceof StorageConfigError) {
+    return json(503, 'storage_unconfigured', error.message);
   }
   if (error instanceof StaleRateError) {
     return json(503, 'stale_exchange_rate', error.message);

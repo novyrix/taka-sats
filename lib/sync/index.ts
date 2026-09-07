@@ -15,29 +15,34 @@ export {
   indicativeSats,
   type AssembleOptions,
 } from './events';
-export { captureCollectionEvent } from './capture';
+export { captureCollectionEvent, type CapturePhoto } from './capture';
+export { drainPhotoQueue, type PhotoDrainResult } from './photoQueue';
 export { primeWeighCache, type PrimeResult } from './prime';
 export { sessionSummary, type SessionSummary } from './summary';
 export {
   cacheCollectors,
   closeSyncDb,
   countEventsByState,
+  deletePhoto,
   enqueueOutbox,
   getAnySessionConfig,
   getCachedCollector,
   getCachedCollectorByTag,
   getEvent,
+  getPhoto,
   getSessionConfig,
   listEvents,
   listOutbox,
   markOutboxAttempt,
   openSyncDb,
   putEvent,
+  putPhoto,
   putSessionConfig,
   removeOutbox,
   searchCachedCollectors,
   setEventSyncStatus,
   type StoredEvent,
+  type StoredPhoto,
   SYNC_DB_NAME,
   SYNC_DB_VERSION,
   type SyncDatabase,

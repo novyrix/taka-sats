@@ -54,6 +54,15 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-07 — Photo upload queue (M3-10, FR-4.2, D-12). New route
+  `POST /api/v1/photos`, `requireScope('collection:record')` (supervisor / hub_lead / admin —
+  no matrix change). Evidence-integrity property it establishes: the server **recomputes**
+  SHA-256 over the received bytes and rejects (422 `photo_hash_mismatch`) anything that does
+  not match the `X-Photo-Sha256` header the device computed at capture — so the stored object
+  is provably the bytes the supervisor photographed. Objects are content-addressed
+  (`photos/<sha256>`), making a re-send an idempotent overwrite. `Content-Type` must be
+  `image/*` (415), body ≤ 8 MiB (413). Storage credentials (`S3_*`) stay environment-only
+  (`lib/storage`, read lazily). No money path; `payout:execute` unaffected.
 - 2026-09-06 — Supervisor rotations (M2-8, FR-3.7). New CRUD routes
   (`GET`/`POST /api/v1/rotations`, `DELETE /api/v1/rotations/:id`) all behind
   `requireScope('session:configure')` (admin only) — no RBAC-matrix change. The one

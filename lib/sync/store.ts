@@ -26,10 +26,19 @@ import type {
 } from '@/types/domain';
 
 export const SYNC_DB_NAME = 'takasats-sync';
-export const SYNC_DB_VERSION = 1;
+export const SYNC_DB_VERSION = 2;
 
 /** An event as persisted: the assembled event plus its local sync state. */
 export type StoredEvent = CollectionEvent & { readonly syncStatus: SyncStatus };
+
+/** A captured photo held until the upload queue (M3-10) drains it to storage. */
+export type StoredPhoto = {
+  /** The `events` id this photo belongs to. */
+  readonly eventId: string;
+  readonly blob: Blob;
+  readonly sha256: string;
+  readonly contentType: string;
+};
 
 interface SyncDb extends DBSchema {
   events: {
@@ -48,6 +57,7 @@ interface SyncDb extends DBSchema {
     value: OutboxEntry;
     indexes: { by_kind: string };
   };
+  photos: { key: string; value: StoredPhoto };
 }
 
 export type SyncDatabase = IDBPDatabase<SyncDb>;
@@ -57,8 +67,8 @@ let dbPromise: Promise<SyncDatabase> | null = null;
 export function openSyncDb(): Promise<SyncDatabase> {
   dbPromise ??= openDB<SyncDb>(SYNC_DB_NAME, SYNC_DB_VERSION, {
     upgrade(db, oldVersion) {
-      // v1 — initial schema. Later versions add stores/indexes here, keyed on
-      // `oldVersion`, and never rewrite existing rows destructively.
+      // Upgrades are keyed on `oldVersion` and never rewrite existing rows
+      // destructively.
       if (oldVersion < 1) {
         const events = db.createObjectStore('events', { keyPath: 'id' });
         events.createIndex('by_session', 'sessionId');
@@ -71,6 +81,10 @@ export function openSyncDb(): Promise<SyncDatabase> {
 
         const outbox = db.createObjectStore('outbox', { keyPath: 'id' });
         outbox.createIndex('by_kind', 'kind');
+      }
+      if (oldVersion < 2) {
+        // v2 — hold the photo bytes locally until the upload queue drains them.
+        db.createObjectStore('photos', { keyPath: 'eventId' });
       }
     },
   });
@@ -219,4 +233,18 @@ export async function getSessionConfig(
 export async function getAnySessionConfig(): Promise<CachedSessionConfig | undefined> {
   const all = await (await openSyncDb()).getAll('sessionConfig');
   return all.sort((a, b) => (a.cachedAt < b.cachedAt ? 1 : -1))[0];
+}
+
+// ── photos (M3-10) ──────────────────────────────────────────────────────────
+
+export async function putPhoto(photo: StoredPhoto): Promise<void> {
+  await (await openSyncDb()).put('photos', photo);
+}
+
+export async function getPhoto(eventId: string): Promise<StoredPhoto | undefined> {
+  return (await openSyncDb()).get('photos', eventId);
+}
+
+export async function deletePhoto(eventId: string): Promise<void> {
+  await (await openSyncDb()).delete('photos', eventId);
 }
