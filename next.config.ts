@@ -17,7 +17,9 @@ const withSerwist = withSerwistInit({
 });
 
 const nextConfig: NextConfig = {
-  ...(process.env.VERCEL ? {} : { output: 'standalone' as const }),
+  // Standalone for the self-hosted image; not on Vercel, and not for the e2e
+  // run (which uses `next start`, incompatible with a standalone build).
+  ...(process.env.VERCEL || process.env.E2E ? {} : { output: 'standalone' as const }),
   // `lib/config` reads `config/*.toml` at runtime (D-21). Make sure the file
   // ships with every server bundle on both deploy paths.
   outputFileTracingIncludes: {
