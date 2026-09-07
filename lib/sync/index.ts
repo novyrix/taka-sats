@@ -11,6 +11,7 @@ export { canonicalize, contentHash, sha256Hex, sha256HexBytes } from './contentH
 export type { Canonicalizable } from './contentHash';
 export {
   assembleCollectionEvent,
+  collectionEventPayload,
   EventAssemblyError,
   indicativeSats,
   type AssembleOptions,

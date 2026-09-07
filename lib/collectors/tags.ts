@@ -7,6 +7,7 @@
 
 import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
+import { isUniqueViolation } from '@/lib/db/pg-errors';
 import { anomalyFlags, collectors, tagHistory } from '@/lib/db/schema';
 import { CollectorNotFoundError, TagAlreadyActiveError } from './errors';
 import {
@@ -17,26 +18,6 @@ import {
   revokeTagInputSchema,
   type TagHistoryRecord,
 } from './types';
-
-const UNIQUE_VIOLATION = '23505';
-
-/** The Postgres error code, whether raised directly or wrapped by Drizzle's `DrizzleQueryError` (`.cause`). */
-function pgErrorCode(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) {
-    return undefined;
-  }
-  if ('code' in error && typeof error.code === 'string') {
-    return error.code;
-  }
-  if ('cause' in error) {
-    return pgErrorCode((error as { cause?: unknown }).cause);
-  }
-  return undefined;
-}
-
-function isUniqueViolation(error: unknown): boolean {
-  return pgErrorCode(error) === UNIQUE_VIOLATION;
-}
 
 /**
  * Map a new physical tag to `collectorId`. Closes every currently-active

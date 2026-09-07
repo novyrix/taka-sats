@@ -53,8 +53,15 @@ export function indicativeSats(
   return Math.floor((rateFiatMinor * weightKg * 1_000_000) / exchangeRate);
 }
 
-/** The exact facts the content hash covers — order-independent (keys are sorted). */
-function hashPayload(event: Omit<CollectionEvent, 'contentHash' | 'photoUrl'>): Canonicalizable {
+/**
+ * The exact facts the `content_hash` covers, as a canonicalizable object
+ * (key order is irrelevant — `canonicalize` sorts). Exported so the server's
+ * sync-ingest path (M4-3) recomputes the hash from the *same* shape — the two
+ * must never diverge (REQUIREMENTS §11 risk note).
+ */
+export function collectionEventPayload(
+  event: Omit<CollectionEvent, 'contentHash' | 'photoUrl'>,
+): Canonicalizable {
   const geo: Canonicalizable =
     event.geo.kind === 'fix'
       ? { kind: 'fix', lat: event.geo.lat, lng: event.geo.lng, accuracyM: event.geo.accuracyM }
@@ -98,7 +105,7 @@ export async function assembleCollectionEvent(
   const sats = indicativeSats(draft.rateFiatMinor, draft.weightKg, draft.exchangeRate);
 
   const base = { ...draft, id, recordedAt, indicativeSats: sats };
-  const hash = await contentHash(hashPayload(base));
+  const hash = await contentHash(collectionEventPayload(base));
 
   return { ...base, contentHash: hash, photoUrl: null };
 }

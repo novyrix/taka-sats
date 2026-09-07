@@ -14,6 +14,7 @@
 import {
   CreateBucketCommand,
   HeadBucketCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
@@ -132,5 +133,30 @@ export async function putPhoto(
       ChecksumSHA256: Buffer.from(sha256, 'hex').toString('base64'),
     }),
   );
-  return { key, url: `${cfg.endpoint.replace(/\/$/, '')}/${cfg.bucket}/${key}` };
+  return { key, url: objectUrl(cfg.endpoint, cfg.bucket, key) };
+}
+
+function objectUrl(endpoint: string, bucket: string, key: string): string {
+  return `${endpoint.replace(/\/$/, '')}/${bucket}/${key}`;
+}
+
+/**
+ * The URL for a photo if the object exists in storage, else `null`. The sync
+ * ingest path (M4-3) uses this to back-fill `collection_events.photo_url` when
+ * the photo has already been uploaded — a missing photo does not block the
+ * event (the upload queue is independent).
+ */
+export async function photoUrlFor(sha256: string, env?: NodeJS.ProcessEnv): Promise<string | null> {
+  const { client, env: cfg } = getClient(env);
+  const key = `photos/${sha256}`;
+  try {
+    await client.send(new HeadObjectCommand({ Bucket: cfg.bucket, Key: key }));
+    return objectUrl(cfg.endpoint, cfg.bucket, key);
+  } catch (error) {
+    const code = error instanceof S3ServiceException ? error.name : '';
+    if (code === 'NotFound' || code === 'NoSuchKey') {
+      return null;
+    }
+    throw error;
+  }
 }

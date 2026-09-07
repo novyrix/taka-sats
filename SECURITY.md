@@ -54,6 +54,26 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-07 — Sync ingest (M4-3, FR-4.2, §10.3). New route `POST /api/v1/sync/events`,
+  `requireScope('collection:record')` (no matrix change) + `lib/collection-events` +
+  migration 0007 (`collection_events`). Trust properties it establishes:
+  1. **Content binding.** Each event's `content_hash` is **recomputed server-side** from the
+     submitted fields via the same `collectionEventPayload` + `canonicalize` the PWA used; a
+     mismatch is `needs_attention`, never ingested. The confirmed `ledger_entries` row's
+     `payload_hash` is that same hash — the fact in the chain is provably the one the device
+     recorded.
+  2. **Idempotency (FR-4.2).** `id` (client UUID) is the `collection_events` PK; a resent
+     event returns its stored `{ status: 'confirmed', seq }` with no second ledger entry. A
+     concurrent duplicate that loses the unique-violation race is resolved to the same result.
+  3. **Authorisation at the boundary.** A plain `supervisor` may only sync events whose
+     `supervisorId` is their own (`hub_lead`/`admin` may sync on behalf — device recovery);
+     and every event is rejected unless that supervisor is in `session_supervisors` for its
+     `session_id` (M2-7 enforced where offline events actually enter the system).
+  4. **Rate integrity.** `rate_id` must be the `material_rates` row active for that material
+     at `recorded_at` (`rateActiveAt`) — a queued event cannot be revalued by a later rate
+     change. No sats arithmetic here (`indicative_sats` is display, §8.3).
+  5. Never a silent drop — every submitted event gets a `confirmed`/`needs_attention` result
+     in order. `photo_url` is a soft back-fill (`photoUrlFor`), a missing photo does not block.
 - 2026-09-07 — The append-only ledger (M4-1/M4-2, D-13, REQUIREMENTS §11). New
   `ledger_entries` / `ledger_checkpoints` tables (migration 0006) + `lib/ledger`. Properties
   it establishes (a review of anything touching the chain must re-check these):

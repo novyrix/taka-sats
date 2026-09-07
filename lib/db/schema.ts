@@ -326,3 +326,64 @@ export const ledgerCheckpoints = pgTable('ledger_checkpoints', {
   opentimestamps: text('opentimestamps'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// ── COLLECTION EVENTS (detail rows behind the ledger, M4-3) ─────────────────
+
+/**
+ * The detail row for one weighed collection (§8.2, §9). The canonical fact is
+ * its `ledger_entries` row (`ledger_entry_id`); this table holds the queryable
+ * columns. `id` is the client-generated UUID (the idempotency key — a resent
+ * event upserts). `photo_url` is nullable here (deviation from §9's `NOT NULL`)
+ * because the photo uploads on its own queue (M3-10) and is back-filled.
+ */
+export const collectionEvents = pgTable(
+  'collection_events',
+  {
+    id: uuid('id').primaryKey(),
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    collectorId: uuid('collector_id')
+      .notNull()
+      .references(() => collectors.id),
+    supervisorId: uuid('supervisor_id')
+      .notNull()
+      .references(() => supervisors.id),
+    sessionId: uuid('session_id').references(() => sessions.id),
+    material: text('material').notNull(),
+    weightKg: numeric('weight_kg', { precision: 6, scale: 3 }).notNull(),
+    rateId: uuid('rate_id')
+      .notNull()
+      .references(() => materialRates.id),
+    /** `rate_fiat_minor × weight_kg` at the cached exchange rate — display only (§8.3). */
+    indicativeSats: bigint('indicative_sats', { mode: 'number' }).notNull(),
+    /** Filled once the photo upload queue drains (M3-10); null until then. */
+    photoUrl: text('photo_url'),
+    /** On-device SHA-256 of the photo bytes (D-12) — part of the content hash. */
+    photoSha256: text('photo_sha256').notNull(),
+    gpsLat: numeric('gps_lat'),
+    gpsLng: numeric('gps_lng'),
+    gpsAccuracyM: numeric('gps_accuracy_m'),
+    gpsUnavailableReason: text('gps_unavailable_reason'),
+    /** Device-local capture time. */
+    recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull(),
+    /** Server ingestion time. */
+    syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
+    registrationType: text('registration_type').notNull().default('tap'),
+    verificationStatus: text('verification_status').notNull().default('verified'),
+  },
+  (table) => [
+    check('collection_events_weight_check', sql`${table.weightKg} > 0`),
+    check(
+      'collection_events_registration_type_check',
+      sql`${table.registrationType} in ('tap', 'walk_in', 'pending_self_serve')`,
+    ),
+    check(
+      'collection_events_verification_status_check',
+      sql`${table.verificationStatus} in ('verified', 'pending_supervisor_review')`,
+    ),
+    index('collection_events_session_idx').on(table.sessionId),
+    index('collection_events_collector_idx').on(table.collectorId),
+  ],
+);

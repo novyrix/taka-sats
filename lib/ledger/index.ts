@@ -25,7 +25,7 @@
  */
 
 import { asc, desc, eq, gt, type InferSelectModel, sql } from 'drizzle-orm';
-import type { Database } from '@/lib/db/client';
+import type { Database, Tx } from '@/lib/db/client';
 import { ledgerEntries } from '@/lib/db/schema';
 import { type Canonicalizable, contentHash, sha256Hex } from '@/lib/sync/contentHash';
 
@@ -87,48 +87,53 @@ export type AppendEntryInput = {
 };
 
 /**
- * Append one entry. Serialised against every other append by an advisory lock
- * held for the transaction, so `seq` and the hash link are race-free.
+ * Append one entry **inside a caller's transaction**. Takes the advisory lock
+ * (held until that transaction commits), so `seq` and the hash link are
+ * race-free — every other append blocks until this transaction ends. Use this
+ * when the entry must be atomic with a detail-row insert (M4-3).
  * @throws {LedgerError} `payloadHash` is not 64 hex chars.
  */
-export async function appendEntry(db: Database, input: AppendEntryInput): Promise<LedgerEntry> {
+export async function appendEntryTx(tx: Tx, input: AppendEntryInput): Promise<LedgerEntry> {
   if (!/^[0-9a-f]{64}$/.test(input.payloadHash)) {
     throw new LedgerError(
       `appendEntry: payloadHash must be 64 hex chars (got "${input.payloadHash}")`,
     );
   }
 
-  return db.transaction(async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(${LEDGER_LOCK_KEY})`);
+  await tx.execute(sql`select pg_advisory_xact_lock(${LEDGER_LOCK_KEY})`);
 
-    const [head] = await tx
-      .select({ seq: ledgerEntries.seq, entryHash: ledgerEntries.entryHash })
-      .from(ledgerEntries)
-      .orderBy(desc(ledgerEntries.seq))
-      .limit(1);
+  const [head] = await tx
+    .select({ seq: ledgerEntries.seq, entryHash: ledgerEntries.entryHash })
+    .from(ledgerEntries)
+    .orderBy(desc(ledgerEntries.seq))
+    .limit(1);
 
-    const seq = (head?.seq ?? 0) + 1;
-    const prevEntryHash = head?.entryHash ?? null;
-    const hash = await computeEntryHash(seq, input.entryType, input.payloadHash, prevEntryHash);
+  const seq = (head?.seq ?? 0) + 1;
+  const prevEntryHash = head?.entryHash ?? null;
+  const hash = await computeEntryHash(seq, input.entryType, input.payloadHash, prevEntryHash);
 
-    const [row] = await tx
-      .insert(ledgerEntries)
-      .values({
-        ...(input.id ? { id: input.id } : {}),
-        seq,
-        entryType: input.entryType,
-        payloadHash: input.payloadHash,
-        prevEntryHash,
-        entryHash: hash,
-        ...(input.referencesId ? { referencesId: input.referencesId } : {}),
-        ...(input.deviceRecordedAt ? { deviceRecordedAt: input.deviceRecordedAt } : {}),
-      })
-      .returning();
-    if (!row) {
-      throw new LedgerError('appendEntry: insert returned no row');
-    }
-    return row;
-  });
+  const [row] = await tx
+    .insert(ledgerEntries)
+    .values({
+      ...(input.id ? { id: input.id } : {}),
+      seq,
+      entryType: input.entryType,
+      payloadHash: input.payloadHash,
+      prevEntryHash,
+      entryHash: hash,
+      ...(input.referencesId ? { referencesId: input.referencesId } : {}),
+      ...(input.deviceRecordedAt ? { deviceRecordedAt: input.deviceRecordedAt } : {}),
+    })
+    .returning();
+  if (!row) {
+    throw new LedgerError('appendEntry: insert returned no row');
+  }
+  return row;
+}
+
+/** {@link appendEntryTx} in its own transaction — for a standalone fact. */
+export async function appendEntry(db: Database, input: AppendEntryInput): Promise<LedgerEntry> {
+  return db.transaction((tx) => appendEntryTx(tx, input));
 }
 
 export async function latestEntry(db: Database): Promise<LedgerEntry | null> {
