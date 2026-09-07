@@ -270,3 +270,59 @@ export const exchangeRateSnapshots = pgTable(
     index('exchange_rate_snapshots_pair_time_idx').on(table.base, table.quote, table.fetchedAt),
   ],
 );
+
+// ── LEDGER (the canonical append-only hash chain, D-13, M4) ──────────────────
+
+/**
+ * One global append-only chain of money- or trust-relevant facts (§11.1). The
+ * server assigns `seq` (monotonic, under an advisory lock — see `lib/ledger`),
+ * sets `prev_entry_hash` to the previous row's `entry_hash`, and computes
+ * `entry_hash`. `UPDATE`/`DELETE` are blocked by a trigger (migration 0006) —
+ * a correction is a new `entry_type = 'correction'` row whose `references_id`
+ * points at the entry it supersedes.
+ */
+export const ledgerEntries = pgTable(
+  'ledger_entries',
+  {
+    /** = the detail row's client UUID where applicable (collection events); else random. */
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** Server-assigned monotonic order. App-assigned under an advisory lock; UNIQUE is the backstop. */
+    seq: bigint('seq', { mode: 'number' }).notNull().unique(),
+    entryType: text('entry_type').notNull(),
+    /** sha256 of the canonical payload — the client's `content_hash` for offline-origin facts. */
+    payloadHash: text('payload_hash').notNull(),
+    /** `entry_hash` of `seq - 1`; NULL only at genesis (`seq = 1`). */
+    prevEntryHash: text('prev_entry_hash'),
+    /** sha256(seq | entry_type | payload_hash | prev_entry_hash) — see `lib/ledger`. */
+    entryHash: text('entry_hash').notNull(),
+    /** For a correction: the entry being superseded. */
+    referencesId: uuid('references_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    /** Original device-local capture time for an offline-origin fact. */
+    deviceRecordedAt: timestamp('device_recorded_at', { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      'ledger_entries_entry_type_check',
+      sql`${table.entryType} in ('collection_event', 'payout', 'correction', 'treasury_topup', 'rate_change', 'tag_revocation')`,
+    ),
+    check('ledger_entries_seq_check', sql`${table.seq} > 0`),
+    index('ledger_entries_references_idx').on(table.referencesId),
+  ],
+);
+
+/**
+ * A periodically signed `(through_seq, entry_hash)` anchor for external
+ * verification (D-19, §11.2). Written by the checkpoint worker job (M4-7).
+ */
+export const ledgerCheckpoints = pgTable('ledger_checkpoints', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  throughSeq: bigint('through_seq', { mode: 'number' }).notNull(),
+  /** `entry_hash` at `through_seq`. */
+  entryHash: text('entry_hash').notNull(),
+  /** Programme-key signature over `(through_seq | entry_hash)`. */
+  signature: text('signature').notNull(),
+  nostrEventId: text('nostr_event_id'),
+  opentimestamps: text('opentimestamps'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});

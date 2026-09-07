@@ -1,0 +1,216 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+
+/**
+ * The one global append-only hash chain (D-13, REQUIREMENTS §11, ROADMAP M4-2).
+ *
+ * Every money- or trust-relevant fact becomes a `ledger_entries` row. On
+ * append the server takes an advisory lock, reads the head, assigns
+ * `seq = head.seq + 1`, links `prev_entry_hash = head.entry_hash`, and
+ * computes:
+ *
+ *   entry_hash = sha256( seq | entry_type | payload_hash | prev_entry_hash )
+ *
+ * joined with `|` — every field is a fixed enum, a decimal integer, or 64 hex
+ * chars, so the delimiter is unambiguous. `prev_entry_hash` is the literal
+ * `GENESIS` for `seq = 1`. This form is frozen (a fixed-vector test guards it).
+ *
+ * `payload_hash` is the SHA-256 of the canonical JSON of the fact — the SAME
+ * `canonicalize` the PWA uses for its `content_hash` (`lib/sync/contentHash`),
+ * so an offline-origin event's client hash is reused verbatim (M4 risk note:
+ * the two serialisations must match byte-for-byte).
+ *
+ * `UPDATE`/`DELETE` on `ledger_entries` are blocked by a DB trigger
+ * (migration 0006). A correction is a new `entry_type = 'correction'` row with
+ * `references_id` set. Framework-free apart from Drizzle (D-04); server only.
+ */
+
+import { asc, desc, eq, gt, type InferSelectModel, sql } from 'drizzle-orm';
+import type { Database } from '@/lib/db/client';
+import { ledgerEntries } from '@/lib/db/schema';
+import { type Canonicalizable, contentHash, sha256Hex } from '@/lib/sync/contentHash';
+
+export type LedgerEntry = InferSelectModel<typeof ledgerEntries>;
+
+export const LEDGER_ENTRY_TYPES = [
+  'collection_event',
+  'payout',
+  'correction',
+  'treasury_topup',
+  'rate_change',
+  'tag_revocation',
+] as const;
+export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
+
+/** Postgres advisory-lock key that serialises appends to the one chain. */
+const LEDGER_LOCK_KEY = 8_264_071;
+
+export class LedgerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'LedgerError';
+  }
+}
+
+/** The frozen `entry_hash` pre-image. */
+export function entryHashInput(
+  seq: number,
+  entryType: string,
+  payloadHash: string,
+  prevEntryHash: string | null,
+): string {
+  return [String(seq), entryType, payloadHash, prevEntryHash ?? 'GENESIS'].join('|');
+}
+
+export function computeEntryHash(
+  seq: number,
+  entryType: string,
+  payloadHash: string,
+  prevEntryHash: string | null,
+): Promise<string> {
+  return sha256Hex(entryHashInput(seq, entryType, payloadHash, prevEntryHash));
+}
+
+/** The `payload_hash` for a server-originated fact (payout, rate change, …). */
+export function payloadHash(payload: Canonicalizable): Promise<string> {
+  return contentHash(payload);
+}
+
+export type AppendEntryInput = {
+  readonly entryType: LedgerEntryType;
+  readonly payloadHash: string;
+  /** Reuse the detail row's client UUID where there is one (collection events). */
+  readonly id?: string;
+  /** For `entry_type = 'correction'`: the entry being superseded. */
+  readonly referencesId?: string;
+  /** Original device-local capture time for an offline-origin fact. */
+  readonly deviceRecordedAt?: Date;
+};
+
+/**
+ * Append one entry. Serialised against every other append by an advisory lock
+ * held for the transaction, so `seq` and the hash link are race-free.
+ * @throws {LedgerError} `payloadHash` is not 64 hex chars.
+ */
+export async function appendEntry(db: Database, input: AppendEntryInput): Promise<LedgerEntry> {
+  if (!/^[0-9a-f]{64}$/.test(input.payloadHash)) {
+    throw new LedgerError(
+      `appendEntry: payloadHash must be 64 hex chars (got "${input.payloadHash}")`,
+    );
+  }
+
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(${LEDGER_LOCK_KEY})`);
+
+    const [head] = await tx
+      .select({ seq: ledgerEntries.seq, entryHash: ledgerEntries.entryHash })
+      .from(ledgerEntries)
+      .orderBy(desc(ledgerEntries.seq))
+      .limit(1);
+
+    const seq = (head?.seq ?? 0) + 1;
+    const prevEntryHash = head?.entryHash ?? null;
+    const hash = await computeEntryHash(seq, input.entryType, input.payloadHash, prevEntryHash);
+
+    const [row] = await tx
+      .insert(ledgerEntries)
+      .values({
+        ...(input.id ? { id: input.id } : {}),
+        seq,
+        entryType: input.entryType,
+        payloadHash: input.payloadHash,
+        prevEntryHash,
+        entryHash: hash,
+        ...(input.referencesId ? { referencesId: input.referencesId } : {}),
+        ...(input.deviceRecordedAt ? { deviceRecordedAt: input.deviceRecordedAt } : {}),
+      })
+      .returning();
+    if (!row) {
+      throw new LedgerError('appendEntry: insert returned no row');
+    }
+    return row;
+  });
+}
+
+export async function latestEntry(db: Database): Promise<LedgerEntry | null> {
+  const [row] = await db.select().from(ledgerEntries).orderBy(desc(ledgerEntries.seq)).limit(1);
+  return row ?? null;
+}
+
+export async function entryBySeq(db: Database, seq: number): Promise<LedgerEntry | null> {
+  const [row] = await db.select().from(ledgerEntries).where(eq(ledgerEntries.seq, seq));
+  return row ?? null;
+}
+
+/** Entries with `seq > afterSeq`, ascending, capped (the `GET /ledger` stream, M4-8). */
+export async function listEntries(
+  db: Database,
+  { afterSeq = 0, limit = 500 }: { afterSeq?: number; limit?: number } = {},
+): Promise<LedgerEntry[]> {
+  return db
+    .select()
+    .from(ledgerEntries)
+    .where(gt(ledgerEntries.seq, afterSeq))
+    .orderBy(asc(ledgerEntries.seq))
+    .limit(Math.min(Math.max(limit, 1), 5000));
+}
+
+export type VerifyResult =
+  | {
+      readonly ok: true;
+      readonly count: number;
+      readonly throughSeq: number;
+      readonly headHash: string | null;
+    }
+  | { readonly ok: false; readonly brokenAt: number; readonly reason: string };
+
+/**
+ * Recompute the whole chain and report the first broken link, if any
+ * (`GET /ledger/verify`, `scripts/verify-ledger.ts`). Reads every row — fine
+ * for a pilot-scale ledger; a windowed check comes with checkpoints (M4-7).
+ */
+export async function verifyChain(db: Database): Promise<VerifyResult> {
+  const rows = await db.select().from(ledgerEntries).orderBy(asc(ledgerEntries.seq));
+  if (rows.length === 0) {
+    return { ok: true, count: 0, throughSeq: 0, headHash: null };
+  }
+
+  let prevHash: string | null = null;
+  let expectedSeq = 1;
+  for (const row of rows) {
+    if (row.seq !== expectedSeq) {
+      return {
+        ok: false,
+        brokenAt: row.seq,
+        reason: `seq gap: expected ${expectedSeq}, got ${row.seq}`,
+      };
+    }
+    if (row.prevEntryHash !== prevHash) {
+      return {
+        ok: false,
+        brokenAt: row.seq,
+        reason: `prev_entry_hash does not link (expected ${prevHash ?? 'NULL'})`,
+      };
+    }
+    const recomputed = await computeEntryHash(
+      row.seq,
+      row.entryType,
+      row.payloadHash,
+      row.prevEntryHash,
+    );
+    if (recomputed !== row.entryHash) {
+      return {
+        ok: false,
+        brokenAt: row.seq,
+        reason: 'entry_hash mismatch (payload or link altered)',
+      };
+    }
+    prevHash = row.entryHash;
+    expectedSeq += 1;
+  }
+  return {
+    ok: true,
+    count: rows.length,
+    throughSeq: rows[rows.length - 1]!.seq,
+    headHash: prevHash,
+  };
+}

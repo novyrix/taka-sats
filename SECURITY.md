@@ -35,25 +35,45 @@ Pre-1.0. Only `main` is supported; fixes land there.
 These are the invariants a review should re-check. A change that touches the code enforcing
 one of them must say so (see "Notes" below).
 
-| Property                                                                                                                                | Where enforced                                                                   |
-| --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| No human role (`supervisor`, `hub_lead`, `admin`) can execute or direct a payout                                                        | `lib/auth/permissions.ts` — `payout:execute` in no role; `permissions.test.ts`   |
-| A payout destination is never taken from client input — always resolved server-side from the tag mapping                                | payout worker (M5-3); API has no `destination` field by construction             |
-| Exactly one function does sats arithmetic for a payout                                                                                  | `lib/money.ts:computePayout`                                                     |
-| A BYO address is validated receive-capable before it is stored or written to a tag; a withdraw (`LNURLw`) code is rejected              | `LightningProvider.resolveReceiveAddress` (M1-2, M1-10)                          |
-| `ledger_entries` is append-only — `UPDATE`/`DELETE` revoked at the DB role level; corrections are new linked rows                       | migration (M4-1), `lib/ledger/`                                                  |
-| Above-threshold payouts require a second, distinct approver; self-approval is refused                                                   | M5-4                                                                             |
-| A payout will not run against an exchange rate older than the configured TTL                                                            | `lib/money` + rate feed (D-18)                                                   |
-| Secrets (DB URL, provider keys, `AUTH_SECRET`, Nostr key) live in the environment only — never in `config/*.toml`, client code, or logs | `lib/config/` (schema rejects them), structured-logging allow-list               |
-| `partner` / `public:read` responses carry no collector PII or individual payout amounts                                                 | central response serialiser (M7-4) + contract tests (M7-12)                      |
-| Every `/api/v1` route is deny-by-default: no session → 401, wrong role → 403, before the handler body runs                              | `lib/auth/session.ts:requireScope`; `session.test.ts`, `app/api/v1/**/*.test.ts` |
-| Passwords are never stored or logged in plaintext                                                                                       | `lib/auth/password.ts` (`scrypt`, random salt, `timingSafeEqual`)                |
+| Property                                                                                                                                | Where enforced                                                                              |
+| --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| No human role (`supervisor`, `hub_lead`, `admin`) can execute or direct a payout                                                        | `lib/auth/permissions.ts` — `payout:execute` in no role; `permissions.test.ts`              |
+| A payout destination is never taken from client input — always resolved server-side from the tag mapping                                | payout worker (M5-3); API has no `destination` field by construction                        |
+| Exactly one function does sats arithmetic for a payout                                                                                  | `lib/money.ts:computePayout`                                                                |
+| A BYO address is validated receive-capable before it is stored or written to a tag; a withdraw (`LNURLw`) code is rejected              | `LightningProvider.resolveReceiveAddress` (M1-2, M1-10)                                     |
+| `ledger_entries` is append-only — a DB trigger blocks `UPDATE`/`DELETE` (any role); corrections are new linked rows; the chain verifies | migration 0006 (`ledger_entries_immutable()`), `lib/ledger/` (`appendEntry`, `verifyChain`) |
+| Above-threshold payouts require a second, distinct approver; self-approval is refused                                                   | M5-4                                                                                        |
+| A payout will not run against an exchange rate older than the configured TTL                                                            | `lib/money` + rate feed (D-18)                                                              |
+| Secrets (DB URL, provider keys, `AUTH_SECRET`, Nostr key) live in the environment only — never in `config/*.toml`, client code, or logs | `lib/config/` (schema rejects them), structured-logging allow-list                          |
+| `partner` / `public:read` responses carry no collector PII or individual payout amounts                                                 | central response serialiser (M7-4) + contract tests (M7-12)                                 |
+| Every `/api/v1` route is deny-by-default: no session → 401, wrong role → 403, before the handler body runs                              | `lib/auth/session.ts:requireScope`; `session.test.ts`, `app/api/v1/**/*.test.ts`            |
+| Passwords are never stored or logged in plaintext                                                                                       | `lib/auth/password.ts` (`scrypt`, random salt, `timingSafeEqual`)                           |
 
 ## Notes
 
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-09-07 — The append-only ledger (M4-1/M4-2, D-13, REQUIREMENTS §11). New
+  `ledger_entries` / `ledger_checkpoints` tables (migration 0006) + `lib/ledger`. Properties
+  it establishes (a review of anything touching the chain must re-check these):
+  1. **Append-only at the DB.** A `BEFORE UPDATE OR DELETE … FOR EACH STATEMENT` trigger
+     (`ledger_entries_immutable()`) raises `restrict_violation` — enforced regardless of the
+     connecting role, so it holds on managed Postgres too. `TRUNCATE` is _not_ blocked
+     (operator reset / test isolation); operators `REVOKE TRUNCATE` for defence in depth. A
+     correction is a new `entry_type = 'correction'` row with `references_id` set — never an
+     edit.
+  2. **Hash chain.** `appendEntry` runs under `pg_advisory_xact_lock`, so `seq` (app-assigned,
+     `= head.seq + 1`, `UNIQUE` backstop) and `prev_entry_hash = head.entry_hash` are
+     race-free. `entry_hash = sha256(seq | entry_type | payload_hash | prev_entry_hash)`,
+     `prev` = `GENESIS` at `seq 1`. Both forms are frozen by fixed-vector tests.
+  3. **Client-bound payload.** `payload_hash` is the SHA-256 of the fact's canonical JSON —
+     the _same_ `canonicalize` the PWA computes its `content_hash` with (`lib/sync/contentHash`,
+     imported by `lib/ledger`), so an offline event's client hash is the ledger payload hash
+     verbatim. If the two serialisations ever diverge, `content_hash` checks fail spuriously.
+  4. `verifyChain(db)` recomputes every link and returns the first `brokenAt` seq + reason —
+     the basis for `GET /ledger/verify` and `scripts/verify-ledger.ts` (M4-8).
+     No money arithmetic and no RBAC change here; the sync-ingest route + its authz land in M4-3.
 - 2026-09-07 — Photo upload queue (M3-10, FR-4.2, D-12). New route
   `POST /api/v1/photos`, `requireScope('collection:record')` (supervisor / hub_lead / admin —
   no matrix change). Evidence-integrity property it establishes: the server **recomputes**
