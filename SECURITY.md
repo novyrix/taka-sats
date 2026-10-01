@@ -282,7 +282,7 @@ each preserves or alters (Code Style Guide §12). Newest first.
   `collection:record` route must call the same helper. `POST /collectors/:id/{address,tags}`
   are **not** gated yet — they are sub-steps reached only after a gated `POST /collectors`
   in the enrol flow; standalone use (e.g. a later tag reissue) by an unassigned supervisor
-  is a known gap tracked in AGENTS §10. The PWA mirrors the gate in the UI
+  is a known gap. The PWA mirrors the gate in the UI
   (`components/supervisor/session-context.tsx` `<SessionGate>`) but the server check is
   authoritative. `payout:execute` unaffected; the RBAC matrix (`permissions.ts`) is unchanged.
 - 2026-09-06 — Sessions + rates API, exchange feed, partner login (M2-5, M2-9, M2-1).

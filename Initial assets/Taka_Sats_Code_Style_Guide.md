@@ -5,7 +5,7 @@ Afribit Africa
 
 Version 1.1 — Companion to the Taka Sats Technical Architecture and CONTRIBUTING Guide
 
-**Revision 1.1 (2026-09):** reconciled with `docs/REQUIREMENTS.md` for implementation. Added: `config/`, `worker/`, `db/`, `ledger/`, `e2e/`, `docker/`, `scripts/`, `messages/` and `app/api/v1/` to the project structure (§3); the **config-first rule** (new §7A — nothing operational is hardcoded); the CONTRIBUTING Guide is a v1 (Milestone 0) deliverable, not "forthcoming"; the `AGENTS.md` working-memory / task-ledger convention (§11). Section 9 (Money-Handling Code) is unchanged and remains binding.
+**Revision 1.1 (2026-09):** reconciled with `docs/REQUIREMENTS.md` for implementation. Added: `config/`, `worker/`, `db/`, `ledger/`, `e2e/`, `docker/`, `scripts/`, `messages/` and `app/api/v1/` to the project structure (§3); the **config-first rule** (new §7A — nothing operational is hardcoded); the CONTRIBUTING Guide is a v1 (Milestone 0) deliverable, not "forthcoming". Section 9 (Money-Handling Code) is unchanged and remains binding.
 
 ---
 

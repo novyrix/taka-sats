@@ -533,4 +533,4 @@ Tracked with owners and gates in `docs/REQUIREMENTS.md §17`. Status at revision
 
 ---
 
-*This document (revision 1.1) is a companion to the Taka Sats PRD, User Stories, and Brand Guidelines. `docs/REQUIREMENTS.md` is the buildable consolidation and wins where the two differ; `docs/ROADMAP.md` sequences the build; `docs/DESIGN.md` covers UI; `AGENTS.md` is the working memory for implementers. The CONTRIBUTING Guide and Code Style Guide specify how the codebase is organized, styled, and opened to outside contributors.*
+*This document (revision 1.1) is a companion to the Taka Sats PRD, User Stories, and Brand Guidelines. `docs/REQUIREMENTS.md` is the buildable consolidation and wins where the two differ; `docs/ROADMAP.md` sequences the build; `docs/DESIGN.md` covers UI. The CONTRIBUTING Guide and Code Style Guide specify how the codebase is organized, styled, and opened to outside contributors.*

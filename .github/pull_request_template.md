@@ -15,5 +15,5 @@
 - [ ] Migrations have a working `down` (`db/<tag>.down.sql`); no destructive prod migration without a reviewed backup step.
 - [ ] Relevant `docs/` page updated in this PR; `SECURITY.md` note added if enforcement code changed.
 - [ ] Every commit is a Conventional Commit and carries `Signed-off-by` (DCO — `git commit -s`).
-- [ ] **`AGENTS.md` updated in this PR** — STATE block, Task Log entry, Codebase map, Open threads.
+- [ ] Any follow-up work you are deferring is written down in the PR description or an issue.
 - [ ] New UI dependency/pattern recorded in `docs/DESIGN.md §7`/`§16`.

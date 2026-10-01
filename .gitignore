@@ -52,3 +52,14 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Personal / AI-assistant working files. Kept locally, never published.
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/
+.codex/
+.cursor/
+docs/AGENT_LOG_ARCHIVE.md
+# Private negotiation and drafting notes
+docs/TAKA_SATS_PAYBEE_PILOT_UPDATE.md

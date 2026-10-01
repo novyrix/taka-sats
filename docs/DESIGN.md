@@ -377,7 +377,7 @@ All licences below are permissive and compatible with the project's **AGPL-3.0-o
 | **class-variance-authority**, **tailwind-merge**, **clsx** | shadcn styling utilities | MIT | **Yes** (come with shadcn). |
 | **date-fns** + **@internationalized/date** | Date math + i18n-safe dates | MIT | **Yes.** Africa/Nairobi from `settings.programme.timezone`. |
 
-Anything not in this table needs a line in `docs/DESIGN.md` (this file) + a note in `AGENTS.md` §10 before it enters `package.json`.
+Anything not in this table needs a line in `docs/DESIGN.md` (this file) and a note in the pull request before it enters `package.json`.
 
 ---
 
@@ -540,7 +540,7 @@ Never blocks on network. GPS-missing shows an inline amber-free warning (Ink + t
 | §13.4 Motion is functional + reduced-motion-safe | `useReducedMotion` gate is mandatory; a Playwright test asserts count-up/spinner degrade. No `@keyframes` loops except the sync spinner (grep check). |
 | §13.5 PWA bundle budget | CI size check on the PWA entry + weigh route; Motion/KokonutUI imports in PWA code fail the check. anime.js must be dynamically imported. |
 | §13.6 Reuse over rebuild | Review checklist: "does §6 already map this need?" A hand-rolled table/drawer/toast is a change-request. |
-| §13.7 New dependency | Must be added to §7 (this file) + `AGENTS.md` §10 in the same PR, with licence noted. |
+| §13.7 New dependency | Must be added to §7 (this file) in the same PR, with its licence noted. |
 
 ---
 
@@ -562,7 +562,7 @@ Never blocks on network. GPS-missing shows an inline amber-free warning (Ink + t
 - ❌ Use colour as the only signal for a status.
 - ❌ Stack border + shadow + gradient on a card. Pick at most one edge treatment.
 - ❌ Tile the pattern strip or put it behind text. Once per screen, as an accent.
-- ❌ Add a dependency without updating §7 here and `AGENTS.md` §10.
+- ❌ Add a dependency without updating §7 here.
 - ❌ Hand-roll a component that §6 already maps to a library.
 - ❌ Animate anything as a loop except the circular-arrow sync spinner.
 - ❌ Block a supervisor interaction on a network call or an animation finishing.
@@ -598,4 +598,4 @@ Never blocks on network. GPS-missing shows an inline amber-free warning (Ink + t
 
 ---
 
-*This document is subordinate to `Taka_Sats_Brand_Guidelines.md`. It is maintained alongside the code: a new component, dependency, or pattern lands here in the same PR. `AGENTS.md` §9 points every agent here before UI work.*
+*This document is subordinate to `Taka_Sats_Brand_Guidelines.md`. It is maintained alongside the code: a new component, dependency, or pattern lands here in the same PR.*

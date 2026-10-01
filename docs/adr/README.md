@@ -31,3 +31,4 @@ ADR differ, REQUIREMENTS is authoritative.
 | [0017](0017-cardless-identity-and-authorization-gate.md) | Cardless identity and the collector authorization gate | Accepted | D-24, D-25 |
 | [0018](0018-payment-destinations-and-spend-credentials.md) | Payment destinations are records; spend credentials are never accepted | Accepted | D-26 |
 | [0019](0019-weight-provenance-and-derived-verification.md) | Weight provenance is signed at capture; verification is derived | Accepted | D-27 |
+| [0020](0020-multisig-pool-funds-a-pluggable-hot-wallet.md) | A multisig pool funds a capped, pluggable hot wallet | Accepted | D-28 |

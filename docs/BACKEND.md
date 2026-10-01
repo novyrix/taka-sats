@@ -2,7 +2,8 @@
 
 **Audience:** anyone building or changing UI for Taka Sats (the supervisor PWA, the admin
 console, public pages). **Source of truth:** the code; this file is its map. If they disagree the
-code is right and this file is stale — fix it in the same change (AGENTS.md rule 11).
+code is right and this file is stale. Fix it in the same change: updating this file is part of
+the definition of done for any API change.
 
 **Last updated:** 2026-10-01 · **Status key:** ✅ built and tested · 🚧 being built · 📋 planned
 

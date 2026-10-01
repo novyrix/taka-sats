@@ -118,6 +118,7 @@ Decisions made to unblock the build. Each can be revisited, but code is written 
 | D-25 | **Collector authorization gate.** `collectors.status` is `pending` \| `active` (= authorized) \| `revoked`. A supervisor's registration is `pending`; a `hub_lead`/`admin` (`collector:authorize`) authorizes it. Only `active` collectors can be weighed (cache + ingest), issued an NFC tag, or paid. Each decision is a `collector_authorizations` row anchored in the ledger (`collector_authorization`). `collectors.authorization_required = false` disables the gate. NFC tags are issued only to authorized collectors. | Closes ghost-collector fraud (aliases pointing at a supervisor's wallet) now that no physical credential gates enrolment. ADR-0017. |
 | D-26 | **Payment destinations are records.** `collector_payment_destinations` (status `pending_validation` → `verified` \| `invalid`, or `revoked`; ≤1 live destination per collector, which is the primary; address unique across live destinations). The payout destination is always the collector's primary **verified** destination, resolved server-side. Replacing a verified destination needs `collector:authorize`. A spend link (`lightning.spend_link_hosts`, e.g. a Paybee card's Pay QR) is rejected before any network call and never stored/logged. Wallet providers (Paybee, Blink, Fedi …) are a `provider_hint`, not code. | Destination history + the cleanest redirect-fraud control. ADR-0018. |
 | D-27 | **Weight provenance is signed at capture; verification is derived.** The signed event payload carries `weightSource` (+ optional `scaleId`, `scaleReadingRaw`). OCR/AI/mass-balance results live in `verification_checks` / `anomaly_flags` / `verification_level` (`V0`–`V4`) and never mutate the event. `verification_level` and payout state are independent axes. The physical scale is authoritative; AI audits kilograms, it does not invent them. | The `content_hash` is frozen and recomputed on ingest — adding a field later breaks queued events. ADR-0019. |
+| D-28 | **A multisig pool funds a capped, pluggable hot wallet.** Stewards (not field supervisors) hold an M of N multisig pool. A recorded vote refills a small hot wallet behind `LightningProvider`, which pays collectors automatically. Taka Sats never holds pool keys and never moves pool funds. Both roles are filled by any provider that meets `docs/providers/README.md`. | Payouts must be automatic, so the key on the server must guard little. ADR-0020, `docs/TREASURY.md`. |
 
 ---
 
@@ -187,8 +188,7 @@ These edits reconcile the source documents with the resolved decisions. They wer
 
 ### 4.4 New documents to add
 
-- Repo root: `AGENTS.md` — shared working memory + task ledger + protocol for every AI agent and human contributor (read before any task, updated as part of every task; the resume point after a context/limit reset).
-- Under `docs/`: `ROADMAP.md` (milestone plan), `DESIGN.md` (design system + UI component inventory + library choices), `adr/` (decision records), `openapi.yaml`, `LEDGER.md` (auditor's verification guide), `SELF_HOSTING.md`, `THREAT_MODEL.md`, `CONFIGURATION.md` (annotated walk-through of every `settings.toml` key), and later `AGENT_LOG_ARCHIVE.md` (overflow of `AGENTS.md`'s Task Log).
+- Under `docs/`: `ROADMAP.md` (milestone plan), `DESIGN.md` (design system + UI component inventory + library choices), `adr/` (decision records), `openapi.yaml`, `LEDGER.md` (auditor's verification guide), `SELF_HOSTING.md`, `THREAT_MODEL.md`, `CONFIGURATION.md` (annotated walk-through of every `settings.toml` key).
 
 ---
 
@@ -741,7 +741,7 @@ Every operational value lives in configuration, not in source. This is what lets
 
 ```toml
 [programme]
-name            = "Taka Sats — Afribit Africa"
+name            = "Taka Sats by Afribit Africa"
 timezone        = "Africa/Nairobi"
 fiat_currency   = "KES"                 # rate table + reporting currency
 locales         = ["en", "sw", "sheng"]

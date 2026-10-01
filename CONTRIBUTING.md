@@ -7,8 +7,8 @@ inventory, don't hand-roll); what to build and in what order is [`docs/ROADMAP.m
 
 ## Before you start
 
-1. Read [`AGENTS.md`](AGENTS.md) — it holds the live build state and the task ledger.
-   Human or agent, it is the resume point.
+1. Read the [README](README.md) and [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) to get the project
+   running, and [`docs/BACKEND.md`](docs/BACKEND.md) if you work on the interface.
 2. Find your milestone/issue in [`docs/ROADMAP.md`](docs/ROADMAP.md); read its dependencies
    and exit criteria, and the [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) sections it maps to.
 3. Do not start a milestone whose ROADMAP dependencies are unmet.
@@ -35,10 +35,10 @@ The `pre-commit` hook runs format/lint/typecheck; the `commit-msg` hook runs com
 
 - Branch off `main`: `feat/m2-rate-table`, `fix/sync-idempotency`.
 - One PR = one ROADMAP issue or one focused change. Don't "also fix" unrelated things —
-  log them in `AGENTS.md §10` instead.
+  open an issue for them instead.
 - Keep PRs reviewable. Rebase on `main`; don't merge `main` into your branch.
 - The PR template checklist is not decorative — every box must be true, including
-  **"`AGENTS.md` updated in this PR"**.
+  that the relevant `docs/` page is updated.
 
 ### Two-reviewer paths
 
