@@ -2,6 +2,15 @@
   "name": "taka-sats",
   "version": "0.1.0",
   "private": true,
+  "license": "AGPL-3.0-only",
+  "homepage": "https://github.com/novyrix/taka-sats#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/novyrix/taka-sats.git"
+  },
+  "bugs": {
+    "url": "https://github.com/novyrix/taka-sats/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
@@ -18,6 +27,7 @@
     "db:migrate": "tsx scripts/migrate.ts",
     "db:studio": "drizzle-kit studio",
     "db:create-supervisor": "tsx scripts/create-supervisor.ts",
+    "db:seed-demo-supervisors": "tsx scripts/seed-demo-supervisors.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed-pilot": "tsx scripts/seed-pilot.ts",
     "pilot:smoke": "tsx scripts/pilot-smoke.ts",
@@ -37,7 +47,7 @@
     "drizzle-orm": "^0.45.2",
     "idb": "^8.0.3",
     "lucide-react": "^1.39.0",
-    "next": "16.3.4",
+    "next": "16.3.6",
     "next-auth": "5.0.0-beta.32",
     "next-intl": "^4.14.2",
     "next-themes": "^0.4.6",
