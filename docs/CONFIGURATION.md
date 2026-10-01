@@ -48,6 +48,7 @@ Every key there carries a comment. Summary of the sections:
 | `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2); the agreement tolerance (an outlier source is set aside; ≥2 must agree within it) |
 | `[rates]` | `seed` rows for `material_rates` on the first migration only — history lives in the DB afterwards |
 | `[payouts]` | Second-sign-off threshold (`0` holds every payout for review), `require_approval_first_payout`, low-float alert threshold, auto-topup flag, `sweep_cron`, `sending_stale_minutes`, `max_attempts` |
+| `[treasury]` | `topup_approvals_required` (distinct stewards who approve a pool-to-hot-wallet refill, the proposer never counts), `hot_wallet_cap_sats` (ceiling on the hot wallet, `0` = no cap; funding already in flight counts toward it) |
 | `[reconciliation]` | Paid-kg vs sold-kg variance tolerance |
 | `[anomaly]` | Detector thresholds (identical-weight repeats, payout concentration, off-hours grace; `weight_outlier_min_events` prior events a material needs before its weights are judged, and `weight_outlier_mad_k`, how many scaled MADs from the median make an outlier) |
 | `[scheduling]` | Coverage-gap alert lead time |

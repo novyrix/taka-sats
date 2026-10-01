@@ -12,6 +12,7 @@
 import { PgBoss } from 'pg-boss';
 import { getSettings } from '@/lib/config';
 import {
+  JOB_CONFIRM_TREASURY_TOPUPS,
   JOB_CREATE_LEDGER_CHECKPOINT,
   JOB_PROCESS_PAYOUT,
   JOB_PROVISION_COLLECTOR_WALLET,
@@ -119,6 +120,28 @@ export async function enqueueProcessPayout(payload: ProcessPayoutPayload): Promi
 export async function enqueueSweepPayouts(): Promise<void> {
   const boss = await getBoss();
   await boss.send(JOB_SWEEP_PAYOUTS, {}, { retryLimit: 2, singletonKey: 'sweep' });
+}
+
+/** Enqueue the check that confirms funding proposals whose transfer has reached the hot wallet (the Vercel Cron bridge; the worker also self-schedules). */
+export async function enqueueConfirmTreasuryTopups(): Promise<void> {
+  const boss = await getBoss();
+  await boss.send(
+    JOB_CONFIRM_TREASURY_TOPUPS,
+    {},
+    { retryLimit: 2, singletonKey: 'confirm-topups' },
+  );
+}
+
+/** {@link enqueueSweepPayouts} for a request that must not fail on a queue outage: the cron tick is the backstop. */
+export async function enqueueSweepPayoutsSafely(): Promise<void> {
+  try {
+    await enqueueSweepPayouts();
+  } catch (error) {
+    console.error(
+      '[jobs] could not enqueue sweep-payouts',
+      error instanceof Error ? error.name : typeof error,
+    );
+  }
 }
 
 /** {@link enqueueProcessPayout} for a request that must not fail on a queue outage — the sweeper is the backstop. */

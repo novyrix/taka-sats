@@ -43,6 +43,15 @@ import {
 } from '@/lib/payouts';
 import { RateError } from '@/lib/rates';
 import { RotationError } from '@/lib/rotations';
+import {
+  TopupApprovalError,
+  TopupCapError,
+  TopupConflictError,
+  TopupFloatUnavailableError,
+  TopupInputError,
+  TopupNotFoundError,
+  TopupStateError,
+} from '@/lib/treasury/errors';
 import { NoActiveSessionError, SessionError } from '@/lib/sessions';
 import { FakeProviderForbiddenError } from '@/lib/lightning';
 import { StorageConfigError } from '@/lib/storage';
@@ -158,6 +167,33 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
     return error.reason === 'self_approval'
       ? json(403, 'self_approval', error.message)
       : json(403, 'forbidden', error.message);
+  }
+  if (error instanceof TopupNotFoundError) {
+    return json(404, 'not_found', error.message);
+  }
+  if (error instanceof TopupStateError) {
+    return json(409, 'invalid_state', error.message, { status: error.status });
+  }
+  if (error instanceof TopupApprovalError) {
+    return error.reason === 'self_approval'
+      ? json(403, 'self_approval', error.message)
+      : json(403, 'forbidden', error.message);
+  }
+  if (error instanceof TopupInputError) {
+    return json(400, 'invalid_request', error.message);
+  }
+  if (error instanceof TopupCapError) {
+    return json(422, 'hot_wallet_cap_exceeded', error.message, {
+      capSats: error.capSats,
+      headroomSats: error.headroomSats,
+    });
+  }
+  if (error instanceof TopupFloatUnavailableError) {
+    // Same code as GET /treasury/float; the rail's own message is never passed on.
+    return json(503, 'float_unavailable', error.message);
+  }
+  if (error instanceof TopupConflictError) {
+    return json(409, 'conflict', error.message);
   }
   if (error instanceof PayoutCursorError || error instanceof CursorError) {
     return json(400, 'invalid_cursor', error.message);

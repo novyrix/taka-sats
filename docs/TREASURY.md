@@ -33,8 +33,9 @@ can fill, provided it meets the requirements in [`providers/README.md`](provider
 | **Hot wallet** | Pay a Lightning address or invoice through an authenticated API. Report its balance. Report each payment's result honestly. Accept deposits from the pool. | Blink, LNbits, a Fedimint client wallet |
 
 The code already treats the hot wallet as a plug in (`LightningProvider`, chosen by
-`lightning.float_provider`). The pool is described by a contract and workflow here and is
-**planned**, not yet built (see "What exists today").
+`lightning.float_provider`). The pool is described by a contract and workflow here. The vote that
+funds the hot wallet from it is built; a read only view of the pool's own balance is not (see
+"What exists today").
 
 ## Who signs
 
@@ -52,15 +53,21 @@ point.
 ## How a funding vote works
 
 1. **Proposal.** A steward proposes an amount for a period, for example "enough for two weeks of
-   payouts". The software shows the pool balance, the hot wallet balance, payouts waiting and the
-   recent spending rate, so the vote is informed.
-2. **Approval.** Stewards approve in Taka Sats. Their approvals are recorded in the ledger with
-   their names.
+   payouts". The treasury view shows the hot wallet balance, the cap and the room under it, the
+   proposals already on their way and the payouts waiting for funds, so the vote is informed. (It
+   will also show the pool balance once a read only view is configured.) A proposal that would take
+   the hot wallet above its cap is refused.
+2. **Approval.** Stewards approve in Taka Sats: by default two distinct people, never the one who
+   proposed. Each approval is recorded in the ledger with the steward's name. Any steward other than
+   the proposer can also reject the proposal, and the proposer can withdraw it.
 3. **Signing.** The transfer is prepared and signed in the wallet that holds the pool. This is the
    real control. The funds cannot move without enough valid signatures, whatever any server says.
-4. **Arrival.** Once the transfer confirms, the hot wallet balance rises and waiting payouts
-   resume by themselves.
-5. **Record.** The proposal, the approvals, the transaction id and the result are written to the
+   Afterwards a steward records the transaction id (or other reference) in Taka Sats. One transfer
+   can back only one proposal.
+4. **Arrival.** Taka Sats does not take anyone's word that the money arrived. It confirms the
+   proposal when the hot wallet's own balance shows the funds (counting what payouts spent in the
+   meantime). Payouts waiting for funds then resume at once.
+5. **Record.** The proposal, each approval, the transaction id and the result are written to the
    ledger, so a funder can see who agreed to what.
 
 Step 3 is the one that protects the money. Steps 1, 2 and 5 are how the programme stays
@@ -70,10 +77,10 @@ accountable and visible.
 
 | Taka Sats **does** | Taka Sats **never** does |
 |---|---|
-| Show the pool balance from its public view | Hold, see or ask for the pool's signing keys |
-| Record proposals, approvals and outcomes in the ledger | Move money out of the pool |
-| Notice when funds arrive at the hot wallet | Let one person approve their own proposal |
-| Keep the hot wallet under its cap and warn when it is low | Pay from the pool directly to a collector |
+| Record proposals, approvals and outcomes in the ledger | Hold, see or ask for the pool's signing keys |
+| Notice when funds arrive at the hot wallet | Move money out of the pool |
+| Refuse a refill that would take the hot wallet above its cap, and warn when it is low | Let one person approve their own proposal |
+| Show the pool balance from its public view, once one is configured (not built yet) | Pay from the pool directly to a collector |
 | Pay collectors automatically from the hot wallet | Let anyone type in where a payment goes |
 
 ## Limits you should know
@@ -84,7 +91,15 @@ accountable and visible.
 - **Waiting is a feature.** When the hot wallet runs dry, payouts show as waiting for funds. The
   collector's record is safe and the payment is made after the next vote.
 - **Stewards must be reachable.** A quorum that cannot meet cannot refill. Plan for holidays and
-  lost devices, and rehearse recovery before holding meaningful value.
+  lost devices, and rehearse recovery before holding meaningful value. By default a vote needs the
+  proposer plus two other stewards, so a programme needs at least three admin accounts held by three
+  different people.
+- **The software cannot tell who a steward really is.** Stewards are admin accounts. Keep them
+  separate from the people who record weights, and give each their own login. Taka Sats stops one
+  account approving its own proposal, but it cannot stop one person holding two accounts.
+- **Approving in Taka Sats does not move money.** Only enough signatures in the pool wallet do. If
+  an approval is recorded here and the transfer is never signed, nothing is lost: the proposal
+  stays open until someone cancels or rejects it.
 - **Legal status of the hot wallet is the operator's responsibility.** A custodial provider holds
   the float, so check what licences and rules apply where you operate.
 
@@ -106,12 +121,17 @@ None of these is a requirement. Anything that meets the provider requirements wi
 | Payouts that wait when the hot wallet is short, and resume | Built |
 | Float balance and low balance warning for admins | Built |
 | Payment results classified so an uncertain payment is never retried blindly | Built |
-| Pool balance view, funding proposals, steward approvals and the ledger record | **Planned** |
-| A cap on the hot wallet balance | **Planned** |
+| Funding proposals, steward approvals (never the proposer, each counted once), rejection and cancellation | Built |
+| Recording the pool transfer's reference, and confirming arrival from the hot wallet's own balance | Built |
+| The ledger record of every step, and payouts resuming once a refill is confirmed | Built |
+| A cap on the hot wallet balance (`treasury.hot_wallet_cap_sats`, off by default) | Built |
+| A one call treasury view (hot wallet, cap, proposals in flight, payouts waiting) | Built |
+| A read only view of the pool's own balance | **Planned**. The treasury view says "not configured" rather than showing zero |
 | A Fedimint hot wallet | **Planned** |
 
-The proposal and approval flow is the next treasury feature (M5-7). Until it exists, refilling is done by the
-stewards outside the software and entered by an admin.
+The funding vote is built as a record and a set of checks around a transfer that happens elsewhere.
+It has been tested against a demo wallet only. Blink and LNbits have never been run against a live
+account, so the arrival check has not been seen against a real balance either.
 
 ## Decision record
 

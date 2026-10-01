@@ -56,15 +56,15 @@ matches the class. **Switch on `code`, never on `message`** (the message is Engl
 | 403 | `forbidden` | your role lacks the scope (`message` names it) |
 | 403 | `no_active_session` | a supervisor with no active assigned session tried to act (§3.4) |
 | 403 | `destination_replace_forbidden` | a supervisor tried to change a payout destination after it was verified or the collector was authorized (§3.2) |
-| 403 | `self_approval` | you recorded this collection, so you cannot approve its payout (a second person must) |
+| 403 | `self_approval` | you recorded this collection, so you cannot approve its payout (a second person must); or you proposed this treasury top-up, so you cannot approve or reject it (§5.3.1) |
 | 403 | `not_your_collector` | a supervisor tried to manage the wallet of a collector they did not register (§3.2) |
 | 404 | `not_found` | collector / destination / session / … does not exist |
 | 409 | `collector_not_authorized` | the collector is `pending` or `revoked`; `details: { status }` (§3.1) |
 | 409 | `destination_in_use` | that wallet already belongs to another collector (deliberately does not say whose) |
-| 409 | `conflict` | a tag is already mapped to another collector |
+| 409 | `conflict` | a tag is already mapped to another collector; a treasury `id` or transfer `reference` is already used by a different proposal (§5.3.1) |
 | 400 | `invalid_cursor` | a `cursor` that is not a previous response's `nextCursor` |
 | 409 | `review_final` | the same admin tried to change their own anomaly verdict (§5.9) |
-| 409 | `invalid_state` | the action does not apply to the payout's current status; `details.status` says what it is |
+| 409 | `invalid_state` | the action does not apply to the payout's (or treasury proposal's) current status; `details.status` says what it is |
 | 410 | `tag_revoked` | a revoked tag was tapped (the attempt is logged server-side) |
 | 413 / 415 | `payload_too_large` / `unsupported_media_type` | photo upload limits — only JPEG, PNG, WebP and HEIC are accepted (**never SVG**) |
 | 422 | `spend_credential_rejected` | **a wallet card's Pay QR was scanned** — show "flip the card, scan Receive" (§3.2) |
@@ -73,9 +73,10 @@ matches the class. **Switch on `code`, never on `message`** (the message is Engl
 | 422 | `invalid_lightning_address` | not a Lightning address / LNURL, or it does not resolve |
 | 422 | `photo_hash_mismatch` | uploaded bytes ≠ `X-Photo-Sha256` |
 | 422 | `unprocessable` | a business rule (bad rate window, session window, rotation, …) |
+| 422 | `hot_wallet_cap_exceeded` | a treasury top-up would take the hot wallet above `treasury.hot_wallet_cap_sats`; `details: { capSats, headroomSats }` (§5.3.1) |
 | 502 | `lightning_endpoint_unreachable` / `exchange_feed_error` | an upstream is down — retry later |
 | 503 | `provider_misconfigured` | the payment rail is configured unsafely (e.g. the demo `fake` rail in production without the explicit opt-in) — an operator problem, not a user one |
-| 503 | `stale_exchange_rate` / `storage_unconfigured` / `ledger_key_invalid` / `float_unavailable` | server-side configuration / freshness / the payment rail is unreachable |
+| 503 | `stale_exchange_rate` / `storage_unconfigured` / `ledger_key_invalid` / `float_unavailable` | server-side configuration / freshness / the payment rail is unreachable (`float_unavailable` also from the treasury endpoints that must read the hot-wallet balance) |
 | 500 | `internal_error` | a bug; nothing about it is exposed |
 
 ### Conventions
@@ -107,10 +108,18 @@ Source: `lib/auth/permissions.ts` (the matrix test `lib/auth/rbac-matrix.test.ts
 | `reconciliation:write` — enter recycler sales, run reconciliation reports | | | ✅ | |
 | `report:generate:all` — read reconciliation reports and recycler sales | | | ✅ | |
 | `anomaly:review` — the anomaly queue and verdicts | | | ✅ | |
-| `session:metrics:read:*`, `report:generate:own`, `treasury:*`, `apikey:manage` | per role — see the file; most are for milestones not built yet | | | |
+| **`treasury:read`**: the treasury view and funding proposals | | | ✅ | |
+| **`treasury:propose`**: propose a pool→hot-wallet refill, cancel your own proposal, record the transfer reference | | | ✅ | |
+| **`treasury:approve`**: approve or reject a refill proposed by someone else, check that the funds arrived | | | ✅ | |
+| `treasury:topup:initiate`: read the hot-wallet float (`GET /treasury/float`) | | | ✅ | |
+| `session:metrics:read:*`, `report:generate:own`, `apikey:manage` | per role, see the file; most are for milestones not built yet | | | |
 
 `payout:execute` exists in **no** role — paying is a system function. There is no endpoint that
 executes a payout and none will be added.
+
+The treasury scopes are **admin only**. `hub_lead` (a field-side role that authorizes collectors and
+approves payouts) deliberately holds none of them, so nobody who vets collectors also approves the
+money that pays them (ADR-0020). Treasury stewards should be separate people from those who record weights.
 
 A plain **`supervisor` may act only inside an active session they are assigned to** (`403
 no_active_session` otherwise); `hub_lead` and `admin` are not shift-bound.
@@ -513,6 +522,81 @@ a retry fetches a fresh invoice, so nothing but you stops it paying twice if the
 `200 { "available": 482000, "asOf": "…", "lowBalance": false }` · `503 float_unavailable` (the rail is unreachable; no
 detail is leaked). `lowBalance` is true below `payouts.float_low_balance_alert_sats`.
 
+#### 5.3.1 The treasury funding vote ✅ (admin only)
+
+How the programme's pool refills the capped hot wallet (`docs/TREASURY.md`, ADR-0020). **Taka Sats only
+records the vote.** The transfer is signed in the pool's own wallet; there is no endpoint that moves pool
+funds and no field that carries a key, a seed or an address. Every state change below appends a
+`treasury_topup` entry to the ledger chain, in the same transaction.
+
+```
+ proposed ──(N distinct approvers, never the proposer)──► approved ──(txid recorded)──► transferred ──(float rose)──► confirmed
+    │                                                         │
+    └──────────────── rejected | cancelled ◄──────────────────┘   (only before a transfer is recorded)
+```
+
+| status | meaning | UI |
+|---|---|---|
+| `proposed` | open for approval | Approve / Reject (not for the proposer), Cancel (proposer only) |
+| `approved` | `approvalsRequired` distinct stewards approved | "Sign the transfer in the pool wallet", then **record its txid** |
+| `transferred` | the txid is recorded, the funds are not yet seen | wait; **Check arrival** (the worker also checks every `payouts.sweep_cron`) |
+| `confirmed` | the hot-wallet balance showed the funds; waiting payouts were woken | done |
+| `rejected` / `cancelled` | the vote ended without a transfer | done |
+
+**`TopupView`** (every action returns `{ topup, changed }`; `changed: false` = it was already so, nothing written):
+
+```json
+{ "id": "…", "status": "approved", "amountSats": 50000, "note": "two weeks of payouts",
+  "createdAt": "…", "approvalsRequired": 2,
+  "proposedBy": { "id": "…", "name": "Wanjiru" },
+  "approvals": [ { "by": { "id": "…", "name": "Otieno" }, "at": "…" } ],
+  "floatBaselineSats": 4200,                 // hot-wallet float when the quorum was reached; null if it could not be read
+  "transfer": { "reference": "abc123…", "by": { "id": "…", "name": "…" }, "at": "…" },   // or null
+  "outcome": { "at": "…", "by": { "id": "…", "name": "…" } /* null = confirmed by the worker */, "reason": null } }  // or null
+```
+
+**`GET /treasury`** · scope `treasury:read`: one payload for the treasury panel:
+
+```json
+{ "hotWallet": { "available": 482000, "asOf": "…", "lowBalance": false, "error": null },
+  "cap": { "sats": 1000000, "headroomSats": 440000 },          // both null when no cap is set
+  "approvalsRequired": 2,
+  "inFlightSats": 78000,                                        // proposed + approved + transferred (counts against the cap)
+  "pendingTopups": [ …TopupView… ],                             // not yet confirmed, rejected or cancelled
+  "pendingPayouts": { "count": 3, "totalSats": 3100 },          // payouts waiting in pending_float
+  "pool": { "configured": false, "balanceSats": null } }        // a read-only pool balance is not built: show "not configured", never 0
+```
+
+If the hot wallet cannot be read the call is still `200`, with `hotWallet: { available: null, asOf: null, lowBalance: null, error: "float_unavailable" }` and `cap.headroomSats: null`.
+
+**`GET /treasury/topups`** · scope `treasury:read`: newest first. Query `status`, `cursor` (the previous `nextCursor`), `limit` 1-100 (default 50). `{ "topups": [ …TopupView… ], "nextCursor": … }`.
+**`GET /treasury/topups/:id`** · `treasury:read`: `{ "topup": TopupView }`, `404 not_found`.
+
+**`POST /treasury/topups`** · scope `treasury:propose`: `{ "id"?: uuid, "amountSats": 50000, "note"?: "≤ 500 chars" }` → `201 { topup, changed: true }`.
+
+- `amountSats` must be a positive whole number (`400 invalid_request` otherwise: 0, negative, fractional, a string, an extra field).
+- `id` is an optional client UUID: resending the same proposal returns `200 { changed: false }`; the same `id` with a different amount or proposer is `409 conflict`.
+- `422 hot_wallet_cap_exceeded` when `float + inFlightSats + amountSats > cap` (only when `treasury.hot_wallet_cap_sats > 0`); `503 float_unavailable` when a cap is set and the float cannot be read. Nothing is guessed.
+
+**`POST /treasury/topups/:id/signoff`** · scope `treasury:approve`: no body. Records the caller's approval.
+`403 self_approval` for the proposer · `409 invalid_state` for a cancelled, rejected or already-approved proposal ·
+a resend by the same steward is `200 { changed: false }` and counts once. The approval that completes the quorum
+moves the status to `approved` and notes the hot-wallet float (the baseline arrival is judged against).
+
+**`POST /treasury/topups/:id/transfer`** · scope `treasury:propose`: `{ "reference": "<txid or other reference>" }` (1-200 printable characters,
+no spaces; stored lower-case). Only on an `approved` proposal (`409 invalid_state` otherwise). The same reference again is
+`200 { changed: false }`; a different reference on the same proposal, or one already used by another proposal, is `409 conflict`.
+`503 float_unavailable` if no baseline was taken at quorum and the float cannot be read now.
+
+**`POST /treasury/topups/:id/confirm`** · scope `treasury:approve`: no body. Checks the hot-wallet balance:
+`200 { topup, changed, arrived }`. `arrived: false` is **not** an error (the funds have not shown up; nothing changed). The proposal is
+confirmed only when `float + sats paid out since the baseline ≥ baseline + amount`; a person's say-so is never enough. On confirmation
+the payouts parked in `pending_float` are woken at once. `409 invalid_state` unless `transferred`; `503 float_unavailable`.
+
+**`POST /treasury/topups/:id/cancel`** · scope `treasury:propose`: optional `{ "reason" }`. The proposer withdraws their own proposal (`403` for anyone else). Only before a transfer is recorded.
+**`POST /treasury/topups/:id/reject`** · scope `treasury:approve`: optional `{ "reason" }`. Another steward refuses it (a single veto; `403 self_approval` for the proposer). Only before a transfer is recorded.
+Both are idempotent and return `409 invalid_state` once a transfer is recorded or the vote has otherwise ended.
+
 ### 5.4 Ledger ✅ (admin only)
 
 All need `ledger:read`. Rows carry only ids, hashes and timestamps — never collector PII.
@@ -529,7 +613,7 @@ All need `ledger:read`. Rows carry only ids, hashes and timestamps — never col
 ```
 
 `entryType` ∈ `collection_event` · `payout` · `correction` · `treasury_topup` · `rate_change` · `tag_revocation` ·
-`collector_authorization`. `prevEntryHash` is `null` only at `seq` 1.
+`collector_authorization` · `recycler_sale`. A funding vote writes one `treasury_topup` entry per state change (proposed, each approval, transfer recorded, confirmed, rejected, cancelled). `prevEntryHash` is `null` only at `seq` 1.
 
 **`GET /ledger/checkpoints`** — signed anchors, newest first. `cursor=<throughSeq>`, `limit`.
 `{ "checkpoints": [{ id, throughSeq, entryHash, signature, nostrEventId, opentimestamps, createdAt }], "nextCursor", "publicKey": "<base64 Ed25519>" | null }`
@@ -727,6 +811,7 @@ The **worker** (`pnpm worker`, pg-boss) runs these; the UI never calls them, but
 | anomaly detectors (inline, right after a sync confirms an event) | new flags in `GET /anomalies`; `openFlags` on events and payouts (§5.8, §5.9) |
 | `provision-collector-wallet` | custodial path only (off by default, gate G1) |
 | `process-payout` / `sweep-payouts` | a payout moves through its states (§3.5); the sweep (every 5 min) resumes anything parked — a stale rate, a missing wallet, a low float |
+| `confirm-treasury-topups` | a `transferred` funding proposal becomes `confirmed` once the hot-wallet balance shows the funds (same cadence as the sweep); waiting payouts are then woken (§5.3.1) |
 
 ---
 
@@ -754,12 +839,25 @@ no real sats are sent" banner. Fetch it once on load; it does not change while t
 | `programme.public_base_url` | base of `reference.url` |
 | `programme.fiat_currency`, `locales`, `default_locale` | currency and language options |
 | `lightning.provider_hints` | which wallet labels exist |
+| `treasury.topup_approvals_required` / `treasury.hot_wallet_cap_sats` | the same values arrive on `GET /treasury` (`approvalsRequired`, `cap`); read them there, not from `/meta` |
 
 ---
 
 ## 8. Changelog for the frontend
 
 Newest first. Anything here may need a UI change.
+
+**2026-10-01 (treasury): the pool→hot-wallet funding vote (M5-7)**
+- **New endpoints:** `GET /treasury`, `GET`/`POST /treasury/topups`, `GET /treasury/topups/:id`,
+  `POST /treasury/topups/:id/{signoff,transfer,cancel,reject,confirm}` (§5.3.1). `GET /treasury/float` is unchanged.
+- **New scopes** `treasury:read`, `treasury:propose`, `treasury:approve`, **admin only** (a `hub_lead` has none).
+- **New state enum** `TopupStatus`: `proposed` · `approved` · `transferred` · `confirmed` · `rejected` · `cancelled`.
+- **New error codes:** `422 hot_wallet_cap_exceeded` (with `details.capSats` / `headroomSats`). Existing codes reused:
+  `403 self_approval` (now also for a proposer), `409 invalid_state`, `409 conflict`, `503 float_unavailable`.
+- **New config:** `[treasury] topup_approvals_required` (default 2, never counting the proposer) and `hot_wallet_cap_sats` (default `0` = no cap).
+- **Behaviour:** `treasury_topup` ledger entries now appear in `GET /ledger`; a confirmed refill wakes payouts parked in `pending_float`.
+- **UI to build:** a steward panel (float, cap and headroom, pending proposals with approve / reject / cancel, "record the transfer txid",
+  "check arrival"), and a "waiting for funds" count from `pendingPayouts`. Show the pool as **not configured**, never as zero.
 
 **2026-10-01 (reconciliation) — anomalies, recycler sales, reconciliation, events list, public summary**
 - **New endpoints:** `GET /events`, `GET /anomalies`, `POST /anomalies/:id/review`, `POST`/`GET /recycler-sales`,
@@ -837,7 +935,7 @@ Newest first. Anything here may need a UI change.
 6. Scale-photo capture guidance (waste + scale + display in frame) for the verification slice.
 7. A public `/c/<code>` landing page (optional; must reveal nothing).
 
-**Known gaps (backend):** an admin tool to resolve a payout stuck in `sending` (📋), OCR/AI verification of the scale
+**Known gaps (backend):** a read-only balance view of the multisig pool (📋; `GET /treasury` reports `pool.configured: false`), an admin tool to resolve a payout stuck in `sending` (📋), OCR/AI verification of the scale
 photo (📋), Nostr/OpenTimestamps anchoring (📋), a scheduled (periodic) reconciliation run and hub_lead read access to reconciliation (📋), a minimum-n suppression on the public summary (📋). The real Blink/LNbits `pay()` has never been exercised against a
 live account — `docs/PILOT.md §6` makes the first real payment a deliberate, tiny, supervised step.
 

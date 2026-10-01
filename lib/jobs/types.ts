@@ -13,6 +13,7 @@ export const JOB_CREATE_LEDGER_CHECKPOINT = 'create-ledger-checkpoint';
 export const JOB_VALIDATE_COLLECTOR_DESTINATION = 'validate-collector-destination';
 export const JOB_PROCESS_PAYOUT = 'process-payout';
 export const JOB_SWEEP_PAYOUTS = 'sweep-payouts';
+export const JOB_CONFIRM_TREASURY_TOPUPS = 'confirm-treasury-topups';
 
 /** Every job queue the app knows about — created on boss start (pg-boss ≥10 needs this). */
 export const JOB_QUEUES = [
@@ -22,6 +23,7 @@ export const JOB_QUEUES = [
   JOB_VALIDATE_COLLECTOR_DESTINATION,
   JOB_PROCESS_PAYOUT,
   JOB_SWEEP_PAYOUTS,
+  JOB_CONFIRM_TREASURY_TOPUPS,
 ] as const;
 
 export const provisionCollectorWalletPayloadSchema = z.object({

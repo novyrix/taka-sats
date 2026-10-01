@@ -17,7 +17,7 @@ row; the ledger carries a hash that commits to them.
 |---|---|
 | `id` | UUID. For a collection event it is the **client-generated** UUID the supervisor's phone minted offline. |
 | `seq` | Server-assigned, starts at 1, +1 per entry, no gaps. The order is **server ingestion order**, not device clock. |
-| `entry_type` | `collection_event`, `payout`, `correction`, `treasury_topup`, `rate_change`, `tag_revocation` (and any later type listed in `lib/ledger/index.ts`). |
+| `entry_type` | `collection_event`, `payout`, `correction`, `treasury_topup`, `rate_change`, `tag_revocation` (and any later type listed in `lib/ledger/index.ts`). A `treasury_topup` is one step of the pool-to-hot-wallet funding vote (proposed, an approval, transfer recorded, confirmed, rejected or cancelled); its hashed payload names the `event`, the proposal id and the steward, never a key or an address. |
 | `payload_hash` | SHA-256 (hex) of the canonical JSON of the fact. For an offline collection event this is the phone's own `content_hash`, computed before the event ever reached us. |
 | `prev_entry_hash` | The previous row's `entry_hash`; `NULL` at `seq = 1`. |
 | `entry_hash` | The link, defined below. |

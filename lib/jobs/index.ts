@@ -3,12 +3,14 @@
 /** The background job queue (D-10). Handlers run in `worker/`; the app only enqueues. */
 
 export {
+  enqueueConfirmTreasuryTopups,
   enqueueCreateLedgerCheckpoint,
   enqueueProcessPayout,
   enqueueProcessPayoutSafely,
   enqueueProvisionCollectorWallet,
   enqueueRefreshExchangeRate,
   enqueueSweepPayouts,
+  enqueueSweepPayoutsSafely,
   enqueueValidateCollectorDestination,
   getBoss,
   stopBoss,
@@ -18,10 +20,12 @@ export {
   provisionCollectorWallet,
   type CollectorWalletProvisioner,
 } from './provisionCollectorWallet';
+export { confirmTreasuryTopups } from './confirmTreasuryTopups';
 export { createLedgerCheckpoint } from './createLedgerCheckpoint';
 export { enqueuePayoutsAwaitingDestination, processPayoutJob, sweepPayouts } from './processPayout';
 export { refreshExchangeRate } from './refreshExchangeRate';
 export {
+  JOB_CONFIRM_TREASURY_TOPUPS,
   JOB_CREATE_LEDGER_CHECKPOINT,
   JOB_PROCESS_PAYOUT,
   JOB_PROVISION_COLLECTOR_WALLET,

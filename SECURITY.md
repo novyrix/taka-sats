@@ -49,6 +49,7 @@ one of them must say so (see "Notes" below).
 | Ledger checkpoints are Ed25519-signed with an environment-only key (never returned or logged); the whole ledger is `admin`-read-only    | `lib/ledger/{signing,checkpoints}.ts`, `LEDGER_SIGNING_KEY`; scope `ledger:read`                                                 |
 | Above-threshold payouts (and a destination's first payout) require a second, distinct approver; self-approval is refused                | `lib/payouts/process.ts` (`approvePayout`, `processPayout`), scope `payout:approve`                                              |
 | A payout is never sent twice; an unknown outcome is flagged for a human, never retried automatically                                    | `lib/payouts/process.ts` (conditional-UPDATE claim before `pay`, `payout_uncertain`), UNIQUE `payouts.collection_event_id`       |
+| A hot-wallet top-up needs a vote: a proposer never approves their own, each approver counts once; no pool key is held                   | `lib/treasury/`; trigger `treasury_topup_signoff_guard` + UNIQUE (topup, approver), migration 0011; scopes `treasury:*` (admin)  |
 | A payout will not run against an exchange rate older than the configured TTL                                                            | `lib/payouts/process.ts` (`requireFreshRate`), `lib/money.ts` (`computePayoutDetail` re-checks)                                  |
 | Secrets (DB URL, provider keys, `AUTH_SECRET`, Nostr key) live in the environment only — never in `config/*.toml`, client code, or logs | `lib/config/` (schema rejects them), structured-logging allow-list                                                               |
 | `partner` / `public:read` responses carry no collector PII or individual payout amounts                                                 | central response serialiser (M7-4) + contract tests (M7-12)                                                                      |
@@ -59,6 +60,22 @@ one of them must say so (see "Notes" below).
 
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
+
+- 2026-10-01: The treasury funding vote (M5-7, ADR-0020, migration 0011). Adds three scopes,
+  `treasury:read`, `treasury:propose` and `treasury:approve`, held by `admin` only (matrix test
+  updated; `hub_lead` deliberately holds none, so nobody who vets collectors also approves the money
+  that pays them). `payout:execute` is still in no role and nothing here pays a collector. Preserves:
+  **Taka Sats holds no pool key and moves no pool funds**; the vote is a record plus checks around a
+  transfer signed in the pool's own wallet, and no request field carries an address or a key.
+  Separation of duties is enforced in code and by a database trigger (the proposer cannot approve or
+  reject their own proposal; an approval counts once; only a `proposed` proposal takes approvals;
+  approvals can never be updated or deleted). One transfer reference can back one proposal (UNIQUE).
+  A proposal that would take the hot wallet above `treasury.hot_wallet_cap_sats` is refused, and if the
+  float cannot be read while a cap is set the proposal is refused too (nothing is guessed). Arrival is
+  confirmed only from the rail's own balance, never from a caller's claim. Every step appends a
+  `treasury_topup` ledger entry in the same transaction. Residual: one person holding two admin
+  accounts defeats the distinct approver rule, and nothing yet links a recorded approval
+  cryptographically to the pool wallet's signatures (compare the recorded transfer reference).
 
 - 2026-10-01 — Vercel-to-VM same-origin API forwarding: the optional
   `TAKASATS_API_ORIGIN` build setting forwards only `/api/*` with a `beforeFiles` rewrite. It is

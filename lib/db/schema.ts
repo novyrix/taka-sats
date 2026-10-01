@@ -7,7 +7,7 @@
  *   - M1: `collectors`, `tag_history` (this file, so far)
  *   - M2: `supervisors`, `sessions`, `material_rates`, `partners`, …
  *   - M4: `ledger_entries` (+ DB-level UPDATE/DELETE revoked), `ledger_checkpoints`
- *   - M5: `payouts`, `treasury_snapshots`, `treasury_topups`
+ *   - M5: `payouts`, `treasury_snapshots`, `treasury_topups` (+ `treasury_topup_signoffs`)
  *
  * Conventions (Code Style Guide §8): `snake_case` columns; money as `bigint`
  * (sats) or `numeric` (weights, fiat minor units), never `float`/`double`;
@@ -29,6 +29,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -602,6 +603,103 @@ export const payouts = pgTable(
     index('payouts_status_idx').on(table.status),
     index('payouts_collector_idx').on(table.collectorId),
   ],
+);
+
+// ── TREASURY FUNDING VOTE (M5-7, ADR-0020) ───────────────────────────────
+
+/**
+ * A proposal to refill the capped hot wallet from the multisig pool. Taka Sats only RECORDS
+ * the vote: the transfer itself is signed in the pool's own wallet, and no key or pool
+ * balance is held here. Lifecycle (see `lib/treasury`):
+ *
+ *   proposed ─(quorum of distinct approvers)─► approved ─(txid recorded)─► transferred ─(float rose)─► confirmed
+ *       └──────────► rejected | cancelled (before a transfer is recorded)
+ *
+ * Every state change is anchored by a `treasury_topup` ledger entry. `approvals_required` is
+ * snapshotted at proposal time so a later config change cannot weaken a vote in flight.
+ */
+export const treasuryTopups = pgTable(
+  'treasury_topups',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    /** The proposal's ledger entry. */
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    amountSats: bigint('amount_sats', { mode: 'number' }).notNull(),
+    /** Free text for the stewards (a period, a reason). Never a key or an address. */
+    note: text('note'),
+    /** 'proposed' | 'approved' | 'transferred' | 'confirmed' | 'rejected' | 'cancelled'. */
+    status: text('status').notNull().default('proposed'),
+    proposedBy: uuid('proposed_by')
+      .notNull()
+      .references(() => supervisors.id),
+    /** Distinct approvers needed (never including the proposer); snapshot of `treasury.topup_approvals_required`. */
+    approvalsRequired: integer('approvals_required').notNull(),
+    /** The hot-wallet float when quorum was reached, and when: the baseline arrival is judged against. */
+    floatBaselineSats: bigint('float_baseline_sats', { mode: 'number' }),
+    floatBaselineAt: timestamp('float_baseline_at', { withTimezone: true }),
+    /**
+     * The pool transfer's txid or other reference, as entered by a steward after signing, trimmed
+     * and lower-cased. UNIQUE: one transfer can never be claimed as the funding of two proposals.
+     */
+    transferReference: text('transfer_reference').unique(),
+    transferredBy: uuid('transferred_by').references(() => supervisors.id),
+    transferredAt: timestamp('transferred_at', { withTimezone: true }),
+    transferLedgerEntryId: uuid('transfer_ledger_entry_id')
+      .unique()
+      .references(() => ledgerEntries.id),
+    /** The end of the vote: confirmed, rejected or cancelled. `outcome_by` is NULL when the worker confirmed. */
+    outcomeAt: timestamp('outcome_at', { withTimezone: true }),
+    outcomeBy: uuid('outcome_by').references(() => supervisors.id),
+    outcomeReason: text('outcome_reason'),
+    outcomeLedgerEntryId: uuid('outcome_ledger_entry_id')
+      .unique()
+      .references(() => ledgerEntries.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      'treasury_topups_status_check',
+      sql`${table.status} in ('proposed', 'approved', 'transferred', 'confirmed', 'rejected', 'cancelled')`,
+    ),
+    check('treasury_topups_amount_check', sql`${table.amountSats} > 0`),
+    check('treasury_topups_approvals_check', sql`${table.approvalsRequired} >= 1`),
+    check(
+      'treasury_topups_transfer_check',
+      sql`(${table.status} in ('transferred', 'confirmed')) = (${table.transferReference} is not null and ${table.transferLedgerEntryId} is not null)`,
+    ),
+    check(
+      'treasury_topups_outcome_check',
+      sql`(${table.status} in ('confirmed', 'rejected', 'cancelled')) = (${table.outcomeAt} is not null and ${table.outcomeLedgerEntryId} is not null)`,
+    ),
+    index('treasury_topups_status_idx').on(table.status),
+  ],
+);
+
+/**
+ * One steward's approval of one proposal. UNIQUE (topup, approver) makes an approval count once;
+ * a database trigger (migration 0011) refuses the proposer as an approver and makes the rows
+ * immutable, so the record of who agreed cannot be edited after the fact.
+ */
+export const treasuryTopupSignoffs = pgTable(
+  'treasury_topup_signoffs',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    topupId: uuid('topup_id')
+      .notNull()
+      .references(() => treasuryTopups.id),
+    supervisorId: uuid('supervisor_id')
+      .notNull()
+      .references(() => supervisors.id),
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    approvedAt: timestamp('approved_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [unique('treasury_topup_signoffs_once').on(table.topupId, table.supervisorId)],
 );
 
 // ── RECONCILIATION (M6, FR-3.5) ──────────────────────────────────────────

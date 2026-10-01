@@ -120,6 +120,16 @@ const payoutsSchema = z.object({
   max_attempts: z.int().positive(),
 });
 
+const treasurySchema = z.object({
+  /**
+   * Distinct stewards who must approve a funding proposal. The proposer never counts, so a
+   * programme needs at least this many OTHER treasury stewards (ADR-0020).
+   */
+  topup_approvals_required: z.int().min(1).max(10),
+  /** Ceiling on the hot-wallet float in sats, counting funding already in flight. 0 = no cap. */
+  hot_wallet_cap_sats: z.int().nonnegative(),
+});
+
 const reconciliationSchema = z.object({
   variance_tolerance_pct: z.number().min(0).max(100),
 });
@@ -166,6 +176,7 @@ export const settingsSchema = z
     money: moneySchema,
     rates: ratesSchema,
     payouts: payoutsSchema,
+    treasury: treasurySchema,
     reconciliation: reconciliationSchema,
     anomaly: anomalySchema,
     scheduling: schedulingSchema,

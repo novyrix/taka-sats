@@ -13,6 +13,11 @@
  * server-side from the tapped tag's mapping and is never client input. The
  * companion test fails the build if this invariant is broken.
  *
+ * Treasury stewards (ADR-0020): the funding-vote scopes (`treasury:*`) are held by `admin` only.
+ * `hub_lead` is a field-side role (authorizes collectors, approves payouts), so it deliberately
+ * cannot also approve the money that pays for those payouts. Approving your own proposal is
+ * refused in `lib/treasury` and by a database trigger, whatever the role.
+ *
  * Zero framework imports (D-04).
  */
 
@@ -31,7 +36,10 @@ export const SCOPES = [
   'payout:read', // read payouts (a plain supervisor: only those of events they recorded — scoped in the handler)
   'payout:approve', // approve an above-threshold payout that is not your own submission
   'payout:execute', // execute/direct a payout — SYSTEM ONLY, in no role
-  'treasury:topup:initiate', // initiate a cold→hot top-up (still needs a 2nd sign-off)
+  'treasury:topup:initiate', // read the hot-wallet float (`GET /treasury/float`); the funding vote itself uses the three scopes below
+  'treasury:read', // read the treasury view and funding proposals (steward-facing; no keys, no addresses)
+  'treasury:propose', // propose a pool→hot-wallet refill, cancel your own proposal, record the transfer reference after signing in the pool wallet
+  'treasury:approve', // approve or reject a refill proposed by someone else, and check that the funds arrived (ADR-0020)
   'anomaly:review', // review/resolve anomaly flags
   'reconciliation:write', // enter recycler sales and run reconciliation reports (admin; §10.2)
   'session:metrics:read:own', // live metrics for your own sessions
@@ -74,6 +82,9 @@ export const ROLE_SCOPES: Readonly<Record<Role, readonly Scope[]>> = Object.free
     'payout:read',
     'payout:approve',
     'treasury:topup:initiate',
+    'treasury:read',
+    'treasury:propose',
+    'treasury:approve',
     'anomaly:review',
     'reconciliation:write',
     'session:metrics:read:all',

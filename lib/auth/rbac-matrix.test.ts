@@ -29,6 +29,9 @@ const EXPECTED: Record<Scope, Row> = {
   'payout:approve': row({ hub_lead: true, admin: true }),
   'payout:execute': row({}), // ← NO human role. Ever.
   'treasury:topup:initiate': row({ admin: true }),
+  'treasury:read': row({ admin: true }),
+  'treasury:propose': row({ admin: true }),
+  'treasury:approve': row({ admin: true }),
   'anomaly:review': row({ admin: true }),
   'reconciliation:write': row({ admin: true }),
   'session:metrics:read:own': row({ supervisor: true, hub_lead: true }),
@@ -54,6 +57,12 @@ describe('RBAC matrix — every (role, scope) cell matches REQUIREMENTS §3.2', 
   it('no human role can reach a payout-execution path (Code Style Guide §9.4)', () => {
     for (const role of ROLES) {
       expect(roleHasScope(role, 'payout:execute')).toBe(false);
+    }
+  });
+
+  it('only an admin steward can propose, approve or read a treasury funding vote (ADR-0020)', () => {
+    for (const scope of ['treasury:read', 'treasury:propose', 'treasury:approve'] as const) {
+      expect(ROLES.filter((role) => roleHasScope(role, scope))).toEqual(['admin']);
     }
   });
 });

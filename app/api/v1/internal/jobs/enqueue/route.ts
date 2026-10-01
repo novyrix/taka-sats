@@ -3,6 +3,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
 import {
+  enqueueConfirmTreasuryTopups,
   enqueueCreateLedgerCheckpoint,
   enqueueRefreshExchangeRate,
   enqueueSweepPayouts,
@@ -40,6 +41,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     enqueued.push('create-ledger-checkpoint');
     await enqueueSweepPayouts();
     enqueued.push('sweep-payouts');
+    await enqueueConfirmTreasuryTopups();
+    enqueued.push('confirm-treasury-topups');
   } catch (error) {
     console.error('[cron] enqueue failed', error instanceof Error ? error.name : typeof error);
     return NextResponse.json({ error: 'enqueue_failed' }, { status: 502 });

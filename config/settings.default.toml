@@ -93,6 +93,11 @@ sweep_cron                    = "*/5 * * * *" # how often the worker re-tries pa
 sending_stale_minutes         = 10       # a payout stuck in 'sending' this long is flagged payout_uncertain for an admin — it is NEVER re-sent automatically
 max_attempts                  = 8        # process-payout job retries (backoff) before the job gives up; the payout stays parked for the sweeper
 
+[treasury]
+# The pool-to-hot-wallet funding vote (ADR-0020). Taka Sats only records the vote; the transfer is signed in the pool's own wallet.
+topup_approvals_required = 2             # distinct stewards who must approve a refill, never counting the proposer (so 2 needs 3 stewards in all)
+hot_wallet_cap_sats      = 0             # a proposal that would take the hot wallet above this (float + funding in flight + amount) is refused. 0 = no cap
+
 [reconciliation]
 variance_tolerance_pct = 5               # paid-kg vs sold-kg variance above this is flagged (FR-3.5)
 

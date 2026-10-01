@@ -521,16 +521,28 @@ treasury_snapshots (
   pending_payouts_sats BIGINT NOT NULL
 )
 
-treasury_topups (                                -- NEW (FR-7.2)
-  id               UUID PRIMARY KEY,
-  ledger_entry_id  UUID UNIQUE REFERENCES ledger_entries(id),
-  amount_sats      BIGINT NOT NULL,
-  initiated_by     UUID NOT NULL REFERENCES supervisors(id),
-  second_signoff_by UUID REFERENCES supervisors(id),
-  status           TEXT NOT NULL,                -- pending_signoff | broadcast | confirmed | failed
-  onchain_txid     TEXT,
-  created_at       TIMESTAMPTZ NOT NULL,
-  confirmed_at     TIMESTAMPTZ
+treasury_topups (                                -- NEW (FR-7.2, D-28, ADR-0020; migration 0011)
+  id                UUID PRIMARY KEY,
+  ledger_entry_id   UUID UNIQUE NOT NULL REFERENCES ledger_entries(id),   -- the proposal
+  amount_sats       BIGINT NOT NULL CHECK (amount_sats > 0),
+  note              TEXT,
+  status            TEXT NOT NULL,               -- proposed | approved | transferred | confirmed | rejected | cancelled
+  proposed_by       UUID NOT NULL REFERENCES supervisors(id),
+  approvals_required INT NOT NULL,               -- snapshot of treasury.topup_approvals_required
+  float_baseline_sats BIGINT, float_baseline_at TIMESTAMPTZ,   -- hot-wallet float when the quorum was reached
+  transfer_reference TEXT UNIQUE,                -- the pool transfer's txid or reference (one transfer, one proposal)
+  transferred_by UUID, transferred_at TIMESTAMPTZ, transfer_ledger_entry_id UUID UNIQUE,
+  outcome_at TIMESTAMPTZ, outcome_by UUID, outcome_reason TEXT, outcome_ledger_entry_id UUID UNIQUE,  -- confirmed | rejected | cancelled
+  created_at        TIMESTAMPTZ NOT NULL
+)
+
+treasury_topup_signoffs (                        -- NEW (M5-7): one steward's approval; append-only
+  id UUID PRIMARY KEY,
+  topup_id UUID NOT NULL REFERENCES treasury_topups(id),
+  supervisor_id UUID NOT NULL REFERENCES supervisors(id),   -- trigger: never the proposer
+  ledger_entry_id UUID UNIQUE NOT NULL REFERENCES ledger_entries(id),
+  approved_at TIMESTAMPTZ NOT NULL,
+  UNIQUE (topup_id, supervisor_id)
 )
 
 exchange_rate_snapshots (                        -- NEW (US-7.3, D-18)
@@ -642,7 +654,7 @@ D-01 makes this a product. All routes are Zod-validated, versioned, and document
 | **Rates** | `GET /rates`, `POST /rates` (new version), `GET /rates/history` | `admin` (write), `supervisor` (read) |
 | **Collection events** | `GET /events`, `GET /events/:id`, `POST /events/:id/verify` (pending_self_serve → verified) | `supervisor`/`admin` |
 | **Payouts** | `GET /payouts`, `POST /payouts/:id/approve` (second sign-off) | `hub_lead`/`admin`. **No execute endpoint exists** (Code Style Guide §9.3). |
-| **Treasury** | `GET /treasury`, `POST /treasury/topups`, `POST /treasury/topups/:id/signoff` | `admin` (both signers distinct) |
+| **Treasury** | `GET /treasury`, `GET`/`POST /treasury/topups`, `GET /treasury/topups/:id`, `POST /treasury/topups/:id/{signoff,transfer,cancel,reject,confirm}` (the funding vote, ADR-0020; detail in `docs/BACKEND.md` §5.3) | `admin` (`treasury:read` / `treasury:propose` / `treasury:approve`; approvers are distinct and never the proposer) |
 | **Reconciliation** | `GET /reconciliation`, `POST /recycler-sales` | `admin` |
 | **Anomalies** | `GET /anomalies`, `POST /anomalies/:id/review` | `admin` |
 | **Reports** | `POST /reports` (partner/funder, aggregate, branded), `GET /reports/:id` | `admin`, `partner` (own scope) |
@@ -782,6 +794,10 @@ seed = [
 second_signoff_threshold_sats = 50000   # above this, a distinct approver is required (FR-3.2)
 float_low_balance_alert_sats  = 200000   # worker alerts admin below this (FR-7.2)
 auto_topup_enabled            = false
+
+[treasury]
+topup_approvals_required = 2             # distinct stewards who approve a pool-to-hot-wallet refill; never counting the proposer (D-28)
+hot_wallet_cap_sats      = 0             # a proposal that would take the hot wallet above this (float + funding in flight + amount) is refused; 0 = no cap
 
 [reconciliation]
 variance_tolerance_pct = 5              # above this, the report is flagged (FR-3.5)
