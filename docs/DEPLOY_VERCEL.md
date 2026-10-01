@@ -2,6 +2,18 @@
 
 The Vercel path runs the same Next.js project as Docker Compose. Neon supplies PostgreSQL and Cloudflare R2 supplies object storage when those features land.
 
+## Frontend on Vercel, backend on the VM
+
+The canonical site can remain on Vercel while its stateful routes run on the self-hosted stack.
+Set `TAKASATS_API_ORIGIN=https://taka.novyrix.com` in the Vercel Production environment. At build
+time, `next.config.ts` installs a `beforeFiles` rewrite for `/api/:path*`, including Auth.js. The
+browser therefore sees one origin (`taka.afribit.africa`), so cookies, photo uploads and sync calls
+remain same-origin. Leave this variable unset on the VM; setting it there would create a proxy loop.
+
+The backend's public base URL should be the canonical browser origin when this becomes the permanent
+production topology. Verify `/api/v1/health`, the CSRF endpoint, credential sign-in, session cookies,
+photo upload and sync through the canonical domain after every routing change.
+
 ## Link and deploy
 
 ```powershell
@@ -28,8 +40,9 @@ Configure values in the Vercel project rather than committing them:
 | Name | Purpose | Availability |
 |---|---|---|
 | `CRON_SECRET` | Authenticates Vercel Cron requests | configured in production |
-| `DATABASE_URL` | Neon pooled PostgreSQL connection | required — `lib/db/`, M1's collectors tables |
-| `AUTH_SECRET` | Auth.js JWT signing secret (`openssl rand -base64 32`) | required — supervisor login (M2-1) |
+| `TAKASATS_API_ORIGIN` | Optional stateful API/Auth.js origin for a Vercel frontend-only deployment | `https://taka.novyrix.com` in production |
+| `DATABASE_URL` | Neon pooled PostgreSQL connection | required only when Vercel runs API routes; not read in the split VM topology |
+| `AUTH_SECRET` | Auth.js JWT signing secret (`openssl rand -base64 32`) | required only when Vercel runs Auth.js; kept on the VM in the split topology |
 | `BLINK_API_KEY` / `LNBITS_ADMIN_KEY` | Lightning provider secret matching `lightning.float_provider` | required once M5 executes payouts |
 | `LEDGER_SIGNING_KEY` | Base64 Ed25519 seed that signs ledger checkpoints (`openssl rand -base64 32`) | secret — required for the checkpoint job (M4-7), see `docs/LEDGER.md` |
 | `S3_ENDPOINT` | Cloudflare R2 S3 endpoint | required when object uploads land |

@@ -60,6 +60,12 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-01 — Vercel-to-VM same-origin API forwarding: the optional
+  `TAKASATS_API_ORIGIN` build setting forwards only `/api/*` with a `beforeFiles` rewrite. It is
+  unset on the VM to prevent a proxy loop. Authentication, authorization and request validation
+  still execute on the VM; the Vercel layer does not mint or interpret sessions. Deploy checks
+  cover CSRF, `Set-Cookie`, authenticated session reads and upload limits through the public origin.
+
 - 2026-10-01 — Reconciliation, anomaly detection and the review/read APIs (ROADMAP M6-1..5).
   Adds ONE scope, `reconciliation:write` (admin only; matrix test updated), guarding `POST
 /recycler-sales` and `POST /reconciliation/runs`; the reads reuse `report:generate:all`
