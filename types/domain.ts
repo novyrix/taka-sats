@@ -18,6 +18,13 @@ export type ClientUuid = string & { readonly __brand: 'ClientUuid' };
 /** `tap` = NFC/looked-up collector; `walk_in` = no tag yet; `pending_self_serve` = review. */
 export type RegistrationType = 'tap' | 'walk_in' | 'pending_self_serve';
 
+/**
+ * How the kilograms were captured (D-27, ADR-0019) — signed into the content hash.
+ * OCR agreement is NOT a source; it is a later, derived verification result.
+ */
+export const WEIGHT_SOURCES = ['manual', 'ble_scale', 'serial_scale', 'industrial_scale'] as const;
+export type WeightSource = (typeof WEIGHT_SOURCES)[number];
+
 /** GPS fix, or an explicit recorded reason it is missing (US-2.3). */
 export type GeoFix =
   | { readonly kind: 'fix'; readonly lat: number; readonly lng: number; readonly accuracyM: number }
@@ -42,6 +49,12 @@ export type CollectionEventDraft = {
   readonly photoSha256: string;
   readonly geo: GeoFix;
   readonly registrationType: RegistrationType;
+  /** How the weight was captured. Defaults to `manual` at assembly. */
+  readonly weightSource?: WeightSource;
+  /** The connected scale that produced the reading, when there is one. */
+  readonly scaleId?: string;
+  /** The scale's raw reading string, kept verbatim for audit. */
+  readonly scaleReadingRaw?: string;
 };
 
 /**
@@ -51,6 +64,8 @@ export type CollectionEventDraft = {
  */
 export type CollectionEvent = CollectionEventDraft & {
   readonly id: ClientUuid;
+  /** Always set after assembly (`manual` unless a scale supplied the reading). */
+  readonly weightSource: WeightSource;
   /** Device-local capture time (honest about the clock — server orders by ingestion). */
   readonly recordedAt: Iso8601;
   /** `rateFiatMinor × weightKg`, converted at `exchangeRate`. Display only — the
@@ -74,6 +89,8 @@ export type SyncStatus =
 export type CachedCollector = {
   readonly id: string;
   readonly alias: string;
+  /** `TS-KBR-0042` (D-24) — searchable offline. Absent in a cache primed before it existed. */
+  readonly publicCode?: string;
   readonly nfcTagId: string | null;
   readonly status: string;
 };

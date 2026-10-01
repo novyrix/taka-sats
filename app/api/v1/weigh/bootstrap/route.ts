@@ -57,6 +57,7 @@ export async function GET(): Promise<NextResponse> {
       collectors: collectors.map((c) => ({
         id: c.id,
         alias: c.alias,
+        publicCode: c.publicCode,
         nfcTagId: c.nfcTagId,
         status: c.status,
       })),

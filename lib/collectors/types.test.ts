@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from 'vitest';
 import {
-  attachByoAddressInputSchema,
+  attachDestinationInputSchema,
+  authorizationDecisionSchema,
   enrolCollectorInputSchema,
   reissueTagInputSchema,
 } from './types';
@@ -29,17 +30,37 @@ describe('enrolCollectorInputSchema', () => {
   });
 });
 
-describe('attachByoAddressInputSchema', () => {
+describe('attachDestinationInputSchema', () => {
   it('requires a UUID collectorId and a non-empty rawCode', () => {
     expect(() =>
-      attachByoAddressInputSchema.parse({ collectorId: 'not-a-uuid', rawCode: 'a@b.co' }),
+      attachDestinationInputSchema.parse({ collectorId: 'not-a-uuid', rawCode: 'a@b.co' }),
     ).toThrow();
     expect(() =>
-      attachByoAddressInputSchema.parse({
+      attachDestinationInputSchema.parse({
         collectorId: '00000000-0000-0000-0000-000000000000',
         rawCode: '',
       }),
     ).toThrow();
+  });
+});
+
+describe('enrolCollectorInputSchema — siteCode', () => {
+  it('upper-cases and accepts a 2-6 letter site code', () => {
+    expect(enrolCollectorInputSchema.parse({ alias: 'A', siteCode: 'kbr' }).siteCode).toBe('KBR');
+  });
+
+  it('rejects a site code that is not 2-6 letters', () => {
+    for (const siteCode of ['K', 'KIBERAAA', 'K8R', 'K-R']) {
+      expect(() => enrolCollectorInputSchema.parse({ alias: 'A', siteCode })).toThrow();
+    }
+  });
+});
+
+describe('authorizationDecisionSchema', () => {
+  it('accepts only authorize | revoke', () => {
+    expect(authorizationDecisionSchema.parse('authorize')).toBe('authorize');
+    expect(authorizationDecisionSchema.parse('revoke')).toBe('revoke');
+    expect(() => authorizationDecisionSchema.parse('approve')).toThrow();
   });
 });
 

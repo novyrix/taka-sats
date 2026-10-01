@@ -18,22 +18,26 @@ const row = (over: Partial<Row>): Row => ({ ...F, ...over });
 
 const EXPECTED: Record<Scope, Row> = {
   'collector:enrol': row({ supervisor: true, hub_lead: true, admin: true }),
+  'collector:authorize': row({ hub_lead: true, admin: true }),
   'collector:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'collection:record': row({ supervisor: true, hub_lead: true, admin: true }),
   'rates:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'session:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'tag:revoke': row({ admin: true }),
   'session:configure': row({ admin: true }),
+  'payout:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'payout:approve': row({ hub_lead: true, admin: true }),
   'payout:execute': row({}), // ← NO human role. Ever.
   'treasury:topup:initiate': row({ admin: true }),
   'anomaly:review': row({ admin: true }),
+  'reconciliation:write': row({ admin: true }),
   'session:metrics:read:own': row({ supervisor: true, hub_lead: true }),
   'session:metrics:read:all': row({ admin: true }),
   'session:metrics:read:sponsored': row({ partner: true }),
   'report:generate:all': row({ admin: true }),
   'report:generate:own': row({ partner: true }),
   'apikey:manage': row({ admin: true }),
+  'ledger:read': row({ admin: true }),
 };
 
 describe('RBAC matrix — every (role, scope) cell matches REQUIREMENTS §3.2', () => {

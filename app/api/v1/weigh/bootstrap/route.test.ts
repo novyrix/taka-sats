@@ -75,8 +75,10 @@ describe.skipIf(!hasDatabase)('/api/v1/weigh/bootstrap — integration', () => {
       fetchedAt: new Date(),
     });
     await db.insert(collectors).values([
-      { alias: 'Amina', addressSource: 'byo' },
-      { alias: 'Brian K', addressSource: 'byo' },
+      { alias: 'Amina', addressSource: 'byo', publicCode: 'TS-0001', status: 'active' },
+      { alias: 'Brian K', addressSource: 'byo', publicCode: 'TS-0002', status: 'active' },
+      // Never cached: awaiting authorization (D-25).
+      { alias: 'Pending Pat', addressSource: 'byo', publicCode: 'TS-0003', status: 'pending' },
     ]);
 
     const created = await createSession(db, {
@@ -99,5 +101,6 @@ describe.skipIf(!hasDatabase)('/api/v1/weigh/bootstrap — integration', () => {
       'Amina',
       'Brian K',
     ]);
+    expect(body.collectors[0]).toHaveProperty('publicCode');
   });
 });

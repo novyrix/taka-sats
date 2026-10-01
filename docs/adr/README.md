@@ -12,7 +12,7 @@ ADR differ, REQUIREMENTS is authoritative.
 
 | ADR | Title | Status | Decisions |
 |---|---|---|---|
-| [0001](0001-nfc-tags-receive-only.md) | NFC tags are receive-only | Accepted | ADR-001 |
+| [0001](0001-nfc-tags-receive-only.md) | NFC tags are receive-only | Accepted (in part superseded by [0017](0017-cardless-identity-and-authorization-gate.md)) | ADR-001 |
 | [0002](0002-offline-first-pwa.md) | Offline-first PWA, not a native app | Accepted | ADR-002 |
 | [0003](0003-pluggable-lightning-provider.md) | Pluggable `LightningProvider` + two-tier treasury | Accepted | ADR-003 |
 | [0004](0004-one-global-ledger-hash-chain.md) | One global `ledger_entries` hash chain | Accepted | ADR-003a, D-13 |
@@ -28,3 +28,6 @@ ADR differ, REQUIREMENTS is authoritative.
 | [0014](0014-append-only-ledger.md) | Append-only ledger, corrections are new rows | Accepted | D-13 |
 | [0015](0015-custody-is-configuration.md) | Custody/payout model is configuration, not a fork | Accepted | D-22 |
 | [0016](0016-three-lightning-provider-implementations.md) | Three real `LightningProvider` implementations | Accepted | D-23 |
+| [0017](0017-cardless-identity-and-authorization-gate.md) | Cardless identity and the collector authorization gate | Accepted | D-24, D-25 |
+| [0018](0018-payment-destinations-and-spend-credentials.md) | Payment destinations are records; spend credentials are never accepted | Accepted | D-26 |
+| [0019](0019-weight-provenance-and-derived-verification.md) | Weight provenance is signed at capture; verification is derived | Accepted | D-27 |

@@ -24,10 +24,22 @@
  * `references_id` set. Framework-free apart from Drizzle (D-04); server only.
  */
 
-import { asc, desc, eq, gt, type InferSelectModel, sql } from 'drizzle-orm';
-import type { Database, Tx } from '@/lib/db/client';
+import { asc, desc, eq, gt, type InferSelectModel, lt, sql } from 'drizzle-orm';
+import type { Database, Queryable, Tx } from '@/lib/db/client';
 import { ledgerEntries } from '@/lib/db/schema';
-import { type Canonicalizable, contentHash, sha256Hex } from '@/lib/sync/contentHash';
+import { type Canonicalizable, contentHash } from '@/lib/sync/contentHash';
+import { computeEntryHash, verifyEntries, type VerifyResult } from './chain';
+
+export {
+  type ChainAnchor,
+  type ChainEntry,
+  computeEntryHash,
+  entryHashInput,
+  verifyEntries,
+  type VerifyLedgerResult,
+  type VerifyMode,
+  type VerifyResult,
+} from './chain';
 
 export type LedgerEntry = InferSelectModel<typeof ledgerEntries>;
 
@@ -38,6 +50,8 @@ export const LEDGER_ENTRY_TYPES = [
   'treasury_topup',
   'rate_change',
   'tag_revocation',
+  'collector_authorization',
+  'recycler_sale',
 ] as const;
 export type LedgerEntryType = (typeof LEDGER_ENTRY_TYPES)[number];
 
@@ -49,25 +63,6 @@ export class LedgerError extends Error {
     super(message);
     this.name = 'LedgerError';
   }
-}
-
-/** The frozen `entry_hash` pre-image. */
-export function entryHashInput(
-  seq: number,
-  entryType: string,
-  payloadHash: string,
-  prevEntryHash: string | null,
-): string {
-  return [String(seq), entryType, payloadHash, prevEntryHash ?? 'GENESIS'].join('|');
-}
-
-export function computeEntryHash(
-  seq: number,
-  entryType: string,
-  payloadHash: string,
-  prevEntryHash: string | null,
-): Promise<string> {
-  return sha256Hex(entryHashInput(seq, entryType, payloadHash, prevEntryHash));
 }
 
 /** The `payload_hash` for a server-originated fact (payout, rate change, …). */
@@ -136,7 +131,7 @@ export async function appendEntry(db: Database, input: AppendEntryInput): Promis
   return db.transaction((tx) => appendEntryTx(tx, input));
 }
 
-export async function latestEntry(db: Database): Promise<LedgerEntry | null> {
+export async function latestEntry(db: Queryable): Promise<LedgerEntry | null> {
   const [row] = await db.select().from(ledgerEntries).orderBy(desc(ledgerEntries.seq)).limit(1);
   return row ?? null;
 }
@@ -159,63 +154,52 @@ export async function listEntries(
     .limit(Math.min(Math.max(limit, 1), 5000));
 }
 
-export type VerifyResult =
-  | {
-      readonly ok: true;
-      readonly count: number;
-      readonly throughSeq: number;
-      readonly headHash: string | null;
-    }
-  | { readonly ok: false; readonly brokenAt: number; readonly reason: string };
+/** Default and maximum page size of `GET /api/v1/ledger`. */
+export const LEDGER_PAGE_DEFAULT = 100;
+export const LEDGER_PAGE_MAX = 500;
+
+export type LedgerPage = { readonly entries: LedgerEntry[]; readonly nextCursor: number | null };
+
+/**
+ * One page of the chain, keyset-paginated on `seq`: ascending returns
+ * `seq > cursor`, descending `seq < cursor` (no cursor = from the start / the
+ * head). `nextCursor` is the last returned `seq`, or `null` on the final page.
+ */
+export async function pageEntries(
+  db: Database,
+  {
+    cursor,
+    order = 'asc',
+    limit = LEDGER_PAGE_DEFAULT,
+  }: { cursor?: number; order?: 'asc' | 'desc'; limit?: number } = {},
+): Promise<LedgerPage> {
+  const size = Math.min(Math.max(limit, 1), LEDGER_PAGE_MAX);
+  const ascending = order === 'asc';
+  const rows = await db
+    .select()
+    .from(ledgerEntries)
+    .where(
+      cursor === undefined
+        ? undefined
+        : ascending
+          ? gt(ledgerEntries.seq, cursor)
+          : lt(ledgerEntries.seq, cursor),
+    )
+    .orderBy(ascending ? asc(ledgerEntries.seq) : desc(ledgerEntries.seq))
+    .limit(size + 1);
+
+  const entries = rows.slice(0, size);
+  const last = entries[entries.length - 1];
+  return { entries, nextCursor: rows.length > size && last ? last.seq : null };
+}
 
 /**
  * Recompute the whole chain and report the first broken link, if any
  * (`GET /ledger/verify`, `scripts/verify-ledger.ts`). Reads every row — fine
- * for a pilot-scale ledger; a windowed check comes with checkpoints (M4-7).
+ * for a pilot-scale ledger; `verifyLedger` (`./checkpoints`) can start from the
+ * last signed checkpoint instead.
  */
 export async function verifyChain(db: Database): Promise<VerifyResult> {
   const rows = await db.select().from(ledgerEntries).orderBy(asc(ledgerEntries.seq));
-  if (rows.length === 0) {
-    return { ok: true, count: 0, throughSeq: 0, headHash: null };
-  }
-
-  let prevHash: string | null = null;
-  let expectedSeq = 1;
-  for (const row of rows) {
-    if (row.seq !== expectedSeq) {
-      return {
-        ok: false,
-        brokenAt: row.seq,
-        reason: `seq gap: expected ${expectedSeq}, got ${row.seq}`,
-      };
-    }
-    if (row.prevEntryHash !== prevHash) {
-      return {
-        ok: false,
-        brokenAt: row.seq,
-        reason: `prev_entry_hash does not link (expected ${prevHash ?? 'NULL'})`,
-      };
-    }
-    const recomputed = await computeEntryHash(
-      row.seq,
-      row.entryType,
-      row.payloadHash,
-      row.prevEntryHash,
-    );
-    if (recomputed !== row.entryHash) {
-      return {
-        ok: false,
-        brokenAt: row.seq,
-        reason: 'entry_hash mismatch (payload or link altered)',
-      };
-    }
-    prevHash = row.entryHash;
-    expectedSeq += 1;
-  }
-  return {
-    ok: true,
-    count: rows.length,
-    throughSeq: rows[rows.length - 1]!.seq,
-    headHash: prevHash,
-  };
+  return verifyEntries(rows);
 }

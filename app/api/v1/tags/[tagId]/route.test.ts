@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { NextRequest } from 'next/server';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,9 +8,10 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 
 import { auth } from '@/auth';
-import { enrolCollector, reissueTag, revokeTag } from '@/lib/collectors';
+import { reissueTag, revokeTag } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
-import { anomalyFlags } from '@/lib/db/schema';
+import { createCollector, resetCollectorTables } from '@/lib/testing/fixtures';
+import { anomalyFlags, collectors } from '@/lib/db/schema';
 import { GET } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
@@ -44,29 +45,36 @@ describe.skipIf(!hasDatabase)('GET /api/v1/tags/:tagId — integration', () => {
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   it('resolves an active tag to its collector (200)', async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     await reissueTag(db, { collectorId: collector.id, newTagId: 'TAG-ACTIVE' });
 
     const response = await call('TAG-ACTIVE');
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.collector.alias).toBe('Amina');
+    expect(body.collector.publicCode).toBe(collector.publicCode);
+  });
+
+  it('409 collector_not_authorized when the collector was revoked after being tagged (D-25)', async () => {
+    const collector = await createCollector(db);
+    await reissueTag(db, { collectorId: collector.id, newTagId: 'TAG-DEAUTH' });
+    await db.update(collectors).set({ status: 'revoked' }).where(eq(collectors.id, collector.id));
+
+    const response = await call('TAG-DEAUTH');
+    expect(response.status).toBe(409);
+    expect((await response.json()).error.code).toBe('collector_not_authorized');
   });
 
   it('rejects a revoked tag with 410 (M1-9)', async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     await reissueTag(db, { collectorId: collector.id, newTagId: 'TAG-GONE' });
     await revokeTag(db, { tagId: 'TAG-GONE' });
 

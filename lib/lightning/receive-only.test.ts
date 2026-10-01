@@ -13,11 +13,16 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { sats } from '@/lib/money';
 import { BlinkProvider } from './BlinkProvider';
-import { NotReceiveCapableError } from './errors';
+import { NotReceiveCapableError, SpendCredentialRejectedError } from './errors';
 import { FakeLightningProvider } from './FakeLightningProvider';
 import { FedimintProvider } from './FedimintProvider';
 import type { LightningProvider, PayoutDestination } from './LightningProvider';
 import { LNbitsProvider } from './LNbitsProvider';
+
+// Real providers use the global fetch, so the DNS check runs — answer it offline.
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(async () => [{ address: '93.184.216.34', family: 4 }]),
+}));
 
 function withdrawResponse(): Response {
   return new Response(
@@ -75,6 +80,18 @@ describe('every LightningProvider rejects a resolved withdrawRequest', () => {
       await expect(provider.resolveReceiveAddress('withdraw@attacker.test')).rejects.toThrow(
         NotReceiveCapableError,
       );
+    },
+  );
+
+  it.each(providers)(
+    '%s: resolveReceiveAddress rejects a spend link without any network call',
+    async (_name, provider) => {
+      const fetchSpy = vi.fn(async () => withdrawResponse());
+      vi.stubGlobal('fetch', fetchSpy);
+      await expect(
+        provider.resolveReceiveAddress('https://card.paybee.buzz/sample-card'),
+      ).rejects.toThrow(SpendCredentialRejectedError);
+      expect(fetchSpy).not.toHaveBeenCalled();
     },
   );
 

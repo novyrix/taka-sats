@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { sql } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { NextRequest } from 'next/server';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,8 +7,9 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 
 import { auth } from '@/auth';
-import { enrolCollector, reissueTag } from '@/lib/collectors';
+import { reissueTag } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
+import { createCollector, resetCollectorTables } from '@/lib/testing/fixtures';
 import { POST } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
@@ -52,19 +52,15 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/tags/revoke — integ
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('admin'));
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   it("revokes the collector's current tag when no tagId is given", async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     await reissueTag(db, { collectorId: collector.id, newTagId: 'TAG-001' });
 
     const response = await POST(postRequest(collector.id), {
@@ -76,7 +72,7 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/tags/revoke — integ
   });
 
   it('404s when the collector has no active tag', async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     const response = await POST(postRequest(collector.id), {
       params: Promise.resolve({ id: collector.id }),
     });

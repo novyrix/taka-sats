@@ -9,6 +9,7 @@ vi.mock('@/auth', () => ({ auth: vi.fn() }));
 import { auth } from '@/auth';
 import { getDb } from '@/lib/db/client';
 import { collectors, sessions, sessionSupervisors, supervisors } from '@/lib/db/schema';
+import { createCollector } from '@/lib/testing/fixtures';
 import { sql } from 'drizzle-orm';
 import { GET, POST } from './route';
 
@@ -63,7 +64,7 @@ describe('POST /api/v1/collectors — auth (no DB required)', () => {
 
 const hasDatabase = Boolean(process.env.DATABASE_URL);
 
-const TRUNCATE = sql`truncate table anomaly_flags, tag_history, collectors, session_supervisors, sessions, supervisors restart identity cascade`;
+const TRUNCATE = sql`truncate table anomaly_flags, tag_history, collector_payment_destinations, collector_authorizations, collection_events, collectors, ledger_entries, session_supervisors, sessions, supervisors restart identity cascade`;
 
 describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)', () => {
   const db = hasDatabase ? getDb() : undefined!;
@@ -98,12 +99,30 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
     await db.execute(TRUNCATE);
   });
 
-  it('enrols a collector and returns 201', async () => {
-    const response = await POST(postRequest({ alias: 'Amina' }));
+  it("registers a supervisor's collector as pending, with a public code and a credential reference", async () => {
+    const response = await POST(postRequest({ alias: 'Amina', siteCode: 'KBR' }));
     expect(response.status).toBe(201);
-    const body = await response.json();
-    expect(body.collector.alias).toBe('Amina');
-    expect(body.collector.status).toBe('active');
+    const { collector } = await response.json();
+    expect(collector).toMatchObject({
+      alias: 'Amina',
+      status: 'pending',
+      publicCode: 'TS-KBR-0001',
+      registeredBy: supId,
+      authorizedBy: null,
+    });
+    expect(collector.reference).toEqual({
+      payload: 'takasats:TS-KBR-0001',
+      url: 'https://taka.afribit.africa/c/TS-KBR-0001',
+    });
+    // Internal columns never reach the client.
+    expect(collector).not.toHaveProperty('lnbitsWalletId');
+  });
+
+  it('registers an admin-created collector as already authorized', async () => {
+    authMock.mockResolvedValue(sessionFor('admin', supId));
+    const { collector } = await (await POST(postRequest({ alias: 'Musa' }))).json();
+    expect(collector.status).toBe('active');
+    expect(collector.authorizedBy).toBe(supId);
   });
 
   it('rejects an invalid body with 400', async () => {
@@ -128,16 +147,55 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
     expect(rows).toHaveLength(1);
   });
 
-  it('GET ?q= returns alias matches (case-insensitive)', async () => {
-    await POST(postRequest({ alias: 'Amina Otieno' }));
-    await POST(postRequest({ alias: 'Brian Kamau' }));
-    await POST(postRequest({ alias: 'Aminata' }));
+  it('GET ?q= returns authorized alias matches (case-insensitive) and finds by code', async () => {
+    await createCollector(db, { alias: 'Amina Otieno', publicCode: 'TS-KBR-0042' });
+    await createCollector(db, { alias: 'Brian Kamau' });
+    await createCollector(db, { alias: 'Aminata' });
+    await createCollector(db, { alias: 'Amina Pending', status: 'pending' }); // never offered
 
-    const response = await GET(getRequest('?q=amin'));
-    expect(response.status).toBe(200);
-    const body = await response.json();
-    const aliases = (body.collectors as { alias: string }[]).map((c) => c.alias).sort();
-    expect(aliases).toEqual(['Amina Otieno', 'Aminata']);
+    const byAlias = await (await GET(getRequest('?q=amin'))).json();
+    expect((byAlias.collectors as { alias: string }[]).map((c) => c.alias).sort()).toEqual([
+      'Amina Otieno',
+      'Aminata',
+    ]);
+    expect(byAlias.collectors[0]).toHaveProperty('publicCode');
+
+    const byCode = await (await GET(getRequest('?q=0042'))).json();
+    expect((byCode.collectors as { alias: string }[]).map((c) => c.alias)).toEqual([
+      'Amina Otieno',
+    ]);
+  });
+
+  it('GET without q 400s for the default (active) listing', async () => {
+    expect((await GET(getRequest(''))).status).toBe(400);
+    expect((await GET(getRequest('?status=active'))).status).toBe(400);
+  });
+
+  it('a supervisor lists only their own pending registrations — never revoked or all', async () => {
+    await POST(postRequest({ alias: 'Mine' }));
+    await createCollector(db, { alias: 'Theirs', status: 'pending' });
+
+    const mine = await (await GET(getRequest('?status=pending'))).json();
+    expect((mine.collectors as { alias: string }[]).map((c) => c.alias)).toEqual(['Mine']);
+    // A supervisor gets no destination detail for the review queue.
+    expect(mine.collectors[0]).not.toHaveProperty('destination');
+
+    expect((await GET(getRequest('?status=revoked'))).status).toBe(403);
+    expect((await GET(getRequest('?status=all'))).status).toBe(403);
+  });
+
+  it('staff with collector:authorize see the whole pending queue with each destination', async () => {
+    await createCollector(db, {
+      alias: 'Queued',
+      status: 'pending',
+      lightningAddress: 'queued@blink.sv',
+    });
+    authMock.mockResolvedValue(sessionFor('hub_lead', supId));
+
+    const { collectors: queue } = await (await GET(getRequest('?status=pending'))).json();
+    expect(queue.map((c: { alias: string }) => c.alias)).toEqual(['Queued']);
+    expect(queue[0]).toHaveProperty('destination', null);
+    expect((await GET(getRequest('?status=all'))).status).toBe(200);
   });
 
   it('403 no_active_session when a supervisor has no session to act in (M2-7)', async () => {

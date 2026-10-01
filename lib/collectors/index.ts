@@ -7,20 +7,47 @@
  * worker job, or a test with no HTTP layer involved.
  */
 
-export { attachByoAddress } from './address';
+export { decideCollectorAuthorization, type AuthorizationOutcome } from './authorization';
+export {
+  attachDestination,
+  completeDestinationValidation,
+  getLiveDestination,
+  listDestinations,
+  normalizeDestination,
+  providerHintFor,
+  revokeDestination,
+  validationErrorCode,
+  type AttachDestinationResult,
+} from './destinations';
 export { enrolCollector } from './enrol';
 export {
+  CollectorNotAuthorizedError,
   CollectorNotFoundError,
+  CollectorNotYoursError,
+  DestinationInUseError,
+  DestinationNotFoundError,
+  DestinationReplaceForbiddenError,
   ProvisioningDisabledError,
   TagAlreadyActiveError,
   TagRevokedError,
 } from './errors';
 export {
+  findCollectorByCode,
   findCollectorById,
   listActiveCollectors,
-  searchCollectorsByAlias,
+  liveDestinationsFor,
+  searchCollectors,
+  type CollectorSearch,
   type CollectorSummary,
 } from './lookup';
+export {
+  COLLECTOR_REF_SCHEME,
+  collectorRefUrl,
+  formatCollectorRef,
+  formatPublicCode,
+  isPublicCode,
+  parseCollectorRef,
+} from './reference';
 export {
   findActiveTagMapping,
   isTagRevoked,
@@ -31,15 +58,29 @@ export {
 } from './tags';
 export {
   addressSourceSchema,
-  attachByoAddressInputSchema,
+  attachDestinationInputSchema,
+  authorizationDecisionSchema,
+  COLLECTOR_STATUSES,
+  DESTINATION_STATUSES,
   enrolCollectorInputSchema,
   reissueTagInputSchema,
   revokeTagInputSchema,
   type AddressSource,
-  type AttachByoAddressInput,
+  type AttachDestinationInput,
+  type CollectorActor,
   type CollectorRecord,
+  type CollectorStatus,
+  type DestinationRecord,
+  type DestinationStatus,
   type EnrolCollectorInput,
   type ReissueTagInput,
   type RevokeTagInput,
   type TagHistoryRecord,
 } from './types';
+export {
+  canSeeAddress,
+  toCollectorView,
+  toDestinationView,
+  type CollectorView,
+  type DestinationView,
+} from './view';

@@ -21,7 +21,13 @@ type BootstrapResponse = {
   };
   rates: { rateId: string; material: string; rateFiatMinor: number; fiatCurrency: string }[];
   exchangeRate: number | null;
-  collectors: { id: string; alias: string; nfcTagId: string | null; status: string }[];
+  collectors: {
+    id: string;
+    alias: string;
+    publicCode?: string;
+    nfcTagId: string | null;
+    status: string;
+  }[];
 };
 
 export type PrimeResult =

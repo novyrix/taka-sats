@@ -21,8 +21,10 @@ import {
   boolean,
   check,
   index,
+  integer,
   jsonb,
   numeric,
+  pgSequence,
   pgTable,
   primaryKey,
   text,
@@ -52,14 +54,31 @@ export const collectors = pgTable(
     /** Set only when address_source = 'provisioned'. */
     lnbitsWalletId: text('lnbits_wallet_id'),
     enrolledAt: timestamp('enrolled_at', { withTimezone: true }).notNull().defaultNow(),
-    /** 'active' | 'revoked'. */
-    status: text('status').notNull().default('active'),
+    /**
+     * The human-readable, server-allocated handle (D-24): `TS-KBR-0042`. Carried by a
+     * QR/NFC credential as `takasats:<public_code>`; never a payment target.
+     */
+    publicCode: text('public_code').notNull().unique(),
+    /**
+     * The authorization gate (D-25): 'pending' (registered, not yet vetted) | 'active'
+     * (= authorized — may be weighed, tagged, paid) | 'revoked'. Fails closed: a new row
+     * is `pending` unless the code that inserts it says otherwise.
+     */
+    status: text('status').notNull().default('pending'),
+    /** The staff member who registered this collector (null for pre-gate rows). */
+    registeredBy: uuid('registered_by').references(() => supervisors.id),
+    /** Who last authorized this collector (null for pre-gate rows and while pending). */
+    authorizedBy: uuid('authorized_by').references(() => supervisors.id),
+    authorizedAt: timestamp('authorized_at', { withTimezone: true }),
   },
   (table) => [
     check('collectors_address_source_check', sql`${table.addressSource} in ('byo', 'provisioned')`),
-    check('collectors_status_check', sql`${table.status} in ('active', 'revoked')`),
+    check('collectors_status_check', sql`${table.status} in ('pending', 'active', 'revoked')`),
   ],
 );
+
+/** Source of the numeric part of every `public_code` (the prefix/site come from config). */
+export const collectorPublicCodeSeq = pgSequence('collector_public_code_seq', { startWith: 1 });
 
 /**
  * The physical-tag lifecycle for a collector (§7.2–7.3). Reissue = a new row
@@ -114,36 +133,63 @@ export const supervisors = pgTable(
 );
 
 /**
- * Anomaly flags (REQUIREMENTS §9). Written by fraud detectors (M6-4) and by
- * the revoked-tag-tap handler (M1-9). A flag never auto-blocks anything —
- * it is queued for human review (ADR-0006 spirit).
- *
- * Minimal here for M1-9: `collection_event_id` is a plain column (its FK to
- * `collection_events` is added with that table in M3/M4). `context` (jsonb)
- * is a §9 extension — investigation detail, e.g. the tapped `tag_id`.
+ * The anomaly types a flag may carry. Detectors and the revoked-tap handler WRITE these; a
+ * flag never blocks a sync or a payout (ADR-0006) — it queues a human review. `off_hours` is
+ * retained for old rows only: out-of-window events are now rejected at ingest.
+ */
+export const ANOMALY_TYPES = [
+  'identical_weight_repeat',
+  'payout_concentration',
+  'off_hours',
+  'revoked_tag_tap',
+  'gps_outlier',
+  'rate_change_during_queue',
+  'payout_uncertain',
+  'duplicate_photo',
+  'weight_outlier',
+  'mass_balance_variance',
+] as const;
+export type AnomalyType = (typeof ANOMALY_TYPES)[number];
+
+/**
+ * Anomaly flags (REQUIREMENTS §9). Written by the fraud detectors (`lib/fraud`), the
+ * reconciliation run and the revoked-tag-tap handler. `context` (jsonb) is investigation
+ * detail. `collector_id` / `supervisor_id` / `session_id` are set when the flag is about
+ * someone or something other than a single event (an event-bound flag is joined through
+ * its event). A review records who/when/why; a changed outcome keeps the old one in
+ * `context.history`. The partial unique index makes re-running a per-event detector a no-op.
  */
 export const anomalyFlags = pgTable(
   'anomaly_flags',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    /** nullable — a revoked-tap flag has no event; FK added with `collection_events`. */
-    collectionEventId: uuid('collection_event_id'),
+    /** nullable — a revoked-tap or mass-balance flag has no event. */
+    collectionEventId: uuid('collection_event_id').references(() => collectionEvents.id),
+    collectorId: uuid('collector_id').references(() => collectors.id),
+    supervisorId: uuid('supervisor_id').references(() => supervisors.id),
+    sessionId: uuid('session_id').references(() => sessions.id),
     flagType: text('flag_type').notNull(),
     context: jsonb('context'),
     detectedAt: timestamp('detected_at', { withTimezone: true }).notNull().defaultNow(),
     reviewedBy: uuid('reviewed_by').references(() => supervisors.id),
+    reviewedAt: timestamp('reviewed_at', { withTimezone: true }),
+    reviewNote: text('review_note'),
     /** 'confirmed' | 'dismissed' (null until reviewed). */
     reviewOutcome: text('review_outcome'),
   },
   (table) => [
     check(
       'anomaly_flags_flag_type_check',
-      sql`${table.flagType} in ('identical_weight_repeat', 'payout_concentration', 'off_hours', 'revoked_tag_tap', 'gps_outlier', 'rate_change_during_queue')`,
+      sql`${table.flagType} in ('identical_weight_repeat', 'payout_concentration', 'off_hours', 'revoked_tag_tap', 'gps_outlier', 'rate_change_during_queue', 'payout_uncertain', 'duplicate_photo', 'weight_outlier', 'mass_balance_variance')`,
     ),
     check(
       'anomaly_flags_review_outcome_check',
       sql`${table.reviewOutcome} is null or ${table.reviewOutcome} in ('confirmed', 'dismissed')`,
     ),
+    uniqueIndex('anomaly_flags_type_event_uniq')
+      .on(table.flagType, table.collectionEventId)
+      .where(sql`${table.collectionEventId} is not null`),
+    index('anomaly_flags_review_idx').on(table.reviewOutcome, table.detectedAt),
   ],
 );
 
@@ -304,7 +350,7 @@ export const ledgerEntries = pgTable(
   (table) => [
     check(
       'ledger_entries_entry_type_check',
-      sql`${table.entryType} in ('collection_event', 'payout', 'correction', 'treasury_topup', 'rate_change', 'tag_revocation')`,
+      sql`${table.entryType} in ('collection_event', 'payout', 'correction', 'treasury_topup', 'rate_change', 'tag_revocation', 'collector_authorization', 'recycler_sale')`,
     ),
     check('ledger_entries_seq_check', sql`${table.seq} > 0`),
     index('ledger_entries_references_idx').on(table.referencesId),
@@ -372,6 +418,16 @@ export const collectionEvents = pgTable(
     syncedAt: timestamp('synced_at', { withTimezone: true }).notNull().defaultNow(),
     registrationType: text('registration_type').notNull().default('tap'),
     verificationStatus: text('verification_status').notNull().default('verified'),
+    /**
+     * How the kilograms were captured (D-27) — signed into the content hash. 'manual' |
+     * 'ble_scale' | 'serial_scale' | 'industrial_scale'. OCR agreement is NOT a source; it
+     * is a verification result (`verification_level`).
+     */
+    weightSource: text('weight_source').notNull().default('manual'),
+    scaleId: text('scale_id'),
+    scaleReadingRaw: text('scale_reading_raw'),
+    /** Derived confidence, 'V0' manual … 'V4' audited (D-27). Independent of payout state. */
+    verificationLevel: text('verification_level').notNull().default('V0'),
   },
   (table) => [
     check('collection_events_weight_check', sql`${table.weightKg} > 0`),
@@ -383,7 +439,247 @@ export const collectionEvents = pgTable(
       'collection_events_verification_status_check',
       sql`${table.verificationStatus} in ('verified', 'pending_supervisor_review')`,
     ),
+    check(
+      'collection_events_weight_source_check',
+      sql`${table.weightSource} in ('manual', 'ble_scale', 'serial_scale', 'industrial_scale')`,
+    ),
+    check(
+      'collection_events_verification_level_check',
+      sql`${table.verificationLevel} in ('V0', 'V1', 'V2', 'V3', 'V4')`,
+    ),
     index('collection_events_session_idx').on(table.sessionId),
     index('collection_events_collector_idx').on(table.collectorId),
+  ],
+);
+
+// ── COLLECTOR AUTHORIZATION & PAYMENT DESTINATIONS (cardless identity, D-25 / D-26) ──
+
+/**
+ * Every authorize / revoke decision on a collector (D-25). The collector row holds the
+ * *current* state; this is the history, each decision anchored by a ledger entry
+ * (`collector_authorization`) so who-authorized-whom is tamper-evident. Append-only by
+ * convention — a change of mind is a new row.
+ */
+export const collectorAuthorizations = pgTable(
+  'collector_authorizations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    collectorId: uuid('collector_id')
+      .notNull()
+      .references(() => collectors.id),
+    /** 'authorized' | 'revoked'. */
+    decision: text('decision').notNull(),
+    decidedBy: uuid('decided_by')
+      .notNull()
+      .references(() => supervisors.id),
+    reason: text('reason'),
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    decidedAt: timestamp('decided_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      'collector_authorizations_decision_check',
+      sql`${table.decision} in ('authorized', 'revoked')`,
+    ),
+    index('collector_authorizations_collector_idx').on(table.collectorId),
+  ],
+);
+
+/**
+ * A collector's payout target (D-26, ADR-0018). At most one *live* row per collector
+ * (`pending_validation` | `verified`) — that row IS the primary; replacing it revokes the old
+ * one in the same transaction. The address is unique across live rows, so two collectors cannot
+ * share a wallet. A payout only ever uses a `verified` row, resolved server-side. The scanned
+ * payload is deliberately not kept — only the normalised address.
+ */
+export const collectorPaymentDestinations = pgTable(
+  'collector_payment_destinations',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    collectorId: uuid('collector_id')
+      .notNull()
+      .references(() => collectors.id),
+    /** 'lightning_address' | 'lnurl_pay'. */
+    type: text('type').notNull(),
+    /** Normalised: a lowercased Lightning Address, or the lowercased bech32 LNURL. */
+    address: text('address').notNull(),
+    /** Display/analytics label from `lightning.provider_hints` (e.g. 'paybee'); null if unknown. */
+    providerHint: text('provider_hint'),
+    /** 'pending_validation' | 'verified' | 'invalid' | 'revoked'. */
+    status: text('status').notNull(),
+    /** Machine code of the last definitive validation failure; never a payload. */
+    validationError: text('validation_error'),
+    verifiedAt: timestamp('verified_at', { withTimezone: true }),
+    /** Null only for rows backfilled from the pre-0008 `collectors.lightning_address`. */
+    createdBy: uuid('created_by').references(() => supervisors.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+    revokedBy: uuid('revoked_by').references(() => supervisors.id),
+  },
+  (table) => [
+    check(
+      'collector_destinations_type_check',
+      sql`${table.type} in ('lightning_address', 'lnurl_pay')`,
+    ),
+    check(
+      'collector_destinations_status_check',
+      sql`${table.status} in ('pending_validation', 'verified', 'invalid', 'revoked')`,
+    ),
+    uniqueIndex('collector_destinations_live_collector_idx')
+      .on(table.collectorId)
+      .where(sql`${table.status} in ('pending_validation', 'verified')`),
+    uniqueIndex('collector_destinations_live_address_idx')
+      .on(table.address)
+      .where(sql`${table.status} in ('pending_validation', 'verified')`),
+  ],
+);
+
+// ── PAYOUTS (M5, REQUIREMENTS §9, §10.4) ─────────────────────────────────
+
+/**
+ * One payout per collection event — the UNIQUE `collection_event_id` is the
+ * idempotency key, so a resent sync or a double-triggered job cannot create a
+ * second one. Money columns are `bigint` (never float). The amounts + snapshot
+ * are filled once the payout is priced — every status past pricing carries them; the
+ * earlier ones (and a `failed` that never got that far, e.g. a revoked collector) do
+ * not. `status` says how far it got (see `lib/payouts`). `paid` is the only status
+ * with a ledger entry.
+ */
+export const payouts = pgTable(
+  'payouts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    collectionEventId: uuid('collection_event_id')
+      .notNull()
+      .unique()
+      .references(() => collectionEvents.id),
+    collectorId: uuid('collector_id')
+      .notNull()
+      .references(() => collectors.id),
+    /** The verified destination the payout was last evaluated against; null until one is found. */
+    destinationId: uuid('destination_id').references(() => collectorPaymentDestinations.id),
+    /** Set only when `paid` — the `entry_type = 'payout'` row on the chain. */
+    ledgerEntryId: uuid('ledger_entry_id')
+      .unique()
+      .references(() => ledgerEntries.id),
+    amountSats: bigint('amount_sats', { mode: 'number' }),
+    amountFiatMinor: bigint('amount_fiat_minor', { mode: 'number' }),
+    fiatCurrency: text('fiat_currency').notNull(),
+    exchangeSnapshotId: uuid('exchange_snapshot_id').references(() => exchangeRateSnapshots.id),
+    status: text('status').notNull().default('awaiting_rate'),
+    approvedBy: uuid('approved_by').references(() => supervisors.id),
+    approvedAt: timestamp('approved_at', { withTimezone: true }),
+    /** Which rail paid ('blink' | 'lnbits' | 'fedimint' | 'fake'). */
+    provider: text('provider'),
+    providerPaymentRef: text('provider_payment_ref'),
+    attempts: integer('attempts').notNull().default(0),
+    /** A short machine code — never a payload, an address or a provider message. */
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    attemptedAt: timestamp('attempted_at', { withTimezone: true }),
+    settledAt: timestamp('settled_at', { withTimezone: true }),
+  },
+  (table) => [
+    check(
+      'payouts_status_check',
+      sql`${table.status} in ('awaiting_rate', 'awaiting_destination', 'pending_approval', 'pending_float', 'queued', 'sending', 'paid', 'failed')`,
+    ),
+    check(
+      'payouts_priced_check',
+      sql`${table.status} in ('awaiting_rate', 'awaiting_destination', 'failed') or (${table.amountSats} is not null and ${table.amountFiatMinor} is not null and ${table.exchangeSnapshotId} is not null)`,
+    ),
+    check(
+      'payouts_amounts_positive_check',
+      sql`(${table.amountSats} is null or ${table.amountSats} > 0) and (${table.amountFiatMinor} is null or ${table.amountFiatMinor} > 0)`,
+    ),
+    check(
+      'payouts_paid_check',
+      sql`${table.status} <> 'paid' or (${table.ledgerEntryId} is not null and ${table.providerPaymentRef} is not null and ${table.settledAt} is not null)`,
+    ),
+    index('payouts_status_idx').on(table.status),
+    index('payouts_collector_idx').on(table.collectorId),
+  ],
+);
+
+// ── RECONCILIATION (M6, FR-3.5) ──────────────────────────────────────────
+
+/**
+ * What a recycler/buyer accepted from the programme (ADR-0006: reconciliation is the primary
+ * fraud control). `weight_kg` is the NET accepted weight (= gross − tare), the figure the mass
+ * balance compares against. Trust-relevant, so each sale is anchored by a `recycler_sale`
+ * ledger entry written in the same transaction as the insert.
+ */
+export const recyclerSales = pgTable(
+  'recycler_sales',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    material: text('material').notNull(),
+    grossKg: numeric('gross_kg', { precision: 9, scale: 3 }).notNull(),
+    tareKg: numeric('tare_kg', { precision: 9, scale: 3 }).notNull().default('0'),
+    weightKg: numeric('weight_kg', { precision: 9, scale: 3 }).notNull(),
+    buyer: text('buyer').notNull(),
+    /** Fiat minor units per kg, as stated on the receipt — informational. */
+    pricePerKgFiatMinor: bigint('price_per_kg_fiat_minor', { mode: 'number' }),
+    /** The receipt total in fiat minor units, as entered — never computed here. */
+    totalFiatMinor: bigint('total_fiat_minor', { mode: 'number' }),
+    soldAt: timestamp('sold_at', { withTimezone: true }).notNull(),
+    /** SHA-256 of the receipt photo (uploaded through `POST /api/v1/photos`). */
+    receiptSha256: text('receipt_sha256'),
+    enteredBy: uuid('entered_by')
+      .notNull()
+      .references(() => supervisors.id),
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check('recycler_sales_gross_check', sql`${table.grossKg} > 0`),
+    check('recycler_sales_tare_check', sql`${table.tareKg} >= 0`),
+    check(
+      'recycler_sales_net_check',
+      sql`${table.weightKg} >= 0 and ${table.weightKg} = ${table.grossKg} - ${table.tareKg}`,
+    ),
+    check(
+      'recycler_sales_receipt_check',
+      sql`${table.receiptSha256} is null or ${table.receiptSha256} ~ '^[0-9a-f]{64}$'`,
+    ),
+    index('recycler_sales_sold_at_idx').on(table.soldAt),
+  ],
+);
+
+/**
+ * One row per (run, material): collected vs paid vs recycler-accepted kg for a period. Rows
+ * are never updated — a new run is a new row. `tolerance_pct` snapshots the setting in force
+ * so a later config change cannot rewrite history.
+ */
+export const reconciliationReports = pgTable(
+  'reconciliation_reports',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    periodStart: timestamp('period_start', { withTimezone: true }).notNull(),
+    periodEnd: timestamp('period_end', { withTimezone: true }).notNull(),
+    material: text('material').notNull(),
+    collectedKg: numeric('collected_kg', { precision: 12, scale: 3 }).notNull(),
+    paidKg: numeric('paid_kg', { precision: 12, scale: 3 }).notNull(),
+    recyclerKg: numeric('recycler_kg', { precision: 12, scale: 3 }).notNull(),
+    varianceKg: numeric('variance_kg', { precision: 12, scale: 3 }).notNull(),
+    variancePct: numeric('variance_pct', { precision: 12, scale: 3 }).notNull(),
+    tolerancePct: numeric('tolerance_pct', { precision: 7, scale: 3 }).notNull(),
+    status: text('status').notNull(),
+    createdBy: uuid('created_by').references(() => supervisors.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    check(
+      'reconciliation_reports_status_check',
+      sql`${table.status} in ('within_tolerance', 'flagged', 'no_recycler_data')`,
+    ),
+    check('reconciliation_reports_period_check', sql`${table.periodEnd} > ${table.periodStart}`),
+    index('reconciliation_reports_created_idx').on(table.createdAt),
   ],
 );

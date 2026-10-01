@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { sql } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { NextRequest } from 'next/server';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,8 +7,8 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 
 import { auth } from '@/auth';
-import { enrolCollector } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
+import { createCollector, resetCollectorTables } from '@/lib/testing/fixtures';
 import { POST } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
@@ -47,25 +46,32 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors/:id/tags — integration'
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   it('reissues a tag and returns 201', async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     const response = await POST(postRequest(collector.id, { newTagId: 'TAG-001' }), {
       params: Promise.resolve({ id: collector.id }),
     });
     expect(response.status).toBe(201);
     const body = await response.json();
     expect(body.tag.tagId).toBe('TAG-001');
+  });
+
+  it('409 collector_not_authorized when the collector is still pending (D-25)', async () => {
+    const collector = await createCollector(db, { status: 'pending' });
+    const response = await POST(postRequest(collector.id, { newTagId: 'TAG-NOPE' }), {
+      params: Promise.resolve({ id: collector.id }),
+    });
+    expect(response.status).toBe(409);
+    const body = await response.json();
+    expect(body.error.code).toBe('collector_not_authorized');
+    expect(body.error.details).toEqual({ status: 'pending' });
   });
 
   it('404s for an unknown collector', async () => {

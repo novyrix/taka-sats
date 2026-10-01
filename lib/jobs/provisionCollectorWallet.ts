@@ -8,10 +8,10 @@
  */
 
 import { eq } from 'drizzle-orm';
-import { CollectorNotFoundError } from '@/lib/collectors';
+import { CollectorNotFoundError, getLiveDestination } from '@/lib/collectors';
 import type { Database } from '@/lib/db/client';
 import type { CollectorWalletProvisioner } from '@/lib/lightning/LNbitsProvider';
-import { collectors } from '@/lib/db/schema';
+import { collectorPaymentDestinations, collectors } from '@/lib/db/schema';
 import {
   provisionCollectorWalletPayloadSchema,
   type ProvisionCollectorWalletPayload,
@@ -38,16 +38,35 @@ export async function provisionCollectorWallet(
   if (collector.lnbitsWalletId || collector.lightningAddress || collector.lnurlPayRaw) {
     return;
   }
+  // A collector who already has a live destination (D-26) must not get a second, competing one.
+  if (await getLiveDestination(db, collector.id)) {
+    return;
+  }
 
   const { lnbitsWalletId, lnurlp } = await provisioner.createCollectorWallet(collector.id);
 
-  await db
-    .update(collectors)
-    .set({
-      lnbitsWalletId,
-      // An LNURLp bech32 string is the payable pointer; it is not an
-      // address-shaped identifier, so `lightning_address` stays null (as with BYO LNURLs).
-      lnurlPayRaw: lnurlp,
-    })
-    .where(eq(collectors.id, collector.id));
+  await db.transaction(async (tx) => {
+    await tx
+      .update(collectors)
+      .set({
+        lnbitsWalletId,
+        // An LNURLp bech32 string is the payable pointer; it is not an
+        // address-shaped identifier, so `lightning_address` stays null (as with BYO LNURLs).
+        lnurlPayRaw: lnurlp,
+      })
+      .where(eq(collectors.id, collector.id));
+
+    // A wallet we minted ourselves is trusted, so its destination is `verified` at once
+    // (D-26: payouts read the destinations table, never the collector row).
+    await tx
+      .insert(collectorPaymentDestinations)
+      .values({
+        collectorId: collector.id,
+        type: 'lnurl_pay',
+        address: lnurlp.toLowerCase(),
+        status: 'verified',
+        verifiedAt: new Date(),
+      })
+      .onConflictDoNothing();
+  });
 }

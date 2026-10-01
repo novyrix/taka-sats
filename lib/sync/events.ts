@@ -81,6 +81,11 @@ export function collectionEventPayload(
     geo,
     registrationType: event.registrationType,
     recordedAt: event.recordedAt,
+    // Weight provenance (D-27). `undefined` members are dropped by `canonicalize`, so an
+    // event queued before these fields existed still hashes exactly as it did.
+    weightSource: event.weightSource,
+    scaleId: event.scaleId,
+    scaleReadingRaw: event.scaleReadingRaw,
   };
 }
 
@@ -104,7 +109,13 @@ export async function assembleCollectionEvent(
   const recordedAt = (options.recordedAt ?? new Date()).toISOString() as Iso8601;
   const sats = indicativeSats(draft.rateFiatMinor, draft.weightKg, draft.exchangeRate);
 
-  const base = { ...draft, id, recordedAt, indicativeSats: sats };
+  const base = {
+    ...draft,
+    weightSource: draft.weightSource ?? 'manual',
+    id,
+    recordedAt,
+    indicativeSats: sats,
+  };
   const hash = await contentHash(collectionEventPayload(base));
 
   return { ...base, contentHash: hash, photoUrl: null };

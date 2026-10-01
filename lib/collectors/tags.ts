@@ -9,7 +9,11 @@ import { and, eq, isNull } from 'drizzle-orm';
 import type { Database } from '@/lib/db/client';
 import { isUniqueViolation } from '@/lib/db/pg-errors';
 import { anomalyFlags, collectors, tagHistory } from '@/lib/db/schema';
-import { CollectorNotFoundError, TagAlreadyActiveError } from './errors';
+import {
+  CollectorNotAuthorizedError,
+  CollectorNotFoundError,
+  TagAlreadyActiveError,
+} from './errors';
 import {
   type CollectorRecord,
   type ReissueTagInput,
@@ -22,18 +26,25 @@ import {
 /**
  * Map a new physical tag to `collectorId`. Closes every currently-active
  * mapping for that collector first — the earnings history (collection_events,
- * ledger entries) is untouched, only the tag pointer moves.
+ * ledger entries) is untouched, only the tag pointer moves. Only an authorized
+ * (`active`) collector can be issued a tag (D-25).
  */
 export async function reissueTag(db: Database, input: ReissueTagInput): Promise<TagHistoryRecord> {
   const parsed = reissueTagInputSchema.parse(input);
 
   return db.transaction(async (tx) => {
+    // Locked, so a concurrent revoke cannot slip in between this status check and the write.
     const [collector] = await tx
       .select()
       .from(collectors)
-      .where(eq(collectors.id, parsed.collectorId));
+      .where(eq(collectors.id, parsed.collectorId))
+      .for('no key update');
     if (!collector) {
       throw new CollectorNotFoundError(parsed.collectorId);
+    }
+    // NFC tags are issued only to authorized collectors (D-25).
+    if (collector.status !== 'active') {
+      throw new CollectorNotAuthorizedError(collector.id, collector.status);
     }
 
     // Resending the same reissue request is a no-op (REQUIREMENTS §10.1).

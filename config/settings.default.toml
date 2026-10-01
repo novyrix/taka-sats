@@ -16,6 +16,7 @@ timezone       = "Africa/Nairobi"        # IANA name; drives session windows and
 fiat_currency  = "KES"                   # ISO 4217; the rate table and all reporting use this
 locales        = ["en", "sw", "sheng"]   # first-class UI locales
 default_locale = "en"                    # must be one of `locales`
+public_base_url = "https://taka.afribit.africa"  # where this deployment is served (no trailing slash); builds credential URLs
 
 [custody]
 # 'byo'         = collector brings their own wallet (Blink Paycode / Lightning Address).
@@ -28,6 +29,14 @@ provisioning_enabled   = false           # must be explicitly true to allow 'pro
 # acknowledgement that the recorded legal review exists — not legal cover.
 provisioning_ack       = ""
 
+[collectors]
+# The authorization gate (D-25, ADR-0017). true  = a supervisor's registration is `pending`
+# until a hub_lead/admin authorizes it; only authorized collectors can be weighed, issued an
+# NFC tag, or paid. false = every registration is `active` at once (no gate).
+authorization_required = true
+code_prefix            = "TS"            # first segment of a collector's public code: TS-KBR-0042
+default_site_code      = ""              # site segment when an enrolment names none ("" = omit it)
+
 [auth]
 # How long a signed-in supervisor session survives, including fully offline
 # (§3.1, ADR-0002) — a JWT session, not a server-side lookup, so this is the
@@ -36,7 +45,19 @@ provisioning_ack       = ""
 session_max_age_days = 30
 
 [lightning]
-float_provider = "blink"                 # blink | lnbits | fedimint — the operating-float rail
+float_provider = "blink"                 # blink | lnbits | fedimint | fake — the operating-float rail. "fake" is a DEMO rail that pays nothing; the app refuses it in production unless TAKASATS_ALLOW_FAKE_PROVIDER=true
+# Hosts whose URLs are spend credentials (e.g. the Pay side of a Paybee card). A scanned code on
+# one of these hosts (or a subdomain, case-insensitive) is rejected before any network call and
+# is never stored, logged, or converted into a receive address.
+spend_link_hosts = ["card.paybee.buzz"]
+lnurl_timeout_ms = 8000                  # per-request timeout when resolving an LNURL / requesting an invoice (1000..60000)
+
+# Wallet-provider label by Lightning-address domain (subdomains match). Display/analytics
+# only — no behaviour depends on it, so a new wallet provider needs no code change (ADR-0018).
+[lightning.provider_hints]
+"flow.paybee.buzz" = "paybee"
+"blink.sv"         = "blink"
+"fedi.xyz"         = "fedi"
 
 [lightning.blink]
 api_url         = "https://api.blink.sv/graphql"
@@ -51,8 +72,8 @@ federation_invite = ""                   # Afribit's federation invite code (fed
 
 [money]
 rate_staleness_ttl_seconds   = 900       # a payout will not run against a BTC rate older than this (D-18)
-exchange_sources             = ["yadio", "coingecko"]  # >=2 independent; known: yadio | coingecko | fake
-rate_deviation_tolerance_pct = 10        # reject a snapshot if a source deviates more than this % from the median
+exchange_sources             = ["yadio", "coinbase", "kraken_fx"]  # >=2 must answer; known: yadio | coinbase | kraken_fx | coingecko | fake
+rate_deviation_tolerance_pct = 10        # sources within this % of the median agree; an outlier is set aside; >=2 must agree within this % of each other
 
 [rates]
 # Seed values for `material_rates` on the first migration only. Afterwards the
@@ -64,9 +85,13 @@ seed = [
 ]
 
 [payouts]
-second_signoff_threshold_sats = 50000    # above this a distinct approver is required (FR-3.2)
+second_signoff_threshold_sats = 50000    # a payout ABOVE this is held until a distinct approver signs off (FR-3.2). 0 holds EVERY payout for review
+require_approval_first_payout = true     # the first payout to any new destination also needs an approver, whatever its size
 float_low_balance_alert_sats  = 200000    # the worker alerts admin below this (FR-7.2)
 auto_topup_enabled            = false
+sweep_cron                    = "*/5 * * * *" # how often the worker re-tries payouts parked on a missing rate / destination / float (5-field cron, UTC)
+sending_stale_minutes         = 10       # a payout stuck in 'sending' this long is flagged payout_uncertain for an admin — it is NEVER re-sent automatically
+max_attempts                  = 8        # process-payout job retries (backoff) before the job gives up; the payout stays parked for the sweeper
 
 [reconciliation]
 variance_tolerance_pct = 5               # paid-kg vs sold-kg variance above this is flagged (FR-3.5)
@@ -75,6 +100,8 @@ variance_tolerance_pct = 5               # paid-kg vs sold-kg variance above thi
 identical_weight_repeat_count = 4         # N identical weights from one supervisor -> flag
 payout_concentration_gini     = 0.6       # payout skew above this over a session -> flag
 off_hours_grace_minutes       = 30        # events this far outside a session window -> flag
+weight_outlier_min_events      = 20        # a material needs this many prior events before weight outliers are flagged
+weight_outlier_mad_k          = 6         # flag a weight further than k x (scaled MAD) from the material's median
 
 [scheduling]
 coverage_gap_lead_time_hours = 12        # an unstaffed session within this window -> admin alert (FR-6.2)
@@ -86,5 +113,7 @@ public_map_jitter_metres = 50           # location fuzzing for public:read map p
 nostr_relays             = ["wss://relay.damus.io", "wss://nos.lol"]
 
 [ledger]
-checkpoint_interval_entries = 500        # sign a checkpoint every N ledger entries (§11.2)
+checkpoint_enabled          = true       # run the checkpoint-signing job (needs the LEDGER_SIGNING_KEY secret)
+checkpoint_cron             = "0 * * * *" # how often the worker looks for new entries to checkpoint (UTC)
+checkpoint_interval_entries = 500        # sign a checkpoint once >= N new entries exist since the last (§11.2)
 opentimestamps_enabled      = true       # also anchor checkpoints with OpenTimestamps

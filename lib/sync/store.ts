@@ -205,7 +205,13 @@ export async function getCachedCollectorByTag(
   return (await openSyncDb()).getFromIndex('collectors', 'by_tag', nfcTagId);
 }
 
-/** Case-insensitive alias substring match over the cached list (M3-3, offline). */
+/** A small alphabetical directory for the cardless collector picker. */
+export async function listCachedCollectors(limit = 20): Promise<CachedCollector[]> {
+  const all = await (await openSyncDb()).getAll('collectors');
+  return all.sort((a, b) => a.alias.localeCompare(b.alias)).slice(0, Math.max(1, limit));
+}
+
+/** Case-insensitive alias/public-code substring match over the cached list (D-24, offline). */
 export async function searchCachedCollectors(
   query: string,
   limit = 20,
@@ -215,7 +221,13 @@ export async function searchCachedCollectors(
     return [];
   }
   const all = await (await openSyncDb()).getAll('collectors');
-  return all.filter((c) => c.alias.toLowerCase().includes(needle)).slice(0, Math.max(1, limit));
+  return all
+    .filter(
+      (c) =>
+        c.alias.toLowerCase().includes(needle) ||
+        (c.publicCode?.toLowerCase().includes(needle) ?? false),
+    )
+    .slice(0, Math.max(1, limit));
 }
 
 // ── session config ──────────────────────────────────────────────────────────

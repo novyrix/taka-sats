@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Session } from 'next-auth';
 import { NextRequest } from 'next/server';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,15 +8,16 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 
 import { auth } from '@/auth';
-import { enrolCollector } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
+import { collectorPaymentDestinations, collectors } from '@/lib/db/schema';
+import { createCollector, createStaff, resetCollectorTables } from '@/lib/testing/fixtures';
 import { GET } from './route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
 
-function sessionFor(role: string): Session {
+function sessionFor(role: string, id = 'actor-1'): Session {
   return {
-    user: { id: 'actor-1', role: role as never, locale: 'en' },
+    user: { id, role: role as never, locale: 'en' },
     expires: '2099-01-01T00:00:00.000Z',
   };
 }
@@ -50,25 +51,77 @@ describe.skipIf(!hasDatabase)('GET /api/v1/collectors/:id — integration', () =
 
   beforeEach(async () => {
     authMock.mockResolvedValue(sessionFor('supervisor'));
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   it('returns the collector', async () => {
-    const collector = await enrolCollector(db, { alias: 'Amina' });
+    const collector = await createCollector(db);
     const response = await GET(getRequest(collector.id), {
       params: Promise.resolve({ id: collector.id }),
     });
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.collector.alias).toBe('Amina');
+    expect(body.collector.reference.payload).toBe(`takasats:${collector.publicCode}`);
+    expect(body.destination).toBeNull(); // no payout destination attached yet
+  });
+
+  async function withWallet(registeredBy?: string) {
+    const collector = await createCollector(db, registeredBy ? { registeredBy } : {});
+    await db.insert(collectorPaymentDestinations).values({
+      collectorId: collector.id,
+      type: 'lightning_address',
+      address: 'sample-card@flow.paybee.buzz',
+      providerHint: 'paybee',
+      status: 'verified',
+      verifiedAt: new Date(),
+    });
+    await db
+      .update(collectors)
+      .set({ lightningAddress: 'sample-card@flow.paybee.buzz' })
+      .where(eq(collectors.id, collector.id));
+    return collector;
+  }
+
+  const read = (id: string) => GET(getRequest(id), { params: Promise.resolve({ id }) });
+
+  it('staff see the live payout destination, address included', async () => {
+    const collector = await withWallet();
+    authMock.mockResolvedValue(sessionFor('hub_lead'));
+    const body = await (await read(collector.id)).json();
+    expect(body.destination).toMatchObject({
+      address: 'sample-card@flow.paybee.buzz',
+      providerHint: 'paybee',
+      status: 'verified',
+    });
+    expect(body.collector.lightningAddress).toBe('sample-card@flow.paybee.buzz');
+    expect(body.destination).not.toHaveProperty('createdBy');
+  });
+
+  it('the registering supervisor sees the address too', async () => {
+    const me = await createStaff(db, 'supervisor');
+    const collector = await withWallet(me.id);
+    authMock.mockResolvedValue(sessionFor('supervisor', me.id));
+    const body = await (await read(collector.id)).json();
+    expect(body.destination.address).toBe('sample-card@flow.paybee.buzz');
+  });
+
+  it('any other supervisor sees that a wallet exists and is verified — never whose it is', async () => {
+    const collector = await withWallet(); // not registered by 'actor-1'
+    authMock.mockResolvedValue(sessionFor('supervisor'));
+    const body = await (await read(collector.id)).json();
+    expect(body.destination).toMatchObject({
+      address: null,
+      status: 'verified',
+      providerHint: 'paybee',
+    });
+    expect(body.collector.lightningAddress).toBeNull();
+    expect(body.collector.lnurlPayRaw).toBeNull();
+    expect(JSON.stringify(body)).not.toContain('sample-card');
   });
 
   it('404s for an unknown id', async () => {

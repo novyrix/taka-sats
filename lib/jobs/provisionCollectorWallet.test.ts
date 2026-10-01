@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach, describe, expect, it } from 'vitest';
 import { CollectorNotFoundError } from '@/lib/collectors';
 import { getDb } from '@/lib/db/client';
-import { collectors } from '@/lib/db/schema';
+import { resetCollectorTables } from '@/lib/testing/fixtures';
+import { collectorPaymentDestinations, collectors } from '@/lib/db/schema';
 import type { CollectorWalletProvisioner } from '@/lib/lightning/LNbitsProvider';
 import { provisionCollectorWallet } from './provisionCollectorWallet';
 
@@ -25,21 +26,23 @@ describe.skipIf(!hasDatabase)('provisionCollectorWallet (integration)', () => {
   const db = hasDatabase ? getDb() : undefined!;
 
   beforeEach(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   afterAll(async () => {
-    await db.execute(
-      sql`truncate table anomaly_flags, tag_history, collectors restart identity cascade`,
-    );
+    await resetCollectorTables(db);
   });
 
   async function insertCollector(addressSource: 'byo' | 'provisioned'): Promise<string> {
     const [row] = await db
       .insert(collectors)
-      .values({ alias: 'Amina', addressSource, enrolledAt: new Date() })
+      .values({
+        alias: 'Amina',
+        addressSource,
+        enrolledAt: new Date(),
+        publicCode: 'TS-0001',
+        status: 'active',
+      })
       .returning({ id: collectors.id });
     return row!.id;
   }
@@ -55,6 +58,19 @@ describe.skipIf(!hasDatabase)('provisionCollectorWallet (integration)', () => {
     expect(row?.lnbitsWalletId).toBe(`wallet-for-${id}`);
     expect(row?.lnurlPayRaw).toBe('lnurl1fakeprovisioned');
     expect(row?.lightningAddress).toBeNull();
+
+    // Payouts read the destinations table, so the minted wallet is recorded there too.
+    const destinations = await db
+      .select()
+      .from(collectorPaymentDestinations)
+      .where(eq(collectorPaymentDestinations.collectorId, id));
+    expect(destinations).toHaveLength(1);
+    expect(destinations[0]).toMatchObject({
+      type: 'lnurl_pay',
+      address: 'lnurl1fakeprovisioned',
+      status: 'verified',
+      createdBy: null,
+    });
   });
 
   it('is idempotent — a retry does not mint a second wallet', async () => {

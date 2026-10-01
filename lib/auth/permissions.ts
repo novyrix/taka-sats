@@ -21,22 +21,26 @@ export type Role = (typeof ROLES)[number];
 
 export const SCOPES = [
   'collector:enrol', // enrol a collector, issue/replace a tag
+  'collector:authorize', // authorize/revoke a collector (D-25) and replace a verified payout destination (D-26)
   'collector:read', // look up a collector's record (staff-facing, not the public/partner surface)
   'collection:record', // record a collection event
   'rates:read', // read the current material rates + history (staff — the weigh flow needs this)
   'session:read', // read session config (assigned/all, scoped in the handler)
   'tag:revoke', // revoke a tag mapping
   'session:configure', // configure sessions, rates, thresholds
+  'payout:read', // read payouts (a plain supervisor: only those of events they recorded — scoped in the handler)
   'payout:approve', // approve an above-threshold payout that is not your own submission
   'payout:execute', // execute/direct a payout — SYSTEM ONLY, in no role
   'treasury:topup:initiate', // initiate a cold→hot top-up (still needs a 2nd sign-off)
   'anomaly:review', // review/resolve anomaly flags
+  'reconciliation:write', // enter recycler sales and run reconciliation reports (admin; §10.2)
   'session:metrics:read:own', // live metrics for your own sessions
   'session:metrics:read:all', // live metrics for every session
   'session:metrics:read:sponsored', // live metrics for sessions you sponsor
   'report:generate:all', // generate any partner/funder report
   'report:generate:own', // generate reports within your own scope
   'apikey:manage', // create/revoke API keys
+  'ledger:read', // stream the global ledger, list checkpoints, run the verifier (staff audit; hashes/ids only)
 ] as const;
 export type Scope = (typeof SCOPES)[number];
 
@@ -50,27 +54,32 @@ const supervisorScopes = [
   'collection:record',
   'rates:read',
   'session:read',
+  'payout:read',
   'session:metrics:read:own',
 ] as const satisfies readonly Scope[];
 
 /** The one source of truth for what each role may do. */
 export const ROLE_SCOPES: Readonly<Record<Role, readonly Scope[]>> = Object.freeze({
   supervisor: supervisorScopes,
-  hub_lead: [...supervisorScopes, 'payout:approve'],
+  hub_lead: [...supervisorScopes, 'collector:authorize', 'payout:approve'],
   admin: [
     'collector:enrol',
+    'collector:authorize',
     'collector:read',
     'collection:record',
     'rates:read',
     'session:read',
     'tag:revoke',
     'session:configure',
+    'payout:read',
     'payout:approve',
     'treasury:topup:initiate',
     'anomaly:review',
+    'reconciliation:write',
     'session:metrics:read:all',
     'report:generate:all',
     'apikey:manage',
+    'ledger:read',
   ],
   partner: ['session:metrics:read:sponsored', 'report:generate:own'],
 });

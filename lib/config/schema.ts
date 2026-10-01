@@ -31,6 +31,8 @@ const programmeSchema = z.object({
     .regex(/^[A-Z]{3}$/, 'fiat_currency must be a 3-letter ISO 4217 code'),
   locales: z.array(nonEmpty).min(1),
   default_locale: nonEmpty,
+  /** Where this deployment is served; builds credential URLs and links (no trailing slash). */
+  public_base_url: z.url().refine((u) => !u.endsWith('/'), 'public_base_url must not end with "/"'),
 });
 
 const custodySchema = z.object({
@@ -39,13 +41,36 @@ const custodySchema = z.object({
   provisioning_ack: z.string(),
 });
 
+const collectorsSchema = z.object({
+  /** The authorization gate (D-25): supervisor registrations stay `pending` until staff authorize. */
+  authorization_required: z.boolean(),
+  /** First segment of a collector's `public_code` (D-24), e.g. `TS` in `TS-KBR-0042`. */
+  code_prefix: z
+    .string()
+    .trim()
+    .regex(/^[A-Z]{1,6}$/, 'code_prefix must be 1-6 capital letters'),
+  /** Site segment when an enrolment names none; empty omits the segment. */
+  default_site_code: z
+    .string()
+    .trim()
+    .regex(/^([A-Z]{2,6})?$/, 'default_site_code must be empty or 2-6 capital letters'),
+});
+
 const authSchema = z.object({
   /** How long a supervisor's signed-in session survives, incl. fully offline (§3.1, ADR-0002). */
   session_max_age_days: z.int().positive(),
 });
 
 const lightningSchema = z.object({
-  float_provider: z.enum(['blink', 'lnbits', 'fedimint']),
+  float_provider: z.enum(['blink', 'lnbits', 'fedimint', 'fake']),
+  /** Hosts whose URLs are spend credentials; exact host + subdomains, case-insensitive. Rejected before any fetch. */
+  spend_link_hosts: z.array(
+    z.string().regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, 'must be a bare hostname'),
+  ),
+  /** Per-request timeout for LNURL resolution and invoice requests. */
+  lnurl_timeout_ms: z.int().min(1000).max(60000),
+  /** Wallet-provider labels by Lightning-address domain (subdomains match) — display/analytics only. */
+  provider_hints: z.record(nonEmpty, nonEmpty),
   blink: z.object({
     api_url: z.url(),
     float_wallet_id: z.string(),
@@ -61,9 +86,9 @@ const lightningSchema = z.object({
 
 const moneySchema = z.object({
   rate_staleness_ttl_seconds: z.int().positive(),
-  /** ≥2 independent sources (D-18); array order is preference order. Known: `yadio`, `coingecko`, `fake`. */
+  /** ≥2 independent sources (D-18); array order is preference order. Known: `yadio`, `coinbase`, `kraken_fx`, `coingecko`, `fake`. */
   exchange_sources: z.array(nonEmpty).min(2),
-  /** Reject a snapshot if any source's reading deviates more than this % from the median. */
+  /** Sources within this % of the median agree; an outlier is set aside; ≥2 must agree within this % of each other. */
   rate_deviation_tolerance_pct: z.number().positive().max(100),
 });
 
@@ -78,9 +103,21 @@ const ratesSchema = z.object({
 });
 
 const payoutsSchema = z.object({
+  /** A payout above this waits for a distinct approver. 0 = every payout is held for review. */
   second_signoff_threshold_sats: z.int().nonnegative(),
+  /** The first payout to a never-paid destination needs an approver whatever its size. */
+  require_approval_first_payout: z.boolean(),
   float_low_balance_alert_sats: z.int().nonnegative(),
   auto_topup_enabled: z.boolean(),
+  /** How often the worker re-tries parked payouts (5-field cron, UTC). */
+  sweep_cron: z
+    .string()
+    .trim()
+    .regex(/^\S+(\s+\S+){4}$/, 'sweep_cron must be a 5-field cron expression'),
+  /** A payout in 'sending' longer than this is flagged payout_uncertain, never re-sent. */
+  sending_stale_minutes: z.int().positive(),
+  /** Retry limit of the process-payout job. */
+  max_attempts: z.int().positive(),
 });
 
 const reconciliationSchema = z.object({
@@ -91,6 +128,8 @@ const anomalySchema = z.object({
   identical_weight_repeat_count: z.int().min(2),
   payout_concentration_gini: z.number().min(0).max(1),
   off_hours_grace_minutes: z.int().nonnegative(),
+  weight_outlier_min_events: z.int().min(1),
+  weight_outlier_mad_k: z.number().positive(),
 });
 
 const schedulingSchema = z.object({
@@ -105,6 +144,14 @@ const transparencySchema = z.object({
 });
 
 const ledgerSchema = z.object({
+  /** Run the signing job at all. Needs the `LEDGER_SIGNING_KEY` secret when true. */
+  checkpoint_enabled: z.boolean(),
+  /** How often the worker looks for new entries to checkpoint (5-field cron, UTC). */
+  checkpoint_cron: z
+    .string()
+    .trim()
+    .regex(/^\S+(\s+\S+){4}$/, 'checkpoint_cron must be a 5-field cron expression'),
+  /** Minimum new entries since the last checkpoint before another is signed. */
   checkpoint_interval_entries: z.int().positive(),
   opentimestamps_enabled: z.boolean(),
 });
@@ -113,6 +160,7 @@ export const settingsSchema = z
   .object({
     programme: programmeSchema,
     custody: custodySchema,
+    collectors: collectorsSchema,
     auth: authSchema,
     lightning: lightningSchema,
     money: moneySchema,
