@@ -40,6 +40,14 @@ The hot wallet pays collectors automatically. It implements the `LightningProvid
 - An uncertain payment is held for a person to check, never retried automatically.
 - The key is read from the environment, never logged and never sent to a browser.
 
+### Checking a provider yourself
+
+`pnpm provider:check` is the operator tool: it checks credentials, reads the balance, proves a
+receive address works and can send one supervised payment of 1 to 100 sats, then reports whether
+the answer was classified paid, failed or unknown. See [`../GETTING_STARTED.md`](../GETTING_STARTED.md).
+It works against the demo provider too. Your provider page should record the date you ran it and
+what you saw.
+
 ### Contract tests
 
 A provider is considered supported when it passes the shared checks in `lib/lightning`, including

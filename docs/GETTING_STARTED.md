@@ -141,11 +141,47 @@ day is [`PILOT.md`](PILOT.md).
 2. Pick a hot wallet provider that meets the requirements in
    [`providers/README.md`](providers/README.md), put its API key in `.env`, and change
    `float_provider`. Set `TAKASATS_ALLOW_FAKE_PROVIDER` back to `false`.
-3. Keep the hot wallet balance small, a few days of expected payouts. Fund it from a pool that
+3. Check the provider with the operator tool before any payout runs (see below).
+4. Keep the hot wallet balance small, a few days of expected payouts. Fund it from a pool that
    several people must approve, as described in [`TREASURY.md`](TREASURY.md).
-4. Make the first payment yourself: register your own wallet, weigh a tiny amount, approve it,
+5. Make the first payment yourself: register your own wallet, weigh a tiny amount, approve it,
    and watch it arrive. Only then invite collectors.
-5. Set up off host backups for Postgres and the photo storage before you collect real data.
+6. Set up off host backups for Postgres and the photo storage before you collect real data.
+
+### Checking your provider with `provider:check`
+
+`pnpm provider:check` loads the provider you configured and tells you, line by line, what works.
+Secrets are never printed. Run it from the same place that holds the API key (for the Compose
+stack, `$COMPOSE run --rm tools scripts/provider-check.ts ...`).
+
+```bash
+# 1. Read only: credentials present, float balance readable
+pnpm provider:check
+
+# 2. Also prove a receive address works (a wallet you control)
+pnpm provider:check --address you@wallet.example
+
+# 3. Also send ONE tiny real payment, supervised
+pnpm provider:check --pay-sats 1 --to you@wallet.example
+```
+
+The payment step needs both `--pay-sats` (a whole number from 1 to 100) and `--to`, and it only
+runs after you type `yes` at the prompt. For a non interactive run pass `--yes-i-am-sure`. The
+tool refuses a destination that is not receive capable, and refuses when the float cannot cover
+the amount.
+
+It reports how the provider's answer was classified:
+
+| Line | Meaning | Exit code |
+|---|---|---|
+| `PAID` | The provider confirmed it. The reference is the payment hash. | 0 |
+| `FAILED` | The provider refused it and nothing was sent. | 1 |
+| `UNKNOWN` | It may have gone out. **Do not send it again.** Look at the wallet history for the key and hash shown. | 3 |
+
+After a payment it also asks the provider to look the payment up and compares the balance before
+and after. Record the date and what you saw in the provider's page under
+[`providers/`](providers/README.md) once you have run it against a real account. Use
+`--env-file <path>` to load `KEY=value` lines first.
 
 ## Keeping it honest
 
