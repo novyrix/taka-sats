@@ -259,7 +259,7 @@ This section overrides anything above it if the two ever conflict. These are not
 
 ## 13. What This Guide Deliberately Does Not Cover
 
-License choice, contribution workflow for external contributors, issue templates, and release/versioning strategy belong in the companion **CONTRIBUTING Guide**, not here — this document is about how code is written, not about how the project is governed as an open-source effort. `CONTRIBUTING.md` is a v1 Milestone 0 deliverable tracked by `docs/ROADMAP.md` M0-4.
+License choice, contribution workflow for external contributors, issue templates, and release/versioning strategy belong in the companion **CONTRIBUTING Guide**, not here — this document is about how code is written, not about how the project is governed as an open-source effort. The governance side lives in `CONTRIBUTING.md`.
 
 ---
 

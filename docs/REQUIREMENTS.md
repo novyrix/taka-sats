@@ -20,7 +20,6 @@ Every requirement here traces to a PRD functional requirement (`FR-x.y`) or user
 
 **Nothing operational is hardcoded.** Every tunable value — per-kg rates, sign-off thresholds, reconciliation tolerance, rate-staleness TTL, anomaly parameters, amount-disclosure mode, and which Lightning provider and custody model an operator runs — lives in a documented, version-controlled settings file (**§13**), never in source. This is a hard project rule, not a preference: it is what lets another circular-economy or Bitcoin-adoption programme adopt this codebase without forking it.
 
-Companion document: `docs/ROADMAP.md` (the milestone-by-milestone build plan).
 
 ---
 
@@ -188,7 +187,7 @@ These edits reconcile the source documents with the resolved decisions. They wer
 
 ### 4.4 New documents to add
 
-- Under `docs/`: `ROADMAP.md` (milestone plan), `DESIGN.md` (design system + UI component inventory + library choices), `adr/` (decision records), `openapi.yaml`, `LEDGER.md` (auditor's verification guide), `SELF_HOSTING.md`, `THREAT_MODEL.md`, `CONFIGURATION.md` (annotated walk-through of every `settings.toml` key).
+- Under `docs/`: `DESIGN.md` (design system + UI component inventory + library choices), `adr/` (decision records), `openapi.yaml`, `LEDGER.md` (auditor's verification guide), `SELF_HOSTING.md`, `THREAT_MODEL.md`, `CONFIGURATION.md` (annotated walk-through of every `settings.toml` key).
 
 ---
 
@@ -250,7 +249,7 @@ These edits reconcile the source documents with the resolved decisions. They wer
 
 ## 6. Functional requirements — consolidated disposition
 
-Every PRD functional requirement, its v1 disposition, and the milestone that delivers it. "Milestone" refers to `docs/ROADMAP.md`.
+Every PRD functional requirement, its v1 disposition, and the milestone that delivers it. "Milestone" is the build stage that delivers it (M0 to M8).
 
 | FR | Summary | v1 disposition | Milestone |
 |---|---|---|---|
@@ -895,4 +894,4 @@ Additions to the PRD §15 glossary:
 
 ---
 
-*This document consolidates and is subordinate to the five source documents in `Initial assets/`. Where it changes them, §4 says so; those edits land in Milestone 0. `docs/ROADMAP.md` turns this into a build sequence.*
+*This document consolidates and is subordinate to the five source documents in `Initial assets/`. Where it changes them, §4 says so; those edits land in Milestone 0.*

@@ -23,4 +23,4 @@ admin use.
 
 ## Related
 
-REQUIREMENTS §14 (NFR 7.2); ROADMAP M3; gate G2.
+REQUIREMENTS §14 (NFR 7.2); gate G2.

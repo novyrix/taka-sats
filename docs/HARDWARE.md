@@ -51,7 +51,7 @@ are the first thing to fail in the field.
 - [ ] Confirm the supplier can pre-print the delivered card art (front) and the back-face
       receive-only text, or that in-house printing/lamination is arranged.
 - [ ] Confirm write compatibility with the Web NFC devices supervisors actually carry (gate
-      **G2** — tracked separately from procurement; see `docs/ROADMAP.md`).
+      **G2** — tracked separately from procurement).
 
 ## Durability test (before a bulk order, and again at M8-11's field test)
 

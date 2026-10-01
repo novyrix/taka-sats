@@ -22,4 +22,4 @@ edit a ledger row. A correction flow (new linked entry) is required wherever dat
 
 ## Related
 
-REQUIREMENTS §11, D-13; ADR-0004; ROADMAP M4-1, M4-8.
+REQUIREMENTS §11, D-13; ADR-0004.

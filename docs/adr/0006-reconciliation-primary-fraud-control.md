@@ -24,4 +24,4 @@ Depends on the recycler-sales data pipeline (gate G3).
 
 ## Related
 
-REQUIREMENTS §16, FR-3.5/3.6; ROADMAP M6; gate G3.
+REQUIREMENTS §16, FR-3.5/3.6; gate G3.

@@ -27,4 +27,4 @@ target, not a special case in the payout worker.
 
 ## Related
 
-REQUIREMENTS D-11/D-23; ADR-0003, ADR-0015; ROADMAP M1-2, M5-10.
+REQUIREMENTS D-11/D-23; ADR-0003, ADR-0015.

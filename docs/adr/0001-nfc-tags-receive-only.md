@@ -23,4 +23,4 @@ spend use case without a different tag type — acceptable, Taka Sats has no spe
 
 ## Related
 
-REQUIREMENTS §7.2, §16; US-1.2/1.3; ROADMAP M1-10. Enforced by a receive-only guarantee test.
+REQUIREMENTS §7.2, §16; US-1.2/1.3. Enforced by a receive-only guarantee test.

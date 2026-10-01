@@ -22,4 +22,4 @@ Config, not branching, carries the operator's regulatory posture.
 
 ## Related
 
-REQUIREMENTS D-22, §12; ADR-0003, ADR-0007; ROADMAP M5-3, M5-10.
+REQUIREMENTS D-22, §12; ADR-0003, ADR-0007.

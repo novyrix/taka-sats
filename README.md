@@ -7,12 +7,11 @@ and pay them over Bitcoin Lightning. Every collection and every payment goes int
 anyone can verify.
 
 [![Licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue.svg)](LICENSE)
-[![Status: pilot ready, demo mode](<https://img.shields.io/badge/status-pilot%20ready%20(demo%20mode)-orange.svg>)](#where-we-are)
+[![Status: pilot ready, demo mode](<https://img.shields.io/badge/status-pilot%20ready%20(demo%20mode)-orange.svg>)](#status)
 
-[About](https://taka.novyrix.com/about) ·
-[Live demo](https://taka.novyrix.com) ·
-[Verification protocol](docs/VERIFICATION.md) ·
-[Funding](docs/FUNDING.md) ·
+[About](https://taka.afribit.africa/about) ·
+[Run it for your community](docs/GETTING_STARTED.md) ·
+[How it stays honest](docs/VERIFICATION.md) ·
 [Source](https://github.com/novyrix/taka-sats)
 
 ## What is Taka Sats?
@@ -53,6 +52,9 @@ without trusting anyone's word.
 - **Collectors keep their own keys.** By default the programme never holds money that belongs to a
   collector. A QR code or NFC tag is only a pointer to an identity. It cannot spend or receive
   anything.
+- **Any wallet provider.** The hot wallet that pays collectors, and the multisig pool that funds
+  it, are both pluggable. [`docs/providers/`](docs/providers/README.md) states what a provider
+  must offer, and [`docs/TREASURY.md`](docs/TREASURY.md) explains how funds are held and approved.
 - **Open source, self hostable.** The code is free to read, copy and run under the AGPL licence.
   Every setting lives in a configuration file, so a programme in another city changes a file, not
   the code.
@@ -60,65 +62,56 @@ without trusting anyone's word.
 - **A record anyone can verify.** Important facts go into an append only ledger with signed
   checkpoints. A free script lets anyone check that nothing was altered.
 
+## Run it for your community
+
+You need a small Linux server with Docker, a domain name, and a few staff. The short version:
+
+```bash
+git clone https://github.com/novyrix/taka-sats.git && cd taka-sats
+cp .env.example .env            # set your secrets and domain
+# create config/settings.toml with your programme's name, currency and timezone
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.https.yml --env-file .env up -d --build
+```
+
+The full walkthrough, from secrets to your first collector and your first payout, is
+[`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md). To try it on your own computer or work on the
+code, see [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
+
 ## How it stays honest
 
 Seven layers, from approving collectors to comparing our totals with what the recycler actually
 received. No single layer is trusted alone, and the protocol states plainly what it cannot prove.
 Read it in full in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 
-## Where we are
+## Status
 
-Taka Sats is **ready for a supervised pilot**. Today it runs in **demo mode**: payments are
+Taka Sats is **ready for a supervised pilot**. It runs in **demo mode** by default: payments are
 simulated and no real money moves.
 
-|                        |                                                                                                                                                                                                                  |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Working and tested** | Collector approval, offline capture, sync, the ledger and its public verifier, payments with second person approval, reconciliation against recycler sales, anomaly flags and review, a public summary of totals |
-| **Before real money**  | A supervised first payment on the live Lightning rail, backups, and the staff accounts for the pilot team                                                                                                        |
-| **Planned**            | Connected scales, automatic reading of the scale display, a shared treasury that needs several people to approve funding, public attestations over Nostr                                                         |
-
-The pilot measures are listed in the verification protocol. The build plan is in
-[`docs/ROADMAP.md`](docs/ROADMAP.md).
-
-## Who it is for
-
-- **Programmes** that pay for recycling or other measurable community work and need records they
-  can defend.
-- **Collectors and supervisors** who need something that works on a cheap phone with poor signal.
-- **Funders and partners** who want to see what their support did, with evidence rather than
-  reports.
-
-## Funding and support
-
-Taka Sats is an open source public good. We are preparing to seek grants from Bitcoin and open
-source funders. What we are building, what each funder asks for and what we still need is in
-[`docs/FUNDING.md`](docs/FUNDING.md).
+|                        |                                                                                                                                                                                          |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Working and tested** | Collector approval, offline capture, sync, the ledger and its public verifier, payments with second person approval, reconciliation against recycler sales, anomaly flags, public totals |
+| **Not yet verified**   | Real Lightning payments through Blink or LNbits. The first one must be a supervised test with a tiny amount                                                                              |
+| **Not built**          | The treasury funding vote, connected scales, automatic reading of the scale display                                                                                                      |
 
 ## Get involved
 
-- **Use it or ask about it.** Open an [issue](https://github.com/novyrix/taka-sats/issues).
+- **Ask a question or report a bug.** Open an [issue](https://github.com/novyrix/taka-sats/issues).
 - **Contribute.** Read [`CONTRIBUTING.md`](CONTRIBUTING.md). We use Conventional Commits and the
   Developer Certificate of Origin, and we welcome translations into Swahili and Sheng.
 - **Report a security problem.** Follow [`SECURITY.md`](SECURITY.md). Please do not open a public
   issue for vulnerabilities.
 - **Community standards.** See [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md).
 
-## Run your own
-
-You can host Taka Sats for your own programme. Start with
-[`docs/SELF_HOSTING.md`](docs/SELF_HOSTING.md). To work on the code, see
-[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
-
 ## Documentation
 
-| Understand                                    | Operate                                | Build                                             |
-| --------------------------------------------- | -------------------------------------- | ------------------------------------------------- |
-| [Verification protocol](docs/VERIFICATION.md) | [Pilot runbook](docs/PILOT.md)         | [Development](docs/DEVELOPMENT.md)                |
-| [The ledger](docs/LEDGER.md)                  | [Self hosting](docs/SELF_HOSTING.md)   | [Backend contract](docs/BACKEND.md)               |
-| [Threat model](docs/THREAT_MODEL.md)          | [Configuration](docs/CONFIGURATION.md) | [Requirements](docs/REQUIREMENTS.md)              |
-| [Decisions](docs/adr/README.md)               | [Hardware](docs/HARDWARE.md)           | [Design system](docs/DESIGN.md)                   |
-| [Roadmap](docs/ROADMAP.md)                    | [Treasury](docs/TREASURY.md)           | [Provider requirements](docs/providers/README.md) |
-| [Funding](docs/FUNDING.md)                    | [Contributing](CONTRIBUTING.md)        |                                                   |
+| Understand                                    | Operate                                              | Build                                             |
+| --------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------- |
+| [Verification protocol](docs/VERIFICATION.md) | [Run it for your community](docs/GETTING_STARTED.md) | [Development](docs/DEVELOPMENT.md)                |
+| [The ledger](docs/LEDGER.md)                  | [Pilot runbook](docs/PILOT.md)                       | [Backend contract](docs/BACKEND.md)               |
+| [Threat model](docs/THREAT_MODEL.md)          | [Self hosting](docs/SELF_HOSTING.md)                 | [Requirements](docs/REQUIREMENTS.md)              |
+| [Treasury](docs/TREASURY.md)                  | [Configuration](docs/CONFIGURATION.md)               | [Design system](docs/DESIGN.md)                   |
+| [Decisions](docs/adr/README.md)               | [Hardware](docs/HARDWARE.md)                         | [Provider requirements](docs/providers/README.md) |
 
 ## Licence
 

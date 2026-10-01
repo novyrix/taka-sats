@@ -8,7 +8,7 @@ Prepared August 2026 · Revised September 2026
 
 **Revision 1.1 (2026-09):** reconciled with `docs/REQUIREMENTS.md` for implementation and its resolved decisions D-01…D-23. Changes: the payout rail is a pluggable, configurable `LightningProvider` (**Blink** as the shipped default, self-hosted **LNbits** as the opt-in custodial provider, and **Fedimint/Fedi** as a supported rail — see §8, Technical Architecture ADR-003/006); collectors may use a **bring-your-own** Lightning Address / Blink Paycode *or* a program-provisioned LNbits wallet (§6.1); the HTTP API is a first-class, documented, versioned product surface (`/api/v1`); per-material rates are stored in fiat and converted to sats at disbursement; open-source publication and the public open dataset are v1 (Phase 2) deliverables. Nothing operational is hardcoded — see `docs/CONFIGURATION.md`.
 
-Companion documents: Taka Sats User Stories, Taka Sats Brand Guidelines, Taka Sats Technical Architecture, Taka Sats CONTRIBUTING Guide, Taka Sats Code Style Guide, and the engineering set under `docs/` (`REQUIREMENTS.md` — the consolidated spec, `ROADMAP.md`, `DESIGN.md`). This PRD states *what* and *why*; `docs/REQUIREMENTS.md` is the buildable consolidation and is authoritative where the two differ.
+Companion documents: Taka Sats User Stories, Taka Sats Brand Guidelines, Taka Sats Technical Architecture, Taka Sats CONTRIBUTING Guide, Taka Sats Code Style Guide, and the engineering set under `docs/` (`REQUIREMENTS.md` — the consolidated spec, `DESIGN.md`). This PRD states *what* and *why*; `docs/REQUIREMENTS.md` is the buildable consolidation and is authoritative where the two differ.
 
 ---
 
@@ -325,7 +325,7 @@ PUBLIC ATTESTATION + PARTNER/FUNDER REPORTING
 
 ## 13. Rollout Plan
 
-**v1 delivers Phase 1 and Phase 2 in one continuous build** (decision D-02 in `docs/REQUIREMENTS.md`), because Phase 2 is what makes the project grant-ready. `docs/ROADMAP.md` sequences this as milestones M0–M8.
+**v1 delivers Phase 1 and Phase 2 in one continuous build** (decision D-02 in `docs/REQUIREMENTS.md`), because Phase 2 is what makes the project grant-ready.
 
 **Phase 1 — Pilot.** Collector enrolment (bring-your-own or program-provisioned), NFC receive-tag issuance, manual weighing + mandatory photo evidence, offline-capable supervisor PWA, hash-chained signed ledger, reconciliation against recycler sales from day one, separation of duties.
 
@@ -366,4 +366,4 @@ Tracked with owners and gates in `docs/REQUIREMENTS.md §17` (OQ-1…OQ-8). Stat
 
 ---
 
-*This PRD (revision 1.1) states what Taka Sats must do and why. The buildable consolidation — data model, API contract, decisions, config surface — is `docs/REQUIREMENTS.md` (signed), sequenced by `docs/ROADMAP.md`, with UI in `docs/DESIGN.md`. The User Stories, Brand Guidelines, Technical Architecture, CONTRIBUTING Guide, and Code Style Guide remain companions.*
+*This PRD (revision 1.1) states what Taka Sats must do and why. The buildable consolidation — data model, API contract, decisions, config surface — is `docs/REQUIREMENTS.md` (signed), with UI in `docs/DESIGN.md`. The User Stories, Brand Guidelines, Technical Architecture, CONTRIBUTING Guide, and Code Style Guide remain companions.*

@@ -26,4 +26,4 @@ must be genuinely usable, not stubs.
 
 ## Related
 
-REQUIREMENTS §7.1, D-05; ADR-0001, ADR-0007; ROADMAP M1-5, M1-6, M1-7.
+REQUIREMENTS §7.1, D-05; ADR-0001, ADR-0007.

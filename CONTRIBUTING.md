@@ -3,15 +3,15 @@
 Thanks for helping build an open, offline-first waste-to-Bitcoin system. This document
 covers how the project is run. How code is _written_ is [`Initial assets/Taka_Sats_Code_Style_Guide.md`](Initial%20assets/Taka_Sats_Code_Style_Guide.md);
 how the UI is built is [`docs/DESIGN.md`](docs/DESIGN.md) (canonical — compose from its §6
-inventory, don't hand-roll); what to build and in what order is [`docs/ROADMAP.md`](docs/ROADMAP.md).
+inventory, don't hand-roll); what the product must do is [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).
 
 ## Before you start
 
 1. Read the [README](README.md) and [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) to get the project
    running, and [`docs/BACKEND.md`](docs/BACKEND.md) if you work on the interface.
-2. Find your milestone/issue in [`docs/ROADMAP.md`](docs/ROADMAP.md); read its dependencies
-   and exit criteria, and the [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) sections it maps to.
-3. Do not start a milestone whose ROADMAP dependencies are unmet.
+2. Pick an open issue, or open one describing what you want to change, and read the
+   [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md) sections it relates to.
+3. Check [`docs/adr/`](docs/adr/README.md) so you do not reopen a settled decision.
 
 ## Development setup
 
@@ -34,7 +34,7 @@ The `pre-commit` hook runs format/lint/typecheck; the `commit-msg` hook runs com
 ## Branches and PRs
 
 - Branch off `main`: `feat/m2-rate-table`, `fix/sync-idempotency`.
-- One PR = one ROADMAP issue or one focused change. Don't "also fix" unrelated things —
+- One PR = one issue or one focused change. Don't "also fix" unrelated things —
   open an issue for them instead.
 - Keep PRs reviewable. Rebase on `main`; don't merge `main` into your branch.
 - The PR template checklist is not decorative — every box must be true, including

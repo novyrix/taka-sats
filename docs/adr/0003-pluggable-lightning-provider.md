@@ -28,4 +28,4 @@ gate G1 first. The float is deliberately small (a few days of payouts).
 
 ## Related
 
-REQUIREMENTS D-05/D-11/D-22/D-23; ADR-0007; ROADMAP M1-2, M5.
+REQUIREMENTS D-05/D-11/D-22/D-23; ADR-0007.

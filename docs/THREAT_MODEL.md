@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Draft — M0-14. Revised whenever a component is added (ROADMAP §12, "Security"). |
+| Status | Draft — M0-14. Revised whenever a component is added (see CONTRIBUTING). |
 | Source | `docs/REQUIREMENTS.md §16`, Technical Architecture §7, the ADRs in `docs/adr/`. |
 | Companion | The external security review at M8-6 (gate G5) supersedes this draft's assurance claims. |
 
@@ -103,7 +103,7 @@ Vercel, relays) — reported upstream — and social engineering of Afribit staf
 ## 7. Keeping this current
 
 - A PR that adds a component or a data flow updates §1–§4 here in the same change
-  (ROADMAP §12).
+  (see CONTRIBUTING).
 - A PR touching money-handling or RBAC-enforcement code adds a note to `SECURITY.md §Notes`.
 - The M8-6 external review (gate G5) produces the authoritative assessment; its findings are
   tracked to closure and this document is reconciled against them.

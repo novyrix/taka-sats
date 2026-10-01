@@ -22,4 +22,4 @@ in config seeds the first migration only; later versions are DB rows.
 
 ## Related
 
-REQUIREMENTS D-14/D-18, §13.2 `[rates]`/`[money]`; ROADMAP M2-4, M2-9, M5-2.
+REQUIREMENTS D-14/D-18, §13.2 `[rates]`/`[money]`.

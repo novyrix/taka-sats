@@ -26,4 +26,4 @@ serialisation must match byte-for-byte (one shared implementation, tested both s
 
 ## Related
 
-REQUIREMENTS §11, D-13/D-19; ADR-0005; ROADMAP M4.
+REQUIREMENTS §11, D-13/D-19; ADR-0005.

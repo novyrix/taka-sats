@@ -1,4 +1,4 @@
-# Pilot runbook — `taka.afribit.africa`
+# Pilot runbook
 
 How to stand up the Taka Sats pilot, prove it works before any collector arrives, run a field
 day, and show it to someone. Written for the person doing it, not for a developer: every step is a
@@ -33,12 +33,12 @@ NFC on plain `http`. That is what the Caddy overlay (`docker/docker-compose.http
 
 ## 2. Before you start
 
-- [ ] **DNS:** an `A` record for `taka.afribit.africa` → the server's public IP. (Caddy cannot get a
+- [ ] **DNS:** an `A` record for `your-domain.example` → the server's public IP. (Caddy cannot get a
       certificate until this resolves.)
 - [ ] **Server:** Docker + Compose v2.24 or newer; firewall allows **80, 443** (and 22 for you).
       Everything else stays closed — the overlay already binds MinIO and the relay to localhost.
 - [ ] **Decide the payout rail** (see §6): `fake` (a demo — nothing is sent, clearly labelled) or
-      `blink` (real sats from Afribit's Blink float).
+      `blink` (real sats from your Blink float).
 - [ ] **A Paybee card** (or any wallet) for the test collector. You need its **Receive** side — a
       Lightning Address. Never scan the **Pay** side; the system will refuse it, but don't try.
 - [ ] Two Android phones with Chrome, a digital scale, something to weigh.
@@ -58,7 +58,7 @@ openssl rand -base64 24     # POSTGRES_PASSWORD, MINIO_ROOT_PASSWORD
 ```bash
 git clone <repo> && cd taka-sats
 cp .env.example .env        # then edit: every password, AUTH_SECRET, CRON_SECRET,
-                            # LEDGER_SIGNING_KEY, TAKASATS_DOMAIN=taka.afribit.africa,
+                            # LEDGER_SIGNING_KEY, TAKASATS_DOMAIN=your-domain.example,
                             # DATABASE_URL's password to match POSTGRES_PASSWORD
 ```
 
@@ -82,13 +82,13 @@ account. **It prints each new account's password exactly once** — copy them no
 fresh BTC/KES rate, opens a session at the location for 12 hours, and registers the collector
 (authorized, wallet checked live and marked `verified`).
 
-Open `https://taka.afribit.africa` — the first load may take ~30 s while Caddy gets the
-certificate. `https://taka.afribit.africa/api/v1/health` should say `{"ok":true,"database":"up"}`.
+Open `https://your-domain.example` — the first load may take ~30 s while Caddy gets the
+certificate. `https://your-domain.example/api/v1/health` should say `{"ok":true,"database":"up"}`.
 
 ## 4. Prove it before anyone arrives — the smoke test
 
 ```bash
-$COMPOSE run --rm tools scripts/pilot-smoke.ts --base https://taka.afribit.africa \
+$COMPOSE run --rm tools scripts/pilot-smoke.ts --base https://your-domain.example \
   --admin-phone +2547… --admin-password '…' --supervisor-phone +2547… --supervisor-password '…'
 ```
 

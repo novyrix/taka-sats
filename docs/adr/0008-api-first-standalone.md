@@ -20,4 +20,4 @@ contract and its docs are a first-class deliverable with their own CI gate (from
 
 ## Related
 
-REQUIREMENTS §10, D-01; Code Style Guide §7; ROADMAP M7-3.
+REQUIREMENTS §10, D-01; Code Style Guide §7.

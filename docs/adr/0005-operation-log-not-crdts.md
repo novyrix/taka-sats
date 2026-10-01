@@ -22,4 +22,4 @@ feature (e.g. collaborative session planning) introduces real concurrent-documen
 
 ## Related
 
-REQUIREMENTS §10.3, FR-4.2; ADR-0004; ROADMAP M4-3, M4-10.
+REQUIREMENTS §10.3, FR-4.2; ADR-0004.

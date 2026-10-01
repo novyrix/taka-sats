@@ -5,7 +5,7 @@
 
 ## What changed and why
 
-<!-- The diff shows what. Explain the why, and the user story / FR / ROADMAP issue it maps to. -->
+<!-- The diff shows what. Explain the why, and the user story / FR / issue it maps to. -->
 
 ## Checklist
 

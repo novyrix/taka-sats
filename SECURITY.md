@@ -66,7 +66,7 @@ each preserves or alters (Code Style Guide §12). Newest first.
   still execute on the VM; the Vercel layer does not mint or interpret sessions. Deploy checks
   cover CSRF, `Set-Cookie`, authenticated session reads and upload limits through the public origin.
 
-- 2026-10-01 — Reconciliation, anomaly detection and the review/read APIs (ROADMAP M6-1..5).
+- 2026-10-01 — Reconciliation, anomaly detection and the review/read APIs.
   Adds ONE scope, `reconciliation:write` (admin only; matrix test updated), guarding `POST
 /recycler-sales` and `POST /reconciliation/runs`; the reads reuse `report:generate:all`
   (admin) and `anomaly:review` (admin). Preserves: **no flag blocks anything** — detectors run

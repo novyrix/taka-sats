@@ -19,8 +19,8 @@ body:
     id: maps-to
     attributes:
       label: Maps to
-      description: ROADMAP milestone/issue, REQUIREMENTS FR/US, or decision (D-xx) this relates to.
-      placeholder: ROADMAP M2-4 / REQUIREMENTS FR-2.2
+      description: REQUIREMENTS FR/US, or decision (D-xx) this relates to.
+      placeholder: REQUIREMENTS FR-2.2
   - type: textarea
     id: alternatives
     attributes:

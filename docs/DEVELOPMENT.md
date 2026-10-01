@@ -1,8 +1,7 @@
 # Development
 
 How to run Taka Sats on your own computer and check your changes. For contributing rules
-(commits, reviews, licensing) see [`CONTRIBUTING.md`](../CONTRIBUTING.md). For the live build
-state, read [`AGENTS.md`](../AGENTS.md) first.
+(commits, reviews, licensing) see [`CONTRIBUTING.md`](../CONTRIBUTING.md). 
 
 ## Requirements
 
@@ -61,5 +60,4 @@ process. See [`CONFIGURATION.md`](CONFIGURATION.md).
 | Understand the product requirements | [`REQUIREMENTS.md`](REQUIREMENTS.md) |
 | Build against the API | [`BACKEND.md`](BACKEND.md) |
 | Follow the design system | [`DESIGN.md`](DESIGN.md) |
-| See what is planned | [`ROADMAP.md`](ROADMAP.md) |
 | Understand a past decision | [`adr/`](adr/README.md) |

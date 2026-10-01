@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Standalone hash-chain verifier (D-19, ROADMAP M4-8, docs/LEDGER.md).
+ * Standalone hash-chain verifier (D-19, docs/LEDGER.md).
  *
  * Recomputes every `entry_hash` link from genesis and checks each signed
  * checkpoint. Exit code: 0 = verified, 1 = the ledger fails verification,

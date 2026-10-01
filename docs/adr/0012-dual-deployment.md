@@ -22,4 +22,4 @@ only works on one — no Redis, no k8s. `output: 'standalone'` is set off-Vercel
 ## Related
 
 REQUIREMENTS D-03, §14 (NFR 7.8); `docker/`, `vercel.json`, `docs/SELF_HOSTING.md`,
-`docs/DEPLOY_VERCEL.md`; ROADMAP M0-7, M0-8, M0-9.
+`docs/DEPLOY_VERCEL.md`.

@@ -6,7 +6,7 @@
 |---|---|
 | Document status | Draft v0.1 — for engineering + design sign-off |
 | Date | 2026-09-03 |
-| Companions | `Initial assets/Taka_Sats_Brand_Guidelines.md` (authoritative on brand), `docs/REQUIREMENTS.md`, `docs/ROADMAP.md`, `Initial assets/Taka_Sats_Code_Style_Guide.md` |
+| Companions | `Initial assets/Taka_Sats_Brand_Guidelines.md` (authoritative on brand), `docs/REQUIREMENTS.md`, `Initial assets/Taka_Sats_Code_Style_Guide.md` |
 | Audience | Implementors (human or agent). This tells you **which components to reuse and how to theme them**, so you build screens by composition, not from scratch. |
 
 ---
@@ -582,7 +582,7 @@ Never blocks on network. GPS-missing shows an inline amber-free warning (Ink + t
 
 ---
 
-## 17. Adoption checklist by milestone (what design work each ROADMAP milestone pulls in)
+## 17. Adoption checklist by milestone (what design work each build milestone pulls in)
 
 | Milestone | Design/UI deliverables |
 |---|---|

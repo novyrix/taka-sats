@@ -36,7 +36,7 @@ multisig tool and any hot wallet can be used, and so that a provider knows what 
 ## Consequences
 
 - The hot wallet interface exists and payouts already wait for float. The pool side (balance
-  view, proposals, approvals, ledger record, hot wallet cap) is not built. It is roadmap item M5-7.
+  view, proposals, approvals, ledger record, hot wallet cap) is not built. It is milestone item M5-7.
 - A custodial hot wallet can freeze its balance. The cap bounds the harm and the requirements
   ask providers to disclose custody and limits.
 - Refills cost an on chain or Lightning fee, so they happen weekly or monthly, not per payment.

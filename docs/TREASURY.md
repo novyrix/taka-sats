@@ -110,7 +110,7 @@ None of these is a requirement. Anything that meets the provider requirements wi
 | A cap on the hot wallet balance | **Planned** |
 | A Fedimint hot wallet | **Planned** |
 
-The proposal and approval flow is roadmap item M5-7. Until it exists, refilling is done by the
+The proposal and approval flow is the next treasury feature (M5-7). Until it exists, refilling is done by the
 stewards outside the software and entered by an admin.
 
 ## Decision record

@@ -9,7 +9,7 @@ if (apiOrigin && !URL.canParse(apiOrigin)) {
   throw new Error('TAKASATS_API_ORIGIN must be an absolute URL');
 }
 
-// Serwist offline layer (DESIGN §6.4, ROADMAP M3-1). `app/sw.ts` precaches the
+// Serwist offline layer (DESIGN §6.4). `app/sw.ts` precaches the
 // built shell + runs Serwist's `defaultCache` runtime strategies. Disabled for
 // `next dev`. NB: `@serwist/next@9` injects the precache manifest with a
 // **webpack** plugin, so `pnpm build` runs `next build --webpack` (not

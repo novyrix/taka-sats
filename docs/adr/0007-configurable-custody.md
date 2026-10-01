@@ -29,4 +29,4 @@ waiting on G1.
 
 ## Related
 
-REQUIREMENTS §7.1, D-05/D-22, §1.3 (G1); ADR-0003; `lib/config/schema.ts`; ROADMAP M8-7.
+REQUIREMENTS §7.1, D-05/D-22, §1.3 (G1); ADR-0003; `lib/config/schema.ts`.
