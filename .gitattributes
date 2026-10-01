@@ -1,0 +1,2 @@
+# Normalise line endings so a Windows checkout (core.autocrlf=true) matches the formatter (LF).
+* text=auto eol=lf

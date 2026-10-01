@@ -13,11 +13,28 @@ import { z } from 'zod';
 import { errorResponse } from '@/lib/api/errors';
 import { requireScope } from '@/lib/auth/session';
 import { getDb } from '@/lib/db/client';
-import { getTopupView, recordTopupTransfer } from '@/lib/treasury';
+import { getTopupView, normaliseTransferReference, recordTopupTransfer } from '@/lib/treasury';
 import { hotWallet } from '@/lib/treasury/provider';
 
 const paramsSchema = z.object({ id: z.uuid() });
-const bodySchema = z.object({ reference: z.string().trim().min(1).max(200) }).strict();
+// The shape is checked here too, so a malformed reference is a 400 before any database access.
+const bodySchema = z
+  .object({
+    reference: z
+      .string()
+      .trim()
+      .min(1)
+      .max(200)
+      .refine((value) => {
+        try {
+          normaliseTransferReference(value);
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'A transfer reference is printable characters without spaces'),
+  })
+  .strict();
 
 type RouteParams = { readonly params: Promise<{ id: string }> };
 

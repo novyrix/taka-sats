@@ -29,10 +29,10 @@ const invoiceFor = (n: number): string =>
 
 const PAYREQUEST = {
   tag: 'payRequest',
-  callback: 'https://blink.sv/lnurlp/callback/afribit',
+  callback: 'https://example.com/lnurlp/callback/sample-wallet',
   minSendable: 1000,
   maxSendable: 100_000_000,
-  metadata: '[["text/plain","pay afribit"]]',
+  metadata: '[["text/plain","pay sample-wallet"]]',
 };
 
 /** A fetch stub that must never be reached. */
@@ -73,17 +73,17 @@ function fakeFetch(routes: Record<string, () => Response>): FetchLike {
 describe('resolveLnurlPay', () => {
   it('resolves a payRequest and converts msat to sat (min rounds up, max rounds down)', async () => {
     const fetchImpl = fakeFetch({
-      'blink.sv': () =>
+      'example.com': () =>
         jsonResponse({
           tag: 'payRequest',
-          callback: 'https://blink.sv/lnurlp/callback/afribit',
+          callback: 'https://example.com/lnurlp/callback/sample-wallet',
           minSendable: 1001,
           maxSendable: 100_000_999,
-          metadata: '[["text/plain","pay afribit"]]',
+          metadata: '[["text/plain","pay sample-wallet"]]',
         }),
     });
 
-    const resolved = await resolveLnurlPay('afribit@blink.sv', fetchImpl);
+    const resolved = await resolveLnurlPay('sample-wallet@example.com', fetchImpl);
     expect(resolved.receiveCapable).toBe(true);
     expect(resolved.minSendableSats).toBe(2); // ceil(1001/1000)
     expect(resolved.maxSendableSats).toBe(100_000); // floor(100000999/1000)
@@ -140,9 +140,9 @@ describe('requestLnurlInvoice / requestInvoiceFor', () => {
       return jsonResponse({ pr: invoiceFor(500) });
     }) as FetchLike;
 
-    const bolt11 = await requestLnurlInvoice('https://blink.sv/callback', sats(500), fetchImpl);
+    const bolt11 = await requestLnurlInvoice('https://example.com/callback', sats(500), fetchImpl);
     expect(bolt11).toBe(invoiceFor(500));
-    expect(requestedUrl).toBe('https://blink.sv/callback?amount=500000');
+    expect(requestedUrl).toBe('https://example.com/callback?amount=500000');
   });
 
   it('appends amount with & when the callback already has query params', async () => {
@@ -161,14 +161,14 @@ describe('requestLnurlInvoice / requestInvoiceFor', () => {
       '.well-known/lnurlp': () =>
         jsonResponse({
           tag: 'payRequest',
-          callback: 'https://blink.sv/lnurlp/callback/afribit',
+          callback: 'https://example.com/lnurlp/callback/sample-wallet',
           minSendable: 1000,
           maxSendable: 100_000_000,
         }),
-      '/lnurlp/callback/afribit': () => jsonResponse({ pr: invoiceFor(1000) }),
+      '/lnurlp/callback/sample-wallet': () => jsonResponse({ pr: invoiceFor(1000) }),
     });
 
-    const bolt11 = await requestInvoiceFor('afribit@blink.sv', sats(1000), fetchImpl);
+    const bolt11 = await requestInvoiceFor('sample-wallet@example.com', sats(1000), fetchImpl);
     expect(bolt11).toBe(invoiceFor(1000));
 
     const withdrawFetch = fakeFetch({
@@ -188,7 +188,7 @@ describe('the invoice must be exactly the amount we asked for', () => {
     for (const inflated of [501, 5_000, 50_000]) {
       await expect(
         requestLnurlInvoice(
-          'https://blink.sv/cb',
+          'https://example.com/cb',
           sats(500),
           callbackReturning(invoiceFor(inflated)),
         ),
@@ -198,7 +198,7 @@ describe('the invoice must be exactly the amount we asked for', () => {
 
   it('refuses an invoice for less than requested too (the ledger must match what moved)', async () => {
     await expect(
-      requestLnurlInvoice('https://blink.sv/cb', sats(500), callbackReturning(invoiceFor(499))),
+      requestLnurlInvoice('https://example.com/cb', sats(500), callbackReturning(invoiceFor(499))),
     ).rejects.toThrow(InvoiceMismatchError);
   });
 
@@ -211,7 +211,7 @@ describe('the invoice must be exactly the amount we asked for', () => {
       'lnurl1dp68gurn8ghj7mrww4exctnrdakj7',
     ]) {
       await expect(
-        requestLnurlInvoice('https://blink.sv/cb', sats(500), callbackReturning(pr)),
+        requestLnurlInvoice('https://example.com/cb', sats(500), callbackReturning(pr)),
       ).rejects.toThrow(InvoiceMismatchError);
     }
   });
@@ -219,7 +219,7 @@ describe('the invoice must be exactly the amount we asked for', () => {
   it('never carries the invoice in the error message', async () => {
     const bad = invoiceFor(9_999);
     const error = (await requestLnurlInvoice(
-      'https://blink.sv/cb',
+      'https://example.com/cb',
       sats(500),
       callbackReturning(bad),
     ).catch((e: unknown) => e)) as Error;
@@ -234,9 +234,9 @@ describe('the invoice must be exactly the amount we asked for', () => {
         : jsonResponse({ pr: invoiceFor(500) }),
     ) as unknown as FetchLike;
 
-    await expect(requestInvoiceFor('afribit@blink.sv', sats(500), fetchImpl)).rejects.toThrow(
-      InvoiceMismatchError,
-    );
+    await expect(
+      requestInvoiceFor('sample-wallet@example.com', sats(500), fetchImpl),
+    ).rejects.toThrow(InvoiceMismatchError);
     // Only the pay-request lookup happened — the callback was never called.
     expect((fetchImpl as unknown as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(1);
   });
@@ -307,9 +307,9 @@ describe('spend credentials and unsafe targets never reach the network', () => {
       jsonResponse({ ...PAYREQUEST, callback: 'https://10.0.0.5/steal' }),
     ) as unknown as FetchLike & ReturnType<typeof vi.fn>;
 
-    await expect(requestInvoiceFor('afribit@blink.sv', sats(10), fetchImpl)).rejects.toThrow(
-      UnsafeLnurlTargetError,
-    );
+    await expect(
+      requestInvoiceFor('sample-wallet@example.com', sats(10), fetchImpl),
+    ).rejects.toThrow(UnsafeLnurlTargetError);
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
@@ -318,7 +318,7 @@ describe('guarded fetch behaviour', () => {
   it('sends redirect:manual and an abort signal', async () => {
     const fetchImpl = vi.fn(async () => jsonResponse(PAYREQUEST)) as unknown as FetchLike &
       ReturnType<typeof vi.fn>;
-    await resolveLnurlPay('afribit@blink.sv', fetchImpl);
+    await resolveLnurlPay('sample-wallet@example.com', fetchImpl);
 
     const init = fetchImpl.mock.calls[0]?.[1] as RequestInit;
     expect(init.redirect).toBe('manual');
@@ -331,7 +331,9 @@ describe('guarded fetch behaviour', () => {
         status: 302,
         headers: { location: 'http://169.254.169.254/' },
       })) as FetchLike;
-    const error = await resolveLnurlPay('afribit@blink.sv', fetchImpl).catch((e: unknown) => e);
+    const error = await resolveLnurlPay('sample-wallet@example.com', fetchImpl).catch(
+      (e: unknown) => e,
+    );
     expect(error).toBeInstanceOf(InvalidLightningAddressError);
     expect(error).not.toBeInstanceOf(LightningEndpointUnreachableError);
     expect((error as Error).message).not.toContain('169.254');
@@ -464,10 +466,10 @@ describe('DNS check (default fetch only)', () => {
     vi.stubGlobal('fetch', fetchImpl);
     dns.lookup.mockResolvedValue([{ address: '93.184.216.34', family: 4 }]);
 
-    await expect(resolveLnurlPay('afribit@blink.sv')).resolves.toMatchObject({
+    await expect(resolveLnurlPay('sample-wallet@example.com')).resolves.toMatchObject({
       receiveCapable: true,
     });
-    expect(dns.lookup).toHaveBeenCalledWith('blink.sv', expect.objectContaining({ all: true }));
+    expect(dns.lookup).toHaveBeenCalledWith('example.com', expect.objectContaining({ all: true }));
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
@@ -484,7 +486,7 @@ describe('DNS check (default fetch only)', () => {
 
   it('is skipped when a fetchImpl is injected', async () => {
     const fetchImpl = (async () => jsonResponse(PAYREQUEST)) as FetchLike;
-    await resolveLnurlPay('afribit@blink.sv', fetchImpl);
+    await resolveLnurlPay('sample-wallet@example.com', fetchImpl);
     expect(dns.lookup).not.toHaveBeenCalled();
   });
 });

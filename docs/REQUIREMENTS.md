@@ -327,7 +327,7 @@ An admin revokes a mapping: `tag_history.revoked_at` is set, and the tag id is a
 
 The **operating float** is Afribit's own money that payouts are sent *from* — it is not a per-collector balance, and it exists in every configuration (even pure BYO: something has to send the sats). The float wallet is whatever the active `LightningProvider` provides:
 
-- **`blink` (default).** The float is an Afribit-controlled Blink account (already in production as `afribit@blink.sv`). Payouts call the Blink API to send to the collector's address. No self-hosted custody anywhere; combined with BYO collector addresses this is the non-custodial baseline.
+- **`blink` (default).** The float is an Afribit-controlled Blink account (already in production). Payouts call the Blink API to send to the collector's address. No self-hosted custody anywhere; combined with BYO collector addresses this is the non-custodial baseline.
 - **`lnbits` (opt-in).** LNbits runs as its own container/host. The float is a dedicated LNbits wallet (`hot-float`); if `provisioning_enabled`, each collector also has a wallet within the same instance. **This makes Afribit a custodian of collector-designated balances → G1 before real funds.**
 - **`fedimint` (opt-in).** The float is a wallet in Afribit's Fedi federation (fedi.xyz); payouts spend federation ecash / Lightning to the collector's address.
 
