@@ -14,7 +14,11 @@
  */
 
 import { sats, type Sats } from '@/lib/money';
-import { PaymentFailedError } from './errors';
+import {
+  isDefinitiveHttpRejection,
+  PaymentFailedError,
+  PaymentOutcomeUnknownError,
+} from './errors';
 import type {
   FloatBalance,
   LightningProvider,
@@ -92,7 +96,11 @@ export class BlinkProvider implements LightningProvider {
     });
 
     if (!response.ok) {
-      throw new PaymentFailedError(`Blink API returned HTTP ${response.status}`);
+      // A 4xx means the request was rejected and nothing was attempted; a 5xx / timeout /
+      // rate-limit may have been processed before the response was lost — outcome unknown.
+      throw isDefinitiveHttpRejection(response.status)
+        ? new PaymentFailedError(`Blink API returned HTTP ${response.status}`)
+        : new PaymentOutcomeUnknownError(`Blink API returned HTTP ${response.status}`);
     }
 
     const body = (await response.json()) as GraphQlResponse<T>;
@@ -130,11 +138,15 @@ export class BlinkProvider implements LightningProvider {
     });
 
     const { status, errors } = data.lnInvoicePaymentSend;
-    if (status !== 'SUCCESS' && status !== 'ALREADY_PAID') {
+    if (status === 'FAILURE') {
       throw new PaymentFailedError(
         errors.map((e) => e.message).join('; ') || `Blink payment status: ${status}`,
         status,
       );
+    }
+    if (status !== 'SUCCESS' && status !== 'ALREADY_PAID') {
+      // PENDING (it may still settle) or a status we do not recognise: never "failed".
+      throw new PaymentOutcomeUnknownError(`Blink payment status: ${status}`);
     }
 
     return {

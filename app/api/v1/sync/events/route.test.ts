@@ -7,6 +7,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/storage', () => ({ photoUrlFor: vi.fn(async () => null) }));
+vi.mock('@/lib/jobs', () => ({ enqueueProcessPayout: vi.fn(async () => undefined) }));
 
 import { auth } from '@/auth';
 import { getDb } from '@/lib/db/client';
@@ -70,7 +71,7 @@ describe.skipIf(!hasDatabase)('/api/v1/sync/events — integration', () => {
     supId = sup!.id;
     const [col] = await db
       .insert(collectors)
-      .values({ alias: 'Amina', addressSource: 'byo' })
+      .values({ alias: 'Amina', addressSource: 'byo', publicCode: 'TS-0001', status: 'active' })
       .returning({ id: collectors.id });
     const [rate] = await db
       .insert(materialRates)
@@ -143,5 +144,32 @@ describe.skipIf(!hasDatabase)('/api/v1/sync/events — integration', () => {
     authMock.mockResolvedValue(session('admin', 'admin'));
     const body = await (await POST(req({ events: [input] }))).json();
     expect(body.results[0]).toMatchObject({ status: 'confirmed', seq: 1 });
+  });
+
+  it('a malformed event never fails the batch — the good events behind it still sync', async () => {
+    authMock.mockResolvedValue(session(supId, 'supervisor'));
+    const poisoned = { ...input, id: crypto.randomUUID(), weightKg: 1500 }; // overflows numeric(6,3)
+    const res = await POST(req({ events: [poisoned, null, 'junk', {}, input] }));
+
+    expect(res.status).toBe(200);
+    const { results } = await res.json();
+    expect(results).toHaveLength(5);
+    expect(results[0]).toMatchObject({
+      id: poisoned.id,
+      status: 'needs_attention',
+      code: 'invalid_event',
+    });
+    for (const bad of results.slice(1, 4)) {
+      expect(bad).toMatchObject({ id: '', status: 'needs_attention', code: 'invalid_event' });
+    }
+    expect(results[4]).toMatchObject({ id: input.id, status: 'confirmed' });
+  });
+
+  it('still 400s for a broken envelope (not an events array, or empty, or over 200)', async () => {
+    authMock.mockResolvedValue(session(supId, 'supervisor'));
+    expect((await POST(req({ events: [] }))).status).toBe(400);
+    expect((await POST(req({}))).status).toBe(400);
+    expect((await POST(req({ events: 'x' }))).status).toBe(400);
+    expect((await POST(req({ events: new Array(201).fill(input) }))).status).toBe(400);
   });
 });

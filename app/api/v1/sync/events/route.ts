@@ -17,10 +17,12 @@ import { errorResponse } from '@/lib/api/errors';
 import { requireScope } from '@/lib/auth/session';
 import {
   ingestCollectionEvent,
+  parseSyncEvent,
   type SyncResult,
   syncEventsBodySchema,
 } from '@/lib/collection-events';
 import { getDb } from '@/lib/db/client';
+import { enqueueProcessPayout } from '@/lib/jobs';
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
@@ -29,16 +31,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const db = getDb();
 
     const results: SyncResult[] = [];
-    for (const event of events) {
+    for (const raw of events) {
+      // Each event stands alone: a malformed one is a result, never a failed request.
+      const parsed = parseSyncEvent(raw);
+      if (!parsed.ok) {
+        results.push(parsed.result);
+        continue;
+      }
+      const event = parsed.input;
       if (actor.role === 'supervisor' && event.supervisorId !== actor.id) {
         results.push({
           id: event.id,
           status: 'needs_attention',
+          code: 'event_not_yours',
           reason: 'a supervisor may only sync their own events',
         });
         continue;
       }
-      results.push(await ingestCollectionEvent(db, event));
+      results.push(
+        await ingestCollectionEvent(db, event, (payoutId) => enqueueProcessPayout({ payoutId })),
+      );
     }
 
     return NextResponse.json({ results });

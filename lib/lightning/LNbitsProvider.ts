@@ -14,7 +14,11 @@
  */
 
 import { sats, type Sats } from '@/lib/money';
-import { PaymentFailedError } from './errors';
+import {
+  isDefinitiveHttpRejection,
+  PaymentFailedError,
+  PaymentOutcomeUnknownError,
+} from './errors';
 import type {
   FloatBalance,
   LightningProvider,
@@ -67,8 +71,11 @@ async function lnbitsFetch<T>(
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    throw new PaymentFailedError(`LNbits ${path} returned HTTP ${response.status}: ${text}`);
+    // The body is deliberately not included: an LNbits error can echo an invoice or a key.
+    // 4xx = rejected, nothing attempted; 5xx / timeout / rate-limit = the outcome is unknown.
+    throw isDefinitiveHttpRejection(response.status)
+      ? new PaymentFailedError(`LNbits ${path} returned HTTP ${response.status}`)
+      : new PaymentOutcomeUnknownError(`LNbits ${path} returned HTTP ${response.status}`);
   }
   return (await response.json()) as T;
 }

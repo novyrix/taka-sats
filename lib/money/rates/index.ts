@@ -81,21 +81,31 @@ export async function fetchExchangeRate(
     );
   }
 
+  // Which readings can be trusted together? Anything within the tolerance of the median of ALL
+  // readings agrees; an outlier is set aside (it stays in `sources` for the record). At least two
+  // must agree — and agree *with each other* within the tolerance, so with only two sources a
+  // spread wider than the tolerance fails (measured from the median, two sources would otherwise
+  // be allowed twice the configured spread).
   const mid = median(readings.map((r) => r.rate));
   const tolerance = settings.money.rate_deviation_tolerance_pct / 100;
-  const outlier = readings.find((r) => Math.abs(r.rate - mid) / mid > tolerance);
-  if (outlier) {
+  const agreeing = readings.filter((r) => Math.abs(r.rate - mid) / mid <= tolerance);
+  const spread =
+    (Math.max(...agreeing.map((r) => r.rate)) - Math.min(...agreeing.map((r) => r.rate))) / mid;
+  if (agreeing.length < 2 || spread > tolerance) {
     throw new ExchangeFeedError(
-      `source "${outlier.source}" reading ${outlier.rate} diverges >${settings.money.rate_deviation_tolerance_pct}% from the median ${mid}`,
+      `exchange sources for ${base}/${quote} disagree by more than ${settings.money.rate_deviation_tolerance_pct}%: ${readings
+        .map((r) => `${r.source}=${r.rate}`)
+        .join(', ')}`,
     );
   }
+  const agreed = median(agreeing.map((r) => r.rate));
 
   const [row] = await db
     .insert(exchangeRateSnapshots)
     .values({
       base,
       quote,
-      rate: String(mid),
+      rate: String(agreed),
       sources: readings,
       fetchedAt: options.now ?? new Date(),
     })

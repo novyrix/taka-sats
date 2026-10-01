@@ -33,7 +33,8 @@ function fakeFetch(routes: Record<string, unknown>): FetchLike {
 describe('resolveSource', () => {
   it('resolves known names and a fake:<n> literal', () => {
     expect(resolveSource('yadio').name).toBe('yadio');
-    expect(resolveSource('coingecko').name).toBe('coingecko');
+    expect(resolveSource('coinbase').name).toBe('coinbase');
+    expect(resolveSource('fake:123').name).toBe('fake');
     expect(() => resolveSource('nope')).toThrow();
   });
 });
@@ -58,32 +59,79 @@ describe.skipIf(!hasDatabase)('fetchExchangeRate (integration)', () => {
     await db.execute(sql`truncate table exchange_rate_snapshots restart identity cascade`);
   });
 
-  it('aggregates ≥2 agreeing sources and persists a snapshot', async () => {
+  // Bodies are shaped like the real services' responses (see sources.test.ts).
+  const yadio = (kes: number) => ({
+    request: { amount: 1, from: 'BTC', to: 'KES' },
+    result: kes,
+  });
+  const coinbase = (kes: number) => ({
+    data: { amount: String(kes), base: 'BTC', currency: 'KES' },
+  });
+  const kraken = (usd: number) => ({ result: { XXBTZUSD: { c: [String(usd), '1'] } } });
+  const fx = { result: 'success', rates: { KES: 100 } };
+
+  it('aggregates the agreeing sources (median) and persists a snapshot', async () => {
     const fetchImpl = fakeFetch({
-      'yadio.io': { rate: 5_000_000 },
-      'coingecko.com': { bitcoin: { kes: 5_050_000 } },
+      'api.yadio.io': yadio(5_000_000),
+      'api.coinbase.com': coinbase(5_050_000),
+      'api.kraken.com': kraken(50_300), // × 100 = 5_030_000
+      'open.er-api.com': fx,
     });
     const snap = await fetchExchangeRate(db, { quote: 'KES', fetchImpl });
     expect(snap.base).toBe('BTC');
     expect(snap.quote).toBe('KES');
-    expect(Number(snap.rate)).toBe(5_025_000); // median of the two
-    expect(snap.sources).toHaveLength(2);
+    expect(Number(snap.rate)).toBe(5_030_000); // median of the three
+    expect(snap.sources).toHaveLength(3);
 
     const latest = await latestSnapshot(db, 'BTC', 'KES');
     expect(latest?.id).toBe(snap.id);
   });
 
+  it('survives one source being down — two is enough', async () => {
+    const fetchImpl = fakeFetch({
+      'api.yadio.io': yadio(5_000_000),
+      'api.coinbase.com': coinbase(5_050_000),
+      // kraken/er-api routes missing → that source throws
+    });
+    const snap = await fetchExchangeRate(db, { quote: 'KES', fetchImpl });
+    expect(Number(snap.rate)).toBe(5_025_000);
+    expect(snap.sources).toHaveLength(2);
+  });
+
   it('fails when fewer than two sources succeed', async () => {
-    const fetchImpl = fakeFetch({ 'yadio.io': { rate: 5_000_000 } }); // coingecko route missing → throws
+    const fetchImpl = fakeFetch({ 'api.yadio.io': yadio(5_000_000) });
     await expect(fetchExchangeRate(db, { quote: 'KES', fetchImpl })).rejects.toThrow(
       ExchangeFeedError,
     );
   });
 
-  it('fails when a source diverges beyond the tolerance', async () => {
+  it('sets a lone outlier aside when two others agree, and records all three', async () => {
     const fetchImpl = fakeFetch({
-      'yadio.io': { rate: 5_000_000 },
-      'coingecko.com': { bitcoin: { kes: 9_000_000 } }, // ~+56% vs median
+      'api.yadio.io': yadio(5_000_000),
+      'api.coinbase.com': coinbase(5_100_000),
+      'api.kraken.com': kraken(70_000), // × 100 = 7_000_000 — an unreasonable outlier
+      'open.er-api.com': fx,
+    });
+    const snap = await fetchExchangeRate(db, { quote: 'KES', fetchImpl });
+    expect(Number(snap.rate)).toBe(5_050_000); // median of the two that agree
+    expect(snap.sources).toHaveLength(3);
+  });
+
+  it('two sources may not be further apart than the tolerance (not twice it)', async () => {
+    // 5.0M vs 5.8M: each is only ~7.4% from their mean (inside 10%), but 15% apart.
+    const fetchImpl = fakeFetch({
+      'api.yadio.io': yadio(5_000_000),
+      'api.coinbase.com': coinbase(5_800_000),
+    });
+    await expect(fetchExchangeRate(db, { quote: 'KES', fetchImpl })).rejects.toThrow(
+      ExchangeFeedError,
+    );
+  });
+
+  it('fails when a source diverges beyond the tolerance — e.g. an inverted or unit-confused feed', async () => {
+    const fetchImpl = fakeFetch({
+      'api.yadio.io': yadio(5_000_000),
+      'api.coinbase.com': coinbase(9_000_000), // ~+56% vs median
     });
     await expect(fetchExchangeRate(db, { quote: 'KES', fetchImpl })).rejects.toThrow(
       ExchangeFeedError,

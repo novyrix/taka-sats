@@ -11,6 +11,7 @@
 
 import { getSettings } from '@/lib/config';
 import { BlinkProvider } from './BlinkProvider';
+import { FakeLightningProvider } from './FakeLightningProvider';
 import { FedimintProvider } from './FedimintProvider';
 import type { LightningProvider } from './LightningProvider';
 import { type CollectorWalletProvisioner, LNbitsProvider } from './LNbitsProvider';
@@ -24,6 +25,19 @@ function lnbitsProvider(env: Readonly<Record<string, string | undefined>>): LNbi
     ...(env.LNBITS_USERMANAGER_KEY ? { usermanagerKey: env.LNBITS_USERMANAGER_KEY } : {}),
   });
 }
+
+/** `float_provider = "fake"` outside development without the explicit opt-in. */
+export class FakeProviderForbiddenError extends Error {
+  constructor() {
+    super(
+      'lightning.float_provider = "fake" marks payouts paid without sending anything; it is refused when NODE_ENV=production unless TAKASATS_ALLOW_FAKE_PROVIDER=true',
+    );
+    this.name = 'FakeProviderForbiddenError';
+  }
+}
+
+/** One per process, so a demo rail keeps its float and de-duplicates by idempotency key. */
+let demoProvider: FakeLightningProvider | undefined;
 
 export function getLightningProvider(
   env: Readonly<Record<string, string | undefined>> = process.env,
@@ -41,6 +55,14 @@ export function getLightningProvider(
       return lnbitsProvider(env);
     case 'fedimint':
       return new FedimintProvider({ federationInvite: lightning.fedimint.federation_invite });
+    case 'fake':
+      // A demo rail (D-11): it "pays" instantly and moves no funds, so a production
+      // deploy must never run it by accident.
+      if (env.NODE_ENV === 'production' && env.TAKASATS_ALLOW_FAKE_PROVIDER !== 'true') {
+        throw new FakeProviderForbiddenError();
+      }
+      demoProvider ??= new FakeLightningProvider();
+      return demoProvider;
   }
 }
 
