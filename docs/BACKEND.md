@@ -63,6 +63,8 @@ matches the class. **Switch on `code`, never on `message`** (the message is Engl
 | 409 | `destination_in_use` | that wallet already belongs to another collector (deliberately does not say whose) |
 | 409 | `conflict` | a tag is already mapped to another collector; a treasury `id` or transfer `reference` is already used by a different proposal (§5.3.1) |
 | 400 | `invalid_cursor` | a `cursor` that is not a previous response's `nextCursor` |
+| 403 | `self_resolution` | the admin recorded the weigh, or approved the payout, they tried to resolve (§5.3) |
+| 409 | `not_resolvable` / `reference_in_use` / `reference_mismatch` / `provider_disagrees` / `resolution_final` | a stuck-payout resolution was refused (§5.3, `POST /payouts/:id/resolve`) |
 | 409 | `review_final` | the same admin tried to change their own anomaly verdict (§5.9) |
 | 409 | `invalid_state` | the action does not apply to the payout's (or treasury proposal's) current status; `details.status` says what it is |
 | 410 | `tag_revoked` | a revoked tag was tapped (the attempt is logged server-side) |
@@ -104,6 +106,7 @@ Source: `lib/auth/permissions.ts` (the matrix test `lib/auth/rbac-matrix.test.ts
 | `session:configure` — sessions, rates, rotations, the staff roster | | | ✅ | |
 | `payout:read` — see payouts (a supervisor only those of events **they** recorded) | ✅ | ✅ | ✅ | |
 | `payout:approve` — approve / retry a payout (never your own collection) | | ✅ | ✅ | |
+| **`payout:resolve`**: check and resolve a payout stuck in `sending` | | | ✅ | |
 | `ledger:read` — stream the ledger, checkpoints, verify | | | ✅ | |
 | `reconciliation:write` — enter recycler sales, run reconciliation reports | | | ✅ | |
 | `report:generate:all` — read reconciliation reports and recycler sales | | | ✅ | |
@@ -255,9 +258,9 @@ recorded**. No request field anywhere carries a destination or an address; the w
 | `pending_approval` | held for a second person | — | **Approve** button (hub_lead/admin, **not** the person who recorded it) |
 | `pending_float` | the operating float is too low or unreadable | `insufficient_float`, `float_unavailable` | top up — resumes by itself |
 | `queued` | approved/retried, waiting for the worker | — | wait |
-| `sending` | being paid right now | `outcome_unknown` = **a human must check the wallet** | none; if it sits long it is flagged for an admin |
+| `sending` | being paid right now | `outcome_unknown` = **a human must check the wallet** | none; if it sits long it is flagged for an admin, who **checks** and **resolves** it (§5.3) |
 | `paid` | done — `providerPaymentRef` (the payment hash) and `settledAt` are the proof | — | show the proof |
-| `failed` | not paid | `collector_not_authorized`, `amount_not_payable`, `payment_failed`, `destination_rejected` | staff may **Retry** — confirm with the provider first |
+| `failed` | not paid | `collector_not_authorized`, `amount_not_payable`, `payment_failed`, `destination_rejected`, `resolved_failed` (an admin confirmed nothing was sent) | staff may **Retry** — confirm with the provider first |
 
 - **Pilot mode:** with `payouts.second_signoff_threshold_sats = 0` *every* payout stops at `pending_approval`, so the
   approval queue is the main admin screen. By default the **first payout to any new wallet always needs approval**
@@ -266,8 +269,7 @@ recorded**. No request field anywhere carries a destination or an address; the w
 - `amountSats` / `amountFiatMinor` are `null` until the payout has been priced (integers; KES cents).
 - After approval the payout is re-priced at a fresh rate, so the sats can differ slightly from what the approver saw.
 - A payout in **`sending` for longer than `payouts.sending_stale_minutes`** is never retried automatically — it may have
-  gone out. It raises a flag for an admin. **There is no admin "resolve" tool yet** (known gap): the admin checks the
-  wallet and resolves it in the database.
+  gone out. It raises a flag for an admin, who uses `GET /payouts/:id/check` and `POST /payouts/:id/resolve` (§5.3).
 - Supervisor view: a supervisor sees only the payouts of events they recorded (others return `404`) — enough to show
   "paid ✓" next to each event. `hub_lead`/`admin` see everything. Partners see nothing here.
 
@@ -517,6 +519,32 @@ There is **no address field**. Errors: `400 invalid_request` (bad filter), `400 
 #### `POST /payouts/:id/retry` · scope `payout:approve` — no body
 `failed → queued`. `200 { payout, changed }` · `409 invalid_state` for any other status. **Check the wallet first:**
 a retry fetches a fresh invoice, so nothing but you stops it paying twice if the first attempt actually landed.
+
+#### `GET /payouts/:id/check` · scope `payout:resolve` (admin only) — read only
+Asks the payment provider what it recorded for a payout that was sent (by the stored payment hash, else by the payout
+id in the memo). It changes nothing.
+`200 { "check": { "supported": true, "state": "paid" | "failed" | "pending" | "not_found", "paymentRef": "…"|null,
+"proofVerified": true|false|null, "feeSats": 2|null, "matches": 1|null } }` or
+`200 { "check": { "supported": false, "reason": "provider_cannot_look_up" | "wrong_provider" } }` ·
+`409 invalid_state` (the payout was never sent) · `403 forbidden`. `not_found` is **not** proof that nothing was sent.
+`proofVerified` means the provider returned a preimage whose sha256 equals the payment hash. `matches` above 1 needs a person's eyes.
+
+#### `POST /payouts/:id/resolve` · scope `payout:resolve` (admin only) — body `{ outcome, reference?, note? }`
+Settles a payout stuck in `sending` (outcome unknown) by a person's decision, from the provider's own records.
+`outcome: "paid"` needs the provider payment reference (`reference`, 6 to 200 of letters, digits and `. : _ -`; it defaults
+to the hash the payout already holds, and must equal it). The payout becomes `paid` and a `payout` ledger entry is
+appended. `outcome: "failed"` means nothing was sent: the payout becomes `failed` (`lastError: "resolved_failed"`) and a
+`correction` entry is appended. It is **not** re-queued; staff use **Retry** as a separate, deliberate act.
+`200 { "payout": { … }, "changed": true, "providerState": "paid" | "failed" | "pending" | "not_found" | "unsupported" | "error" }`.
+Idempotent: repeating the same resolution returns `changed: false`. The open `payout_uncertain` flag is closed.
+Errors: `400 invalid_request` (body or reference) · `403 forbidden` (not an admin) · `403 self_resolution` (you recorded
+the weigh or approved the payout; `payouts.resolution_requires_distinct_actor`) · `404 not_found` ·
+`409 invalid_state` (not in `sending`) · `409 not_resolvable` (still being sent: it is neither stale nor flagged) ·
+`409 reference_in_use` (another payout holds that payment) · `409 reference_mismatch` (differs from the payment hash the
+payout was sent with) · `409 provider_disagrees` (the provider says paid or pending against a `failed` resolution, or
+failed against a `paid` one) · `409 resolution_final` (this attempt was already resolved the other way).
+UI: on a `sending` payout with `lastError: "outcome_unknown"`, show **Check with provider** (GET `check`), then **Mark paid**
+(with the reference) or **Mark failed**, with a note.
 
 #### `GET /treasury/float` · scope `treasury:topup:initiate` (admin)
 `200 { "available": 482000, "asOf": "…", "lowBalance": false }` · `503 float_unavailable` (the rail is unreachable; no
@@ -847,6 +875,15 @@ no real sats are sent" banner. Fetch it once on load; it does not change while t
 
 Newest first. Anything here may need a UI change.
 
+**2026-10-02 (payouts): resolve a stuck payout**
+- **New endpoints:** `GET /payouts/:id/check`, `POST /payouts/:id/resolve` (§5.3). **New scope** `payout:resolve`, **admin only**.
+- **New error codes:** `403 self_resolution`, `409 not_resolvable | reference_in_use | reference_mismatch | provider_disagrees | resolution_final`.
+  `400 invalid_request` and `409 invalid_state` are reused.
+- **New `lastError`:** `resolved_failed`. A payout resolved as `paid` shows `providerPaymentRef` and `settledAt` like any other.
+- **New config:** `[payouts] resolution_requires_distinct_actor` (default true).
+- **Behaviour:** a `payout_uncertain` anomaly flag that was closed re-opens if the same payout is retried and gets stuck again.
+- **UI to build:** on a stuck payout (admin): **Check with provider**, **Mark paid** (reference required) and **Mark failed**, each with a note.
+
 **2026-10-02 (providers): the real provider reference**
 - `providerPaymentRef` is now the Lightning **payment hash** (64 hex characters) for Blink and LNbits (it used to be
   our payout id for Blink). It can also be present on a payout still in `sending` with `lastError: outcome_unknown`:
@@ -942,7 +979,7 @@ Newest first. Anything here may need a UI change.
 6. Scale-photo capture guidance (waste + scale + display in frame) for the verification slice.
 7. A public `/c/<code>` landing page (optional; must reveal nothing).
 
-**Known gaps (backend):** a read-only balance view of the multisig pool (📋; `GET /treasury` reports `pool.configured: false`), an admin tool to resolve a payout stuck in `sending` (📋), OCR/AI verification of the scale
+**Known gaps (backend):** a read-only balance view of the multisig pool (📋; `GET /treasury` reports `pool.configured: false`), OCR/AI verification of the scale
 photo (📋), Nostr/OpenTimestamps anchoring (📋), a scheduled (periodic) reconciliation run and hub_lead read access to reconciliation (📋), a minimum-n suppression on the public summary (📋). The real Blink/LNbits `pay()` has never been exercised against a
 live account — `docs/PILOT.md §6` makes the first real payment a deliberate, tiny, supervised step.
 

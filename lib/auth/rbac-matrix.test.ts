@@ -27,6 +27,7 @@ const EXPECTED: Record<Scope, Row> = {
   'session:configure': row({ admin: true }),
   'payout:read': row({ supervisor: true, hub_lead: true, admin: true }),
   'payout:approve': row({ hub_lead: true, admin: true }),
+  'payout:resolve': row({ admin: true }),
   'payout:execute': row({}), // ← NO human role. Ever.
   'treasury:topup:initiate': row({ admin: true }),
   'treasury:read': row({ admin: true }),

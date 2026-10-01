@@ -85,6 +85,13 @@
       "when": 1790885701828,
       "tag": "0011_treasury_topups",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1790889233713,
+      "tag": "0012_payout_resolutions",
+      "breakpoints": true
     }
   ]
 }

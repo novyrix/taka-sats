@@ -61,6 +61,22 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Resolving a payout stuck in `sending` (`lib/payouts/resolve.ts`, migration 0012). Adds the
+  scope `payout:resolve`, held by `admin` only (matrix test updated; `hub_lead` can approve and retry but
+  cannot settle an uncertain payment). `payout:execute` is still in no role and nothing here sends money:
+  resolving only RECORDS a person's decision. Preserves **never pay twice**: only a payout in `sending`
+  that is stale or flagged can be resolved; `failed` does not re-queue it (retry stays a separate act); a
+  `paid` resolution needs a reference that no other payout holds (also a UNIQUE column) and that equals the
+  payment hash the payout was sent with; the provider's own lookup, when it can answer, vetoes a decision
+  that contradicts it (paid or pending against `failed`, failed against `paid`), except that a "paid" the
+  provider shows for a hash another payout already settled is not treated as evidence (a reused invoice).
+  Separation of duties: the person who recorded the weigh or approved the payout cannot resolve it
+  (`payouts.resolution_requires_distinct_actor`, default true; off only for a one-admin deployment).
+  One resolution per attempt, so it is idempotent and concurrent identical requests write one ledger
+  entry; the table is append-only (trigger), every resolution is anchored by a `payout` or `correction`
+  ledger entry, and the uncertainty flag is closed in the same transaction. A flag that was closed
+  re-opens if a retried payout gets stuck again. Residual: the check reads the provider; a compromised
+  provider account could mislead the admin, and `not_found` is never proof of non-payment.
 - 2026-10-02: Payment provider hardening (`lib/lightning/{BlinkProvider,LNbitsProvider,bolt11}.ts`),
   written against Blink's published GraphQL schema and the LNbits 1.6 OpenAPI document
   (`docs/providers/`). Tightens the rule that prevents a double payment: only a definite success is

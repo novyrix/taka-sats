@@ -36,6 +36,7 @@ export const SCOPES = [
   'payout:read', // read payouts (a plain supervisor: only those of events they recorded — scoped in the handler)
   'payout:approve', // approve an above-threshold payout that is not your own submission
   'payout:execute', // execute/direct a payout — SYSTEM ONLY, in no role
+  'payout:resolve', // check and resolve a payout stuck in `sending` (outcome unknown) — admin only
   'treasury:topup:initiate', // read the hot-wallet float (`GET /treasury/float`); the funding vote itself uses the three scopes below
   'treasury:read', // read the treasury view and funding proposals (steward-facing; no keys, no addresses)
   'treasury:propose', // propose a pool→hot-wallet refill, cancel your own proposal, record the transfer reference after signing in the pool wallet
@@ -81,6 +82,7 @@ export const ROLE_SCOPES: Readonly<Record<Role, readonly Scope[]>> = Object.free
     'session:configure',
     'payout:read',
     'payout:approve',
+    'payout:resolve',
     'treasury:topup:initiate',
     'treasury:read',
     'treasury:propose',

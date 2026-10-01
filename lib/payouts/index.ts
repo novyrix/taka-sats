@@ -12,8 +12,16 @@ export {
   PayoutApprovalError,
   PayoutCursorError,
   PayoutNotFoundError,
+  PayoutResolveError,
   PayoutStateError,
 } from './errors';
+export {
+  checkPayout,
+  resolvePayout,
+  type PayoutCheck,
+  type ResolvePayoutInput,
+  type ResolvePayoutResult,
+} from './resolve';
 export {
   approvePayout,
   createPayoutForEvent,

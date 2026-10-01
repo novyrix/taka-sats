@@ -605,6 +605,47 @@ export const payouts = pgTable(
   ],
 );
 
+/**
+ * A person's decision about a payout whose outcome the provider never confirmed (it was stuck in
+ * `sending`). Append-only (a trigger forbids UPDATE and DELETE). One row per payout attempt, so
+ * resolving is idempotent; `reference` is unique, so one provider payment can never be claimed as
+ * the settlement of two payouts. Every row is anchored by a ledger entry.
+ */
+export const payoutResolutions = pgTable(
+  'payout_resolutions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    payoutId: uuid('payout_id')
+      .notNull()
+      .references(() => payouts.id),
+    /** `payouts.attempts` when it was resolved: a payout retried and stuck again can be resolved again. */
+    attempt: integer('attempt').notNull(),
+    /** 'paid' | 'failed'. */
+    outcome: text('outcome').notNull(),
+    /** The provider payment hash or transaction id that proves a `paid` resolution. */
+    reference: text('reference').unique(),
+    note: text('note'),
+    /** What the provider's own lookup said at the time: paid|failed|pending|not_found|unsupported|error. */
+    providerState: text('provider_state').notNull(),
+    resolvedBy: uuid('resolved_by')
+      .notNull()
+      .references(() => supervisors.id),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }).notNull().defaultNow(),
+    ledgerEntryId: uuid('ledger_entry_id')
+      .notNull()
+      .unique()
+      .references(() => ledgerEntries.id),
+  },
+  (table) => [
+    unique('payout_resolutions_attempt_once').on(table.payoutId, table.attempt),
+    check('payout_resolutions_outcome_check', sql`${table.outcome} in ('paid', 'failed')`),
+    check(
+      'payout_resolutions_reference_check',
+      sql`${table.outcome} <> 'paid' or ${table.reference} is not null`,
+    ),
+  ],
+);
+
 // ── TREASURY FUNDING VOTE (M5-7, ADR-0020) ───────────────────────────────
 
 /**

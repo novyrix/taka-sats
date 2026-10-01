@@ -37,3 +37,26 @@ export class PayoutCursorError extends Error {
     this.name = 'PayoutCursorError';
   }
 }
+
+/**
+ * Why a stuck-payout resolution (or provider check) was refused. Every reason is a rule that
+ * stops one person, one mistake or one forged reference from settling money on their own.
+ */
+export class PayoutResolveError extends Error {
+  constructor(
+    public readonly reason:
+      | 'not_permitted'
+      | 'not_resolvable'
+      | 'self_resolution'
+      | 'reference_required'
+      | 'reference_in_use'
+      | 'reference_mismatch'
+      | 'provider_disagrees'
+      | 'resolution_final'
+      | 'nothing_to_check',
+    message: string,
+  ) {
+    super(message);
+    this.name = 'PayoutResolveError';
+  }
+}

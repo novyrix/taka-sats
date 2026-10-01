@@ -39,6 +39,7 @@ import {
   PayoutApprovalError,
   PayoutCursorError,
   PayoutNotFoundError,
+  PayoutResolveError,
   PayoutStateError,
 } from '@/lib/payouts';
 import { RateError } from '@/lib/rates';
@@ -162,6 +163,21 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof PayoutStateError) {
     return json(409, 'invalid_state', error.message, { status: error.status });
+  }
+  if (error instanceof PayoutResolveError) {
+    switch (error.reason) {
+      case 'not_permitted':
+        return json(403, 'forbidden', error.message);
+      case 'self_resolution':
+        return json(403, 'self_resolution', error.message);
+      case 'reference_required':
+        return json(400, 'invalid_request', error.message);
+      case 'nothing_to_check':
+        return json(409, 'invalid_state', error.message);
+      default:
+        // not_resolvable | reference_in_use | reference_mismatch | provider_disagrees | resolution_final
+        return json(409, error.reason, error.message);
+    }
   }
   if (error instanceof PayoutApprovalError) {
     return error.reason === 'self_approval'

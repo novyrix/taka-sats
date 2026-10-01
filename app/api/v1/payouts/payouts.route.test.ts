@@ -14,7 +14,7 @@ import { getDb } from '@/lib/db/client';
 import { anomalyFlags, collectors, payouts } from '@/lib/db/schema';
 import { enqueueProcessPayoutSafely } from '@/lib/jobs';
 import { FakeLightningProvider } from '@/lib/lightning';
-import { PaymentFailedError } from '@/lib/lightning/errors';
+import { PaymentFailedError, PaymentOutcomeUnknownError } from '@/lib/lightning/errors';
 import { createPayoutForEvent, processPayout } from '@/lib/payouts';
 import { sats } from '@/lib/money';
 import {
@@ -28,6 +28,8 @@ import { GET as LIST } from './route';
 import { GET as DETAIL } from './[id]/route';
 import { POST as APPROVE } from './[id]/approve/route';
 import { POST as RETRY } from './[id]/retry/route';
+import { POST as RESOLVE } from './[id]/resolve/route';
+import { GET as CHECK } from './[id]/check/route';
 import { GET as SUMMARY } from './summary/route';
 
 const authMock = auth as unknown as { mockResolvedValue: (value: Session | null) => void };
@@ -53,6 +55,35 @@ describe('/api/v1/payouts — auth (no DB)', () => {
     expect((await DETAIL(get(`/${UNKNOWN}`), idParams(UNKNOWN))).status).toBe(401);
     expect((await APPROVE(post(`/${UNKNOWN}/approve`), idParams(UNKNOWN))).status).toBe(401);
     expect((await RETRY(post(`/${UNKNOWN}/retry`), idParams(UNKNOWN))).status).toBe(401);
+    expect(
+      (await RESOLVE(post(`/${UNKNOWN}/resolve`, { outcome: 'failed' }), idParams(UNKNOWN))).status,
+    ).toBe(401);
+    expect((await CHECK(get(`/${UNKNOWN}/check`), idParams(UNKNOWN))).status).toBe(401);
+  });
+
+  it('403 for everyone but an admin on resolve and check (a hub_lead can approve, not settle a stuck payout)', async () => {
+    for (const role of ['supervisor', 'hub_lead', 'partner']) {
+      authMock.mockResolvedValue(session('x', role));
+      expect(
+        (await RESOLVE(post(`/${UNKNOWN}/resolve`, { outcome: 'failed' }), idParams(UNKNOWN)))
+          .status,
+      ).toBe(403);
+      expect((await CHECK(get(`/${UNKNOWN}/check`), idParams(UNKNOWN))).status).toBe(403);
+    }
+  });
+
+  it('400 for a bad resolve body (no outcome, unknown outcome, extra fields such as an address)', async () => {
+    authMock.mockResolvedValue(session('a', 'admin'));
+    for (const body of [
+      undefined,
+      {},
+      { outcome: 'maybe' },
+      { outcome: 'paid', address: 'x@y.z' },
+    ]) {
+      expect((await RESOLVE(post(`/${UNKNOWN}/resolve`, body), idParams(UNKNOWN))).status).toBe(
+        400,
+      );
+    }
   });
 
   it('403 for a partner everywhere', async () => {
@@ -333,6 +364,70 @@ describe.skipIf(!hasDatabase)('/api/v1/payouts — integration', () => {
       expect(paid.status).toBe(409);
       expect((await json(paid)).error.code).toBe('invalid_state');
       expect((await APPROVE(post(`/${UNKNOWN}/approve`), idParams(UNKNOWN))).status).toBe(404);
+    });
+  });
+
+  describe('POST /payouts/:id/resolve and GET /payouts/:id/check', () => {
+    async function stuck() {
+      const eventId = await seedCollectionEvent(db, world, { weightKg: '1' });
+      const created = await createPayoutForEvent(db, eventId);
+      const rail = {
+        kind: 'fake' as const,
+        pay: async () => {
+          throw new PaymentOutcomeUnknownError('pending', 'ab'.repeat(32));
+        },
+        getFloatBalance: async () => ({ available: sats(1_000_000), asOf: NOW }),
+      };
+      const sending = await processPayout(db, rail, created.id, NOW);
+      expect(sending.status).toBe('sending');
+      return sending.id;
+    }
+
+    it('an admin other than the approver resolves it once; a repeat changes nothing', async () => {
+      const id = await stuck();
+      authMock.mockResolvedValue(session(world.adminId, 'admin'));
+      const first = await RESOLVE(
+        post(`/${id}/resolve`, { outcome: 'paid', note: 'in wallet' }),
+        idParams(id),
+      );
+      expect(first.status).toBe(200);
+      const body = await json(first);
+      expect(body.changed).toBe(true);
+      expect(body.payout.status).toBe('paid');
+      expect(body.payout.providerPaymentRef).toBe('ab'.repeat(32));
+      const again = await json(
+        await RESOLVE(post(`/${id}/resolve`, { outcome: 'paid' }), idParams(id)),
+      );
+      expect(again.changed).toBe(false);
+      const conflict = await RESOLVE(post(`/${id}/resolve`, { outcome: 'failed' }), idParams(id));
+      expect(conflict.status).toBe(409);
+      expect((await json(conflict)).error.code).toBe('resolution_final');
+    });
+
+    it('409 not_resolvable for a payout that is fresh and not flagged; 409 invalid_state when not sending', async () => {
+      const id = await stuck();
+      await db.delete(anomalyFlags);
+      await db.update(payouts).set({ attemptedAt: new Date() }).where(eq(payouts.id, id));
+      authMock.mockResolvedValue(session(world.adminId, 'admin'));
+      const fresh = await RESOLVE(post(`/${id}/resolve`, { outcome: 'failed' }), idParams(id));
+      expect(fresh.status).toBe(409);
+      expect((await json(fresh)).error.code).toBe('not_resolvable');
+      const paidOne = await RESOLVE(post(`/${a}/resolve`, { outcome: 'failed' }), idParams(a));
+      expect(paidOne.status).toBe(409);
+      expect((await json(paidOne)).error.code).toBe('invalid_state');
+    });
+
+    it('check is read only and says when it cannot look the payment up', async () => {
+      const id = await stuck();
+      authMock.mockResolvedValue(session(world.adminId, 'admin'));
+      const response = await CHECK(get(`/${id}/check`), idParams(id));
+      expect(response.status).toBe(200);
+      expect((await json(response)).check.supported).toBe(false);
+      expect((await db.select().from(payouts).where(eq(payouts.id, id)))[0]?.status).toBe(
+        'sending',
+      );
+      const never = await CHECK(get(`/${b}/check`), idParams(b));
+      expect(never.status).toBe(409);
     });
   });
 

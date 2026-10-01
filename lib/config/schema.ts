@@ -116,6 +116,8 @@ const payoutsSchema = z.object({
     .string()
     .trim()
     .regex(/^\S+(\s+\S+){4}$/, 'sweep_cron must be a 5-field cron expression'),
+  /** Resolving a stuck payout needs an admin who neither recorded the weigh nor approved the payout. */
+  resolution_requires_distinct_actor: z.boolean(),
   /** A payout in 'sending' longer than this is flagged payout_uncertain, never re-sent. */
   sending_stale_minutes: z.int().positive(),
   /** Retry limit of the process-payout job. */

@@ -175,7 +175,7 @@ async function flagUncertain(
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${payout.id}, 0))`);
     const [existing] = await tx
-      .select({ id: anomalyFlags.id })
+      .select({ id: anomalyFlags.id, reviewedAt: anomalyFlags.reviewedAt })
       .from(anomalyFlags)
       .where(
         and(
@@ -184,7 +184,23 @@ async function flagUncertain(
         ),
       );
     if (existing) {
-      return false;
+      if (existing.reviewedAt === null) {
+        return false;
+      }
+      // An earlier uncertainty was resolved and the payout was retried: it is stuck again, so the
+      // one flag per event is re-opened for a person (the earlier verdict stays in the resolution).
+      await tx
+        .update(anomalyFlags)
+        .set({
+          reviewedBy: null,
+          reviewedAt: null,
+          reviewOutcome: null,
+          reviewNote: null,
+          detectedAt: new Date(),
+          context: { payoutId: payout.id, reason, reopened: true },
+        })
+        .where(eq(anomalyFlags.id, existing.id));
+      return true;
     }
     await tx.insert(anomalyFlags).values({
       collectionEventId: payout.collectionEventId,
@@ -196,7 +212,7 @@ async function flagUncertain(
 }
 
 /** The `attempted_at` before which a `sending` payout counts as stuck. */
-function staleCutoff(now: Date): Date {
+export function staleCutoff(now: Date): Date {
   return new Date(now.getTime() - getSettings().payouts.sending_stale_minutes * 60_000);
 }
 
