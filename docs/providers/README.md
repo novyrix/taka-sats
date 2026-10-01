@@ -79,8 +79,8 @@ Evidence matters more than claims. This table records what we have actually veri
 | Provider | Role | Status | Last verified |
 |---|---|---|---|
 | Demo provider | Hot wallet | Built for tests and demos only. It sends nothing and is refused in production unless explicitly allowed | Always |
-| Blink | Hot wallet | Implemented. **Never run against a live account.** Field names and settlement reference are unverified | Not yet |
-| LNbits | Hot wallet | Implemented. **Never run against a live account** | Not yet |
+| [Blink](blink.md) | Hot wallet | Implemented. Request and response shapes checked against Blink's published schema (2 Oct 2026). **Never run against a live account** | Not yet |
+| [LNbits](lnbits.md) | Hot wallet | Implemented. Payment shapes checked against the LNbits 1.6 OpenAPI document. **Never run against a live instance** | Not yet |
 | Fedimint | Hot wallet | Not implemented | Not applicable |
 | Trezor with Sparrow | Pool | Planned. Supports multisig through Sparrow | Not yet |
 | Nunchuk | Pool | Planned | Not yet |

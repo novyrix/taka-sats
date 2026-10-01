@@ -42,6 +42,29 @@ export type FloatBalance = {
   readonly asOf: Date;
 };
 
+/** What to look up: the provider reference if we hold one, and always the key we sent. */
+export type PaymentLookupQuery = {
+  /** The payment hash recorded when the attempt was made, if any. */
+  readonly paymentRef?: string;
+  /** The idempotency key `pay` was called with (the payout id). */
+  readonly idempotencyKey: string;
+};
+
+/**
+ * What the provider says became of a payment. Read only evidence for a person to act on;
+ * it never changes a payout by itself. `not_found` is not proof that nothing was sent.
+ */
+export type PaymentLookup = {
+  readonly state: 'paid' | 'failed' | 'pending' | 'not_found';
+  readonly paymentRef?: string;
+  readonly feeSats?: Sats;
+  readonly settledAt?: Date;
+  /** True when the provider returned a preimage whose sha256 equals the payment hash. */
+  readonly proofVerified?: boolean;
+  /** How many matching outgoing payments were found (more than one needs a person's eyes). */
+  readonly matches?: number;
+};
+
 export interface LightningProvider {
   readonly kind: ProviderKind;
 
@@ -60,4 +83,11 @@ export interface LightningProvider {
 
   /** Current operating-float balance for the low-balance alert (FR-7.2). */
   getFloatBalance(): Promise<FloatBalance>;
+
+  /**
+   * Read only: ask the provider what became of an earlier `pay` (used to resolve a payout whose
+   * outcome was unknown). Optional: a provider that cannot look a payment up omits it and the
+   * operator checks the provider's own dashboard.
+   */
+  lookupPayment?(query: PaymentLookupQuery): Promise<PaymentLookup>;
 }

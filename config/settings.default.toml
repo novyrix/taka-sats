@@ -50,6 +50,7 @@ float_provider = "blink"                 # blink | lnbits | fedimint | fake — 
 # one of these hosts (or a subdomain, case-insensitive) is rejected before any network call and
 # is never stored, logged, or converted into a receive address.
 spend_link_hosts = ["card.paybee.buzz"]
+provider_timeout_ms = 30000              # per-request timeout talking to the wallet provider (Blink/LNbits). A timeout on a payment means the outcome is UNKNOWN (held for a person), never "failed" (1000..120000)
 lnurl_timeout_ms = 8000                  # per-request timeout when resolving an LNURL / requesting an invoice (1000..60000)
 
 # Wallet-provider label by Lightning-address domain (subdomains match). Display/analytics

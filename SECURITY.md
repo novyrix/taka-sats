@@ -61,6 +61,20 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Payment provider hardening (`lib/lightning/{BlinkProvider,LNbitsProvider,bolt11}.ts`),
+  written against Blink's published GraphQL schema and the LNbits 1.6 OpenAPI document
+  (`docs/providers/`). Tightens the rule that prevents a double payment: only a definite success is
+  "paid" and only a definite refusal is "failed". A Blink `FAILURE` counts as failed only when every
+  error code is on an allow list of "nothing was sent" codes (Blink also returns `FAILURE` for
+  internal faults that can follow a sent payment); `ALREADY_PAID`, `PENDING`, an unlisted code, a lost
+  connection, a timeout, an unreadable answer and an HTTP 5xx are all an UNKNOWN outcome. An LNbits 201
+  with `status: pending` is no longer treated as paid (it was). A success whose preimage does not hash
+  to the invoice's payment hash is not trusted. The USD wallet is refused as a float (its balance is in
+  cents). The payment hash (parsed from the invoice before sending) is now the provider reference and is
+  kept on a payout whose outcome is unknown, so a person can look the payment up. Requests carry a
+  timeout. Residual: no live account has been exercised; the allow list is from the open source
+  resolver and may need extending after the supervised first payment.
+
 - 2026-10-01: The treasury funding vote (M5-7, ADR-0020, migration 0011). Adds three scopes,
   `treasury:read`, `treasury:propose` and `treasury:approve`, held by `admin` only (matrix test
   updated; `hub_lead` deliberately holds none, so nobody who vets collectors also approves the money

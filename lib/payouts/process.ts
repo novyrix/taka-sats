@@ -40,6 +40,7 @@ import {
   LightningEndpointUnreachableError,
   NotReceiveCapableError,
   PaymentFailedError,
+  PaymentOutcomeUnknownError,
 } from '@/lib/lightning/errors';
 import type { LightningProvider, PayResult } from '@/lib/lightning/LightningProvider';
 import {
@@ -397,7 +398,13 @@ async function evaluate(
       await flagUncertain(db, claimed, 'outcome_unknown');
       const [row] = await db
         .update(payouts)
-        .set({ lastError: 'outcome_unknown' })
+        .set({
+          lastError: 'outcome_unknown',
+          // Keep the provider's reference (the payment hash) so a person can look the payment up.
+          ...(error instanceof PaymentOutcomeUnknownError && error.paymentRef
+            ? { providerPaymentRef: error.paymentRef }
+            : {}),
+        })
         .where(eq(payouts.id, claimed.id))
         .returning();
       return row ?? claimed;

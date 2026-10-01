@@ -67,6 +67,8 @@ const lightningSchema = z.object({
   spend_link_hosts: z.array(
     z.string().regex(/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i, 'must be a bare hostname'),
   ),
+  /** Per-request timeout for provider API calls; a timeout on a payment is an unknown outcome. */
+  provider_timeout_ms: z.int().min(1000).max(120000),
   /** Per-request timeout for LNURL resolution and invoice requests. */
   lnurl_timeout_ms: z.int().min(1000).max(60000),
   /** Wallet-provider labels by Lightning-address domain (subdomains match) — display/analytics only. */

@@ -70,3 +70,45 @@ export function bolt11AmountMsat(invoice: string): bigint | null {
   }
   return msat;
 }
+
+/** Bytes of a recoverable signature (64 + 1 recovery id) = 104 five-bit words at the end of the data part. */
+const SIGNATURE_WORDS = 104;
+/** The 35-bit timestamp that opens the data part. */
+const TIMESTAMP_WORDS = 7;
+/** BOLT11 tagged-field type for the payment hash (`p`, bech32 value 1). */
+const PAYMENT_HASH_TAG = 1;
+const PAYMENT_HASH_WORDS = 52;
+
+/**
+ * The payment hash (64 hex characters) of a BOLT11 invoice. This is the durable reference of a
+ * Lightning payment: the paying rail reports it, and an uncertain payment can be looked up by it
+ * afterwards. Pure; the signature is not verified (the paying rail does that).
+ * @throws {Error} the string is not an invoice or carries no well-formed payment hash.
+ */
+export function bolt11PaymentHash(invoice: string): string {
+  const text = invoice
+    .trim()
+    .toLowerCase()
+    .replace(/^lightning:/, '');
+  let words: number[];
+  try {
+    words = bech32.decode(text, BECH32_LIMIT).words;
+  } catch {
+    throw new Error('not a valid BOLT11 invoice');
+  }
+  const end = words.length - SIGNATURE_WORDS;
+  let index = TIMESTAMP_WORDS;
+  while (index + 3 <= end) {
+    const type = words[index] as number;
+    const length = (words[index + 1] as number) * 32 + (words[index + 2] as number);
+    const start = index + 3;
+    if (start + length > end) {
+      break;
+    }
+    if (type === PAYMENT_HASH_TAG && length === PAYMENT_HASH_WORDS) {
+      return Buffer.from(bech32.fromWords(words.slice(start, start + length))).toString('hex');
+    }
+    index = start + length;
+  }
+  throw new Error('BOLT11 invoice has no payment hash');
+}

@@ -8,12 +8,18 @@
  * Core Payments/Wallet endpoints and the `X-Api-Key` header are LNbits'
  * long-stable REST convention. `createCollectorWallet` additionally uses the
  * `usermanager` and `lnurlp` extensions (must be enabled on the instance —
- * see `docker/docker-compose.custodial.yml`). Field names are NOT
- * introspection-verified in this environment — confirm against the running
- * instance's `/docs` (Swagger UI) before the first live provisioning run.
+ * see `docker/docker-compose.custodial.yml`).
+ *
+ * Payment fields were checked against the OpenAPI document of LNbits 1.6 (`/openapi.json`):
+ * `POST /api/v1/payments` answers 201 with a `Payment` whose `status` is `pending` until it
+ * settles, so a 201 is NOT proof of payment: only `status: "success"` is. `pending`, a missing
+ * status, an HTTP 5xx (LNbits documents 520 "Payment or Invoice error") and a timeout are an
+ * UNKNOWN outcome. Amounts and fees are in millisatoshis. The usermanager/lnurlp provisioning
+ * shapes remain unverified against a live instance. See `docs/providers/lnbits.md`.
  */
 
 import { sats, type Sats } from '@/lib/money';
+import { bolt11PaymentHash } from './bolt11';
 import {
   isDefinitiveHttpRejection,
   PaymentFailedError,
@@ -22,6 +28,8 @@ import {
 import type {
   FloatBalance,
   LightningProvider,
+  PaymentLookup,
+  PaymentLookupQuery,
   PayoutDestination,
   PayResult,
   ResolvedAddress,
@@ -50,7 +58,30 @@ export type LNbitsProviderConfig = {
    * from the float `adminKey`.
    */
   readonly usermanagerKey?: string;
+  /** Per-request timeout; a timeout on a payment is an unknown outcome. Default 30 s. */
+  readonly timeoutMs?: number;
 };
+
+/** paid | failed | pending, from a 1.x `status` string or a legacy `paid` flag. */
+function paymentState(payment: PaymentResponse): 'paid' | 'failed' | 'pending' {
+  if (payment.status === 'success') {
+    return 'paid';
+  }
+  if (payment.status === 'failed') {
+    return 'failed';
+  }
+  if (payment.status === undefined && payment.paid === true) {
+    return 'paid';
+  }
+  return 'pending';
+}
+
+/** LNbits reports fees in msat (negative when outgoing); round up to whole sats. */
+function feeSatsOf(fee: number | undefined): Sats {
+  return sats(
+    typeof fee === 'number' && Number.isFinite(fee) ? Math.ceil(Math.abs(fee) / 1000) : 0,
+  );
+}
 
 async function lnbitsFetch<T>(
   baseUrl: string,
@@ -81,7 +112,16 @@ async function lnbitsFetch<T>(
 }
 
 type WalletDetails = { id: string; name: string; balance: number };
-type PaymentResponse = { payment_hash: string };
+/** Core `Payment` (1.x) or the older `{ payment_hash, checking_id }` / `{ paid, preimage }` shapes. */
+type PaymentResponse = {
+  payment_hash: string;
+  status?: 'pending' | 'success' | 'failed' | string;
+  paid?: boolean;
+  /** msat; negative for an outgoing payment in LNbits. */
+  fee?: number;
+  amount?: number;
+  memo?: string | null;
+};
 type UsermanagerUser = { id: string; wallets: { id: string; adminkey: string; inkey: string }[] };
 type LnurlpLink = { id: string; lnurl: string };
 
@@ -101,23 +141,68 @@ export class LNbitsProvider implements LightningProvider {
   ): Promise<PayResult> {
     const bolt11 = await requestInvoiceFor(destination.lnurlOrAddress, amount);
 
-    const result = await lnbitsFetch<PaymentResponse>(
-      this.config.baseUrl,
-      '/api/v1/payments',
-      this.config.adminKey,
-      {
-        method: 'POST',
-        body: JSON.stringify({ out: true, bolt11, memo: idempotencyKey }),
-      },
-    );
+    const paymentHash = bolt11PaymentHash(bolt11);
+    let result: PaymentResponse;
+    try {
+      result = await lnbitsFetch<PaymentResponse>(
+        this.config.baseUrl,
+        '/api/v1/payments',
+        this.config.adminKey,
+        {
+          method: 'POST',
+          body: JSON.stringify({ out: true, bolt11, memo: idempotencyKey }),
+          signal: AbortSignal.timeout(this.config.timeoutMs ?? 30_000),
+        },
+      );
+    } catch (error) {
+      if (error instanceof PaymentFailedError || error instanceof PaymentOutcomeUnknownError) {
+        throw error instanceof PaymentOutcomeUnknownError
+          ? new PaymentOutcomeUnknownError(error.message, paymentHash)
+          : error;
+      }
+      // A lost connection or timeout: the request may have reached LNbits.
+      throw new PaymentOutcomeUnknownError('LNbits request did not complete', paymentHash);
+    }
+
+    const state = paymentState(result);
+    if (state === 'failed') {
+      throw new PaymentFailedError('LNbits reported the payment as failed', 'failed');
+    }
+    if (state !== 'paid') {
+      // `pending` (it may still settle) or an answer without a status: never "paid", never "failed".
+      throw new PaymentOutcomeUnknownError(
+        `LNbits payment status: ${result.status ?? 'unreported'}`,
+        result.payment_hash || paymentHash,
+      );
+    }
 
     return {
-      paymentRef: result.payment_hash,
+      paymentRef: result.payment_hash || paymentHash,
       amount,
-      // LNbits does not return the routing fee synchronously; a follow-up
-      // reconciliation pass (`GET /api/v1/payments/{hash}`) is deferred past M1.
-      feeSats: sats(0),
+      feeSats: feeSatsOf(result.fee),
       settledAt: new Date(),
+    };
+  }
+
+  /**
+   * Read only: `GET /api/v1/payments/{payment_hash}`. LNbits cannot be searched by our memo
+   * here, so a payment reference (the hash recorded with an unknown outcome) is required.
+   */
+  async lookupPayment(query: PaymentLookupQuery): Promise<PaymentLookup> {
+    if (!query.paymentRef) {
+      throw new Error('LNbits lookup needs the payment hash; check the LNbits wallet history');
+    }
+    const result = await lnbitsFetch<PaymentResponse>(
+      this.config.baseUrl,
+      `/api/v1/payments/${encodeURIComponent(query.paymentRef)}`,
+      this.config.adminKey,
+    );
+    const state = paymentState(result);
+    return {
+      state: state === 'paid' ? 'paid' : state === 'failed' ? 'failed' : 'pending',
+      paymentRef: query.paymentRef,
+      feeSats: feeSatsOf(result.fee),
+      matches: 1,
     };
   }
 

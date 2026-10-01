@@ -63,7 +63,14 @@ export class UnsafeLnurlTargetError extends InvalidLightningAddressError {
  * stop it paying twice). The payout engine keeps such a payout `sending` and flags it for a human.
  */
 export class PaymentOutcomeUnknownError extends Error {
-  constructor(message: string) {
+  constructor(
+    message: string,
+    /**
+     * The provider-side reference (the Lightning payment hash) of the attempt, when one exists,
+     * so the payout can keep it and a person can look the payment up. Never a secret.
+     */
+    public readonly paymentRef?: string,
+  ) {
     super(message);
     this.name = 'PaymentOutcomeUnknownError';
   }

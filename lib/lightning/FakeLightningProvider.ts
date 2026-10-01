@@ -14,6 +14,8 @@ import { PaymentFailedError } from './errors';
 import type {
   FloatBalance,
   LightningProvider,
+  PaymentLookup,
+  PaymentLookupQuery,
   PayoutDestination,
   PayResult,
   ResolvedAddress,
@@ -119,6 +121,25 @@ export class FakeLightningProvider implements LightningProvider {
 
   async getFloatBalance(): Promise<FloatBalance> {
     return { available: sats(this.floatSats), asOf: new Date() };
+  }
+
+  /** Read only: the demo rail knows exactly what it "sent", keyed by idempotency key. */
+  async lookupPayment(query: PaymentLookupQuery): Promise<PaymentLookup> {
+    const found = this.payments.filter(
+      (p) => p.paymentRef === query.idempotencyKey || p.paymentRef === query.paymentRef,
+    );
+    const first = found[0];
+    if (!first) {
+      return { state: 'not_found', matches: 0 };
+    }
+    return {
+      state: 'paid',
+      paymentRef: first.paymentRef,
+      feeSats: first.feeSats,
+      settledAt: first.settledAt,
+      proofVerified: false,
+      matches: found.length,
+    };
   }
 
   /** Test helper: every payment sent so far, in call order. */

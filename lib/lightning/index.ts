@@ -22,6 +22,7 @@ function lnbitsProvider(env: Readonly<Record<string, string | undefined>>): LNbi
     baseUrl: lightning.lnbits.base_url,
     floatWalletId: lightning.lnbits.float_wallet_id,
     adminKey: env.LNBITS_ADMIN_KEY ?? '',
+    timeoutMs: lightning.provider_timeout_ms,
     ...(env.LNBITS_USERMANAGER_KEY ? { usermanagerKey: env.LNBITS_USERMANAGER_KEY } : {}),
   });
 }
@@ -50,6 +51,7 @@ export function getLightningProvider(
         apiUrl: lightning.blink.api_url,
         floatWalletId: lightning.blink.float_wallet_id,
         apiKey: env.BLINK_API_KEY ?? '',
+        timeoutMs: lightning.provider_timeout_ms,
       });
     case 'lnbits':
       return lnbitsProvider(env);

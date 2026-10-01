@@ -16,6 +16,7 @@ import {
   InvalidLightningAddressError,
   LightningEndpointUnreachableError,
   PaymentFailedError,
+  PaymentOutcomeUnknownError,
 } from '@/lib/lightning/errors';
 import type { LightningProvider } from '@/lib/lightning/LightningProvider';
 import { sats } from '@/lib/money';
@@ -479,6 +480,18 @@ describe.skipIf(!hasDatabase)('lib/payouts (integration)', () => {
       await processPayout(db, provider, payout.id, new Date(NOW.getTime() + 3_600_000));
       expect(provider.pay).toHaveBeenCalledTimes(1);
       await expect(retryPayout(db, payout.id)).rejects.toBeInstanceOf(PayoutStateError);
+      expect(await uncertainFlags()).toHaveLength(1);
+    });
+  });
+
+  describe('the provider reference of an unknown outcome', () => {
+    it('is kept on the payout so a person can look the payment up', async () => {
+      const hash = 'ab'.repeat(32);
+      const provider = failingProvider(new PaymentOutcomeUnknownError('pending', hash));
+      const payout = await newPayout();
+      const result = await processPayout(db, provider, payout.id, NOW);
+      expect(result.status).toBe('sending');
+      expect(result.providerPaymentRef).toBe(hash);
       expect(await uncertainFlags()).toHaveLength(1);
     });
   });

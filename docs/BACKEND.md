@@ -256,7 +256,7 @@ recorded**. No request field anywhere carries a destination or an address; the w
 | `pending_float` | the operating float is too low or unreadable | `insufficient_float`, `float_unavailable` | top up — resumes by itself |
 | `queued` | approved/retried, waiting for the worker | — | wait |
 | `sending` | being paid right now | `outcome_unknown` = **a human must check the wallet** | none; if it sits long it is flagged for an admin |
-| `paid` | done — `providerPaymentRef` and `settledAt` are the proof | — | show the proof |
+| `paid` | done — `providerPaymentRef` (the payment hash) and `settledAt` are the proof | — | show the proof |
 | `failed` | not paid | `collector_not_authorized`, `amount_not_payable`, `payment_failed`, `destination_rejected` | staff may **Retry** — confirm with the provider first |
 
 - **Pilot mode:** with `payouts.second_signoff_threshold_sats = 0` *every* payout stops at `pending_approval`, so the
@@ -846,6 +846,13 @@ no real sats are sent" banner. Fetch it once on load; it does not change while t
 ## 8. Changelog for the frontend
 
 Newest first. Anything here may need a UI change.
+
+**2026-10-02 (providers): the real provider reference**
+- `providerPaymentRef` is now the Lightning **payment hash** (64 hex characters) for Blink and LNbits (it used to be
+  our payout id for Blink). It can also be present on a payout still in `sending` with `lastError: outcome_unknown`:
+  it is the reference to look the payment up by. The demo rail still uses the payout id.
+- No endpoint, status or error code changed. `docs/providers/blink.md` records how each provider answer is classified.
+- **New config:** `[lightning] provider_timeout_ms` (default 30000). A timeout on a payment is an unknown outcome.
 
 **2026-10-01 (treasury): the pool→hot-wallet funding vote (M5-7)**
 - **New endpoints:** `GET /treasury`, `GET`/`POST /treasury/topups`, `GET /treasury/topups/:id`,

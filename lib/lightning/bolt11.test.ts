@@ -2,7 +2,8 @@
 
 import { bech32 } from 'bech32';
 import { describe, expect, it } from 'vitest';
-import { bolt11AmountMsat } from './bolt11';
+import { testInvoice, testPreimage } from '@/lib/testing/bolt11';
+import { bolt11AmountMsat, bolt11PaymentHash } from './bolt11';
 
 /** A syntactically valid bech32 string with the given human-readable part (data is irrelevant here). */
 const invoiceWith = (hrp: string): string => bech32.encode(hrp, new Array(40).fill(7), 4000);
@@ -55,4 +56,30 @@ describe('bolt11AmountMsat', () => {
       99999999999999999999n * 100_000_000_000n,
     );
   });
+});
+
+describe('bolt11PaymentHash', () => {
+  it('reads the payment hash out of the BOLT11 specification example', () => {
+    const spec =
+      'lnbc2500u1pvjluezpp5qqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqqqsyqcyq5rqwzqfqypqdq5xysxxatsyp3k7enxv4jsxqzpuaztrnwngzn3kdzw5hydlzf03qdgm2hdq27cqv3agm2awhz5se903vruatfhq77w3ls4evs3ch9zw97j25emudupq63nyw24cg27h2rspfj9srp';
+    expect(bolt11PaymentHash(spec)).toBe(
+      '0001020304050607080900010203040506070809000102030405060708090102',
+    );
+    expect(bolt11AmountMsat(spec)).toBe(250_000_000n);
+  });
+
+  it('round trips the test fixture builder, with a lightning: prefix and upper case', () => {
+    const { paymentHash } = testPreimage('a');
+    const invoice = testInvoice(500, paymentHash);
+    expect(bolt11PaymentHash(invoice)).toBe(paymentHash);
+    expect(bolt11PaymentHash(`lightning:${invoice.toUpperCase()}`)).toBe(paymentHash);
+    expect(bolt11AmountMsat(invoice)).toBe(500_000n);
+  });
+
+  it.each(['', 'not an invoice', 'lnbc1invalid', invoiceWith('lnbc10n')])(
+    'rejects %j (no payment hash tag)',
+    (input) => {
+      expect(() => bolt11PaymentHash(input)).toThrow();
+    },
+  );
 });
