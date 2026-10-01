@@ -34,9 +34,49 @@ export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('Metadata');
 
   return {
-    title: t('title'),
+    metadataBase: new URL('https://taka.afribit.africa'),
+    applicationName: 'Taka Sats',
+    title: {
+      default: t('title'),
+      template: '%s | Taka Sats',
+    },
     description: t('description'),
+    keywords: [
+      'Taka Sats',
+      'recycling rewards',
+      'Bitcoin recycling',
+      'waste collection Kenya',
+      'Lightning payments',
+      'verified recycling',
+    ],
+    alternates: { canonical: '/' },
     manifest: '/manifest.webmanifest',
+    icons: {
+      icon: [
+        { url: '/favicon.ico', sizes: 'any' },
+        { url: '/icon.png', type: 'image/png', sizes: '256x256' },
+      ],
+      apple: [{ url: '/apple-touch-icon.png', type: 'image/png', sizes: '180x180' }],
+    },
+    openGraph: {
+      type: 'website',
+      url: '/',
+      siteName: 'Taka Sats',
+      title: t('title'),
+      description: t('description'),
+      locale: 'en_KE',
+      images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: t('shareImageAlt') }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: t('title'),
+      description: t('description'),
+      images: ['/opengraph-image'],
+    },
+    category: 'technology',
+    creator: 'Afribit Africa',
+    publisher: 'Afribit Africa',
+    formatDetection: { email: false, address: false, telephone: false },
     appleWebApp: { capable: true, title: t('title'), statusBarStyle: 'default' },
   };
 }
@@ -53,6 +93,20 @@ type RootLayoutProps = {
 export default async function RootLayout({ children }: RootLayoutProps) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const t = await getTranslations('Metadata');
+  const structuredData = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Taka Sats',
+    url: 'https://taka.afribit.africa',
+    description: t('description'),
+    publisher: {
+      '@type': 'Organization',
+      name: 'Afribit Africa',
+      url: 'https://afribit.africa',
+      logo: 'https://taka.afribit.africa/icon-512.png',
+    },
+  };
 
   return (
     <html
@@ -60,6 +114,14 @@ export default async function RootLayout({ children }: RootLayoutProps) {
       suppressHydrationWarning
       className={`${displayFont.variable} ${bodyFont.variable} ${monoFont.variable}`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(structuredData).replace(/</g, '\\u003c'),
+          }}
+        />
+      </head>
       <body>
         <NextIntlClientProvider messages={messages}>
           <ThemeProvider attribute="data-theme" defaultTheme="light" enableSystem={false}>
