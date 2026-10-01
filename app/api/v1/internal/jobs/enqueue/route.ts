@@ -2,7 +2,11 @@
 
 import { timingSafeEqual } from 'node:crypto';
 import { type NextRequest, NextResponse } from 'next/server';
-import { enqueueRefreshExchangeRate } from '@/lib/jobs';
+import {
+  enqueueCreateLedgerCheckpoint,
+  enqueueRefreshExchangeRate,
+  enqueueSweepPayouts,
+} from '@/lib/jobs';
 
 function isAuthorized(request: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -32,6 +36,10 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     await enqueueRefreshExchangeRate();
     enqueued.push('refresh-exchange-rate');
+    await enqueueCreateLedgerCheckpoint();
+    enqueued.push('create-ledger-checkpoint');
+    await enqueueSweepPayouts();
+    enqueued.push('sweep-payouts');
   } catch (error) {
     console.error('[cron] enqueue failed', error instanceof Error ? error.name : typeof error);
     return NextResponse.json({ error: 'enqueue_failed' }, { status: 502 });
