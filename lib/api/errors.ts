@@ -14,16 +14,37 @@ import { NextResponse } from 'next/server';
 import { ZodError } from 'zod';
 import { ForbiddenError, UnauthorizedError } from '@/lib/auth/session';
 import {
+  CollectorNotAuthorizedError,
   CollectorNotFoundError,
+  CollectorNotYoursError,
+  DestinationInUseError,
+  DestinationNotFoundError,
+  DestinationReplaceForbiddenError,
   ProvisioningDisabledError,
   TagAlreadyActiveError,
   TagRevokedError,
 } from '@/lib/collectors';
-import { InvalidLightningAddressError, NotReceiveCapableError } from '@/lib/lightning/errors';
+import { AnomalyNotFoundError, AnomalyReviewError } from '@/lib/fraud';
+import { LedgerKeyError } from '@/lib/ledger/signing';
+import {
+  InvalidLightningAddressError,
+  LightningEndpointUnreachableError,
+  NotReceiveCapableError,
+  SpendCredentialRejectedError,
+  UnsafeLnurlTargetError,
+} from '@/lib/lightning/errors';
 import { ExchangeFeedError, StaleRateError } from '@/lib/money/rates';
+import { CursorError } from '@/lib/pagination';
+import {
+  PayoutApprovalError,
+  PayoutCursorError,
+  PayoutNotFoundError,
+  PayoutStateError,
+} from '@/lib/payouts';
 import { RateError } from '@/lib/rates';
 import { RotationError } from '@/lib/rotations';
 import { NoActiveSessionError, SessionError } from '@/lib/sessions';
+import { FakeProviderForbiddenError } from '@/lib/lightning';
 import { StorageConfigError } from '@/lib/storage';
 
 export type ApiErrorBody = {
@@ -61,8 +82,20 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   if (error instanceof ZodError) {
     return json(400, 'invalid_request', 'Request validation failed', error.issues);
   }
-  if (error instanceof CollectorNotFoundError) {
+  if (error instanceof CollectorNotFoundError || error instanceof DestinationNotFoundError) {
     return json(404, 'not_found', error.message);
+  }
+  if (error instanceof CollectorNotAuthorizedError) {
+    return json(409, 'collector_not_authorized', error.message, { status: error.status });
+  }
+  if (error instanceof DestinationInUseError) {
+    return json(409, 'destination_in_use', error.message);
+  }
+  if (error instanceof CollectorNotYoursError) {
+    return json(403, 'not_your_collector', error.message);
+  }
+  if (error instanceof DestinationReplaceForbiddenError) {
+    return json(403, 'destination_replace_forbidden', error.message);
   }
   if (error instanceof TagAlreadyActiveError) {
     return json(409, 'conflict', error.message);
@@ -73,8 +106,18 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   if (error instanceof ProvisioningDisabledError) {
     return json(403, 'forbidden', error.message);
   }
+  // Most specific first: every one of these is also an InvalidLightningAddress/NotReceiveCapable.
+  if (error instanceof SpendCredentialRejectedError) {
+    return json(422, 'spend_credential_rejected', error.message);
+  }
   if (error instanceof NotReceiveCapableError) {
     return json(422, 'not_receive_capable', error.message);
+  }
+  if (error instanceof UnsafeLnurlTargetError) {
+    return json(422, 'unsafe_lnurl_target', error.message);
+  }
+  if (error instanceof LightningEndpointUnreachableError) {
+    return json(502, 'lightning_endpoint_unreachable', error.message);
   }
   if (error instanceof InvalidLightningAddressError) {
     return json(422, 'invalid_lightning_address', error.message);
@@ -89,6 +132,13 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   if (error instanceof NoActiveSessionError) {
     return json(403, 'no_active_session', error.message);
   }
+  if (error instanceof LedgerKeyError) {
+    return json(503, 'ledger_key_invalid', error.message);
+  }
+  if (error instanceof FakeProviderForbiddenError) {
+    // A deployment misconfiguration, not a bug: say so instead of an opaque 500.
+    return json(503, 'provider_misconfigured', error.message);
+  }
   if (error instanceof StorageConfigError) {
     return json(503, 'storage_unconfigured', error.message);
   }
@@ -97,6 +147,26 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof ExchangeFeedError) {
     return json(502, 'exchange_feed_error', error.message);
+  }
+  if (error instanceof PayoutNotFoundError) {
+    return json(404, 'not_found', error.message);
+  }
+  if (error instanceof PayoutStateError) {
+    return json(409, 'invalid_state', error.message, { status: error.status });
+  }
+  if (error instanceof PayoutApprovalError) {
+    return error.reason === 'self_approval'
+      ? json(403, 'self_approval', error.message)
+      : json(403, 'forbidden', error.message);
+  }
+  if (error instanceof PayoutCursorError || error instanceof CursorError) {
+    return json(400, 'invalid_cursor', error.message);
+  }
+  if (error instanceof AnomalyNotFoundError) {
+    return json(404, 'not_found', error.message);
+  }
+  if (error instanceof AnomalyReviewError) {
+    return json(409, 'review_final', error.message);
   }
 
   console.error('[api] unhandled error', error instanceof Error ? error.name : typeof error);
