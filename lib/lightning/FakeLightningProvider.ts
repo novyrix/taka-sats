@@ -123,6 +123,14 @@ export class FakeLightningProvider implements LightningProvider {
     return { available: sats(this.floatSats), asOf: new Date() };
   }
 
+  /** Demo/test helper: money "arrives" in the float (what a pool transfer does on a real rail). */
+  fund(amount: number): void {
+    if (!Number.isInteger(amount) || amount <= 0) {
+      throw new Error('fund: a positive whole number of sats is required');
+    }
+    this.floatSats += amount;
+  }
+
   /** Read only: the demo rail knows exactly what it "sent", keyed by idempotency key. */
   async lookupPayment(query: PaymentLookupQuery): Promise<PaymentLookup> {
     const found = this.payments.filter(

@@ -96,6 +96,13 @@ It signs in as both roles and walks the whole backend: register → authorize �
 photo → sync (twice, to prove idempotency) → check the ledger verifies → see the payout appear.
 Every line is ✓ or ✗ with the reason. **Do not run a field day until this is all green.**
 
+To include the treasury funding vote, add two more admin accounts
+(`--admin2-phone … --admin2-password … --admin3-phone … --admin3-password …`; the first account must
+be an `admin`). It proposes a 1 sat refill, checks that the proposer cannot approve it, has the two
+others approve, records a transfer reference and checks that arrival is **not** accepted on anyone's
+say so. It stops at `transferred` and moves no pool funds; that proposal stays in flight until a
+steward resolves it, so it counts against the hot wallet cap headroom.
+
 ## 5. The pilot configuration
 
 `config/settings.toml` — the pilot values (each is explained in `docs/CONFIGURATION.md`):

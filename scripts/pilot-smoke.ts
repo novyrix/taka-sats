@@ -12,7 +12,7 @@
  *   pnpm pilot:smoke -- --base https://taka.afribit.africa \
  *     --admin-phone +2547… --admin-password '…' \
  *     --supervisor-phone +2547… --supervisor-password '…' \
- *     [--wallet <a Lightning Address — the RECEIVE side of a wallet card>] [--pay-real]
+ *     [--wallet <a Lightning Address — the RECEIVE side of a wallet card>] [--pay-real] \n *     [--admin2-phone … --admin2-password … --admin3-phone … --admin3-password …]
  *
  * Passwords can instead come from SMOKE_ADMIN_PASSWORD / SMOKE_SUPERVISOR_PASSWORD.
  *
@@ -143,7 +143,7 @@ async function main(): Promise<void> {
   const wallet = arg('wallet');
   if (!adminPhone || !supPhone || !adminPw || !supPw) {
     console.error(
-      'Usage: pilot-smoke --base <url> --admin-phone … --admin-password … --supervisor-phone … --supervisor-password … [--wallet <receive address>] [--pay-real]',
+      'Usage: pilot-smoke --base <url> --admin-phone … --admin-password … --supervisor-phone … --supervisor-password … [--wallet <receive address>] [--pay-real] [--admin2-phone … --admin2-password … --admin3-phone … --admin3-password …]',
     );
     ran = false;
     process.exitCode = 2;
@@ -446,6 +446,84 @@ async function main(): Promise<void> {
     verify2.body.ok === true,
     `ledger: still verifies with the payout recorded (${verify2.body.count} entries)`,
     verify2.body,
+  );
+
+  await treasuryVote(base, admin, adminUser?.role ?? '');
+}
+
+/**
+ * Optional (pass `--admin2-phone/--admin2-password/--admin3-phone/--admin3-password` and sign in
+ * with an `admin` as the first account): the funding vote end to end over HTTP. A 1 sat proposal,
+ * the proposer cannot approve, two other admins approve, the transfer is recorded, and the
+ * arrival is NOT accepted on anyone's word. It stops at `transferred`: on a demo rail the float
+ * does not rise, and this tool never moves pool funds. The proposal stays in flight (it counts
+ * against `treasury.hot_wallet_cap_sats` headroom until someone resolves it).
+ */
+async function treasuryVote(base: string, admin: Client, role: string): Promise<void> {
+  const a2 = { phone: arg('admin2-phone'), pw: arg('admin2-password') };
+  const a3 = { phone: arg('admin3-phone'), pw: arg('admin3-password') };
+  if (!a2.phone || !a2.pw || !a3.phone || !a3.pw) {
+    console.log(
+      '  (treasury vote skipped: pass --admin2-* and --admin3-* credentials to include it)',
+    );
+    return;
+  }
+  if (role !== 'admin') {
+    step(false, 'treasury: the first account must be an admin to propose', role);
+    return;
+  }
+  const b = new Client(base, 'admin2');
+  const c = new Client(base, 'admin3');
+  const bUser = await b.signIn(a2.phone, a2.pw);
+  const cUser = await c.signIn(a3.phone, a3.pw);
+  if (
+    !step(bUser?.role === 'admin' && cUser?.role === 'admin', 'treasury: two more admins sign in', {
+      b: bUser?.role,
+      c: cUser?.role,
+    })
+  ) {
+    return;
+  }
+
+  const proposed = await admin.call('POST', '/api/v1/treasury/topups', {
+    amountSats: 1,
+    note: `smoke ${new Date().toISOString().slice(11, 19)}`,
+  });
+  const id = proposed.body.topup?.id as string | undefined;
+  if (
+    !step(proposed.status === 201 && !!id, 'treasury: an admin proposes a refill', proposed.body)
+  ) {
+    return;
+  }
+  const self = await admin.call('POST', `/api/v1/treasury/topups/${id}/signoff`);
+  step(self.status === 403, 'treasury: the proposer cannot approve their own proposal', self.body);
+  const first = await b.call('POST', `/api/v1/treasury/topups/${id}/signoff`);
+  step(first.status === 200, 'treasury: a second admin approves', first.body);
+  const second = await c.call('POST', `/api/v1/treasury/topups/${id}/signoff`);
+  step(
+    second.status === 200 && second.body.topup?.status === 'approved',
+    'treasury: a third admin approves and the quorum is reached',
+    second.body,
+  );
+  const transfer = await admin.call('POST', `/api/v1/treasury/topups/${id}/transfer`, {
+    reference: `smoke-${Date.now().toString(16)}`,
+  });
+  step(
+    transfer.status === 200 && transfer.body.topup?.status === 'transferred',
+    'treasury: the transfer reference is recorded',
+    transfer.body,
+  );
+  const confirm = await b.call('POST', `/api/v1/treasury/topups/${id}/confirm`);
+  step(
+    confirm.status === 200 && confirm.body.topup?.status !== 'confirmed',
+    'treasury: arrival is not confirmed on someone saying so (the balance must rise)',
+    confirm.body,
+  );
+  const verify = await admin.call('GET', '/api/v1/ledger/verify');
+  step(
+    verify.body.ok === true,
+    'ledger: still verifies with the funding vote recorded',
+    verify.body,
   );
 }
 
