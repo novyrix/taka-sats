@@ -43,22 +43,22 @@ export function ImpactStats() {
         : t('privateValue');
   const stats = [
     {
-      value: summary ? formatNumber(kilograms, 1) : '—',
+      value: summary ? formatNumber(kilograms, 1) : '...',
       unit: t('kgUnit'),
       label: t('statMaterial'),
     },
     {
-      value: summary ? formatNumber(summary.collectors) : '—',
+      value: summary ? formatNumber(summary.collectors) : '...',
       unit: '',
       label: t('statCollectors'),
     },
     {
-      value: summary ? satsLabel : '—',
+      value: summary ? satsLabel : '...',
       unit: typeof sats === 'number' || sats ? t('satsUnit') : '',
       label: t('statPayouts'),
     },
     {
-      value: summary ? formatNumber(summary.ledger.entries) : '—',
+      value: summary ? formatNumber(summary.ledger.entries) : '...',
       unit: '',
       label: t('statLedger'),
     },
