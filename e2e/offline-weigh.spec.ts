@@ -52,7 +52,7 @@ test('offline: weigh a collector end to end → event is queued in IndexedDB', a
   await reason.fill('e2e: headless, no GPS');
 
   await page.getByRole('button', { name: 'Confirm' }).click();
-  await expect(page.getByText('Saved — queued')).toBeVisible();
+  await expect(page.getByText('Saved and queued')).toBeVisible();
 
   // ── assert the offline store ─────────────────────────────────────────────
   const store = await page.evaluate(async () => {

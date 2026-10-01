@@ -24,9 +24,41 @@ import screenProof from '@/docs/Screens/Screen2.png';
 export default async function Home() {
   const t = await getTranslations('Home');
   const steps = [
-    { number: '01', icon: Scale, title: t('collectTitle'), copy: t('collectDescription') },
-    { number: '02', icon: Camera, title: t('verifyTitle'), copy: t('verifyDescription') },
-    { number: '03', icon: Zap, title: t('payTitle'), copy: t('payDescription') },
+    {
+      number: '01',
+      icon: Smartphone,
+      actor: t('flowIdentifyActor'),
+      title: t('flowIdentifyTitle'),
+      copy: t('flowIdentifyDescription'),
+    },
+    {
+      number: '02',
+      icon: Scale,
+      actor: t('flowWeighActor'),
+      title: t('flowWeighTitle'),
+      copy: t('flowWeighDescription'),
+    },
+    {
+      number: '03',
+      icon: Camera,
+      actor: t('flowEvidenceActor'),
+      title: t('flowEvidenceTitle'),
+      copy: t('flowEvidenceDescription'),
+    },
+    {
+      number: '04',
+      icon: DatabaseZap,
+      actor: t('flowSyncActor'),
+      title: t('flowSyncTitle'),
+      copy: t('flowSyncDescription'),
+    },
+    {
+      number: '05',
+      icon: Zap,
+      actor: t('flowPayoutActor'),
+      title: t('flowPayoutTitle'),
+      copy: t('flowPayoutDescription'),
+    },
   ] as const;
   const productScreens = [
     { src: screenFind, alt: t('identifyAlt'), label: t('identifyLabel') },
@@ -55,6 +87,9 @@ export default async function Home() {
           >
             {t('howItWorks')}
           </a>
+          <Link href="/about" className="hidden font-display text-sm font-medium sm:inline-flex">
+            {t('about')}
+          </Link>
           <Link
             href="/login"
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 font-display text-sm font-bold text-primary-foreground transition-colors hover:bg-[var(--brand-green-deep)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
@@ -156,7 +191,7 @@ export default async function Home() {
         id="how-it-works"
         className="mx-auto w-full max-w-7xl scroll-mt-8 px-5 py-20 sm:px-8 lg:px-10 lg:py-28"
       >
-        <div className="grid gap-8 lg:grid-cols-[0.75fr_1.25fr] lg:gap-16">
+        <div className="grid gap-8 lg:grid-cols-[0.7fr_1.3fr] lg:items-end lg:gap-16">
           <div>
             <p className="font-display text-sm font-bold uppercase tracking-[0.1em] text-primary">
               {t('flowEyebrow')}
@@ -168,26 +203,39 @@ export default async function Home() {
               {t('flowDescription')}
             </p>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {steps.map(({ number, icon: Icon, title, copy }) => (
-              <article
-                key={number}
-                className="rounded-xl border border-border bg-card p-6 shadow-[0_1px_2px_rgb(20_20_20/0.06)]"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="grid size-11 place-items-center rounded-lg bg-secondary text-primary">
-                    <Icon aria-hidden="true" className="size-5" />
-                  </span>
-                  <span className="font-mono text-xs font-bold text-muted-foreground">
-                    {number}
-                  </span>
-                </div>
-                <h3 className="mt-7 font-display text-xl font-bold">{title}</h3>
-                <p className="mt-3 leading-7 text-muted-foreground">{copy}</p>
-              </article>
-            ))}
+          <div className="rounded-xl border border-border bg-card p-6 sm:p-8">
+            <p className="font-display text-lg font-bold">{t('flowLedgerTitle')}</p>
+            <p className="mt-2 leading-7 text-muted-foreground">{t('flowLedgerDescription')}</p>
           </div>
         </div>
+        <ol className="mt-14 grid gap-8 lg:grid-cols-5 lg:gap-6">
+          {steps.map(({ number, icon: Icon, actor, title, copy }, index) => (
+            <li
+              key={number}
+              className="relative rounded-xl border border-border bg-card p-6 shadow-[0_1px_2px_rgb(20_20_20/0.06)]"
+            >
+              <div className="flex items-center justify-between">
+                <span className="grid size-12 place-items-center rounded-full bg-secondary text-primary">
+                  <Icon aria-hidden="true" className="size-5" />
+                </span>
+                <span className="font-mono text-xs font-bold text-muted-foreground">{number}</span>
+              </div>
+              <p className="mt-6 font-display text-xs font-bold uppercase tracking-[0.08em] text-primary">
+                {actor}
+              </p>
+              <h3 className="mt-2 font-display text-xl font-bold">{title}</h3>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy}</p>
+              {index < steps.length - 1 ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-7 left-1/2 grid size-6 -translate-x-1/2 rotate-90 place-items-center rounded-full bg-background text-primary lg:-right-4 lg:bottom-auto lg:left-auto lg:top-9 lg:translate-x-0 lg:rotate-0"
+                >
+                  <ArrowRight className="size-4" />
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
       </section>
 
       <section id="product" className="scroll-mt-8 bg-[var(--brand-ink)] text-white">

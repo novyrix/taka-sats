@@ -11,7 +11,7 @@
 # variables only. This file may name *which* provider, never a key.
 
 [programme]
-name           = "Taka Sats — Afribit Africa"
+name           = "Taka Sats by Afribit Africa"
 timezone       = "Africa/Nairobi"        # IANA name; drives session windows and reporting
 fiat_currency  = "KES"                   # ISO 4217; the rate table and all reporting use this
 locales        = ["en", "sw", "sheng"]   # first-class UI locales

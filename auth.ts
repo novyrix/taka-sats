@@ -25,7 +25,7 @@ import { getDb } from '@/lib/db/client';
 import { partners, supervisors } from '@/lib/db/schema';
 
 const credentialsSchema = z.object({
-  /** A supervisor's phone or a partner's login email. */
+  /** A supervisor's provisioned staff identifier/phone or a partner's login email. */
   identifier: z.string().trim().min(1),
   password: z.string().min(1),
 });
@@ -44,7 +44,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
       credentials: {
-        identifier: { label: 'Phone or email', type: 'text' },
+        identifier: { label: 'Staff code, phone or email', type: 'text' },
         password: { label: 'Password', type: 'password' },
       },
       async authorize(raw) {
@@ -55,7 +55,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const { identifier, password } = parsed.data;
         const db = getDb();
 
-        // A partner logs in with an email; staff with a phone number.
+        // A partner logs in with an email; staff with their provisioned identifier.
         if (identifier.includes('@')) {
           const [partner] = await db
             .select()
