@@ -26,7 +26,8 @@ starts on a half-valid config. The validated object is deep-frozen and exported 
 ## Secrets are never in TOML
 
 `DATABASE_URL`, `BLINK_API_KEY`, `LNBITS_ADMIN_KEY`, `LNBITS_USERMANAGER_KEY`,
-`NOSTR_PRIVATE_KEY`, `AUTH_SECRET`,
+`NOSTR_PRIVATE_KEY`, `AUTH_SECRET`, `LEDGER_SIGNING_KEY` (base64 Ed25519 seed — see
+[`LEDGER.md`](LEDGER.md)),
 and object-storage credentials are environment variables only. `settings.toml` may name
 *which* provider (`float_provider = "lnbits"`), never a key. See `.env.example`.
 `lib/lightning/index.ts` reads exactly the one secret its configured provider needs
@@ -39,18 +40,19 @@ Every key there carries a comment. Summary of the sections:
 
 | Section | Purpose |
 |---|---|
-| `[programme]` | Name, timezone, fiat currency (ISO 4217), UI locales, default locale |
+| `[programme]` | Name, timezone, fiat currency (ISO 4217), UI locales, default locale, `public_base_url` (where this deployment is served — builds credential URLs) |
 | `[custody]` | `byo` vs `provisioned` address source; the provisioning enable flag + G1 acknowledgement |
+| `[collectors]` | The authorization gate (`authorization_required`), and the `public_code` format (`code_prefix`, `default_site_code`) — ADR-0017 |
 | `[auth]` | Supervisor session lifetime (JWT-based, survives offline) |
-| `[lightning]` | `float_provider` (`blink` \| `lnbits` \| `fedimint`) and each provider's non-secret settings |
-| `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2); the per-source divergence tolerance |
+| `[lightning]` | `float_provider` (`blink` \| `lnbits` \| `fedimint` \| `fake` — a demo rail that pays nothing; refused in production unless `TAKASATS_ALLOW_FAKE_PROVIDER=true`), each provider's non-secret settings, and `provider_hints` (a label per Lightning-address domain — display only), `spend_link_hosts` (hosts whose URLs are spend credentials — rejected before any network call), `lnurl_timeout_ms` (per-request LNURL timeout, 1000–60000) |
+| `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2); the agreement tolerance (an outlier source is set aside; ≥2 must agree within it) |
 | `[rates]` | `seed` rows for `material_rates` on the first migration only — history lives in the DB afterwards |
-| `[payouts]` | Second-sign-off threshold, low-float alert threshold, auto-topup flag |
+| `[payouts]` | Second-sign-off threshold (`0` holds every payout for review), `require_approval_first_payout`, low-float alert threshold, auto-topup flag, `sweep_cron`, `sending_stale_minutes`, `max_attempts` |
 | `[reconciliation]` | Paid-kg vs sold-kg variance tolerance |
-| `[anomaly]` | Detector thresholds (identical-weight repeats, payout concentration, off-hours grace) |
+| `[anomaly]` | Detector thresholds (identical-weight repeats, payout concentration, off-hours grace; `weight_outlier_min_events` prior events a material needs before its weights are judged, and `weight_outlier_mad_k`, how many scaled MADs from the median make an outlier) |
 | `[scheduling]` | Coverage-gap alert lead time |
 | `[transparency]` | Attestation amount disclosure, weight bucket, public map jitter, Nostr relays |
-| `[ledger]` | Checkpoint interval, OpenTimestamps toggle |
+| `[ledger]` | Checkpoint job on/off, its cron, the minimum new entries per checkpoint, OpenTimestamps toggle |
 
 ### Cross-field rules enforced at boot
 

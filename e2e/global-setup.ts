@@ -56,7 +56,12 @@ export default async function globalSetup(): Promise<void> {
       fetchedAt: new Date(),
     });
 
-    await db.insert(collectors).values({ alias: 'Amina E2E', addressSource: 'byo' });
+    await db.insert(collectors).values({
+      alias: 'Amina E2E',
+      addressSource: 'byo',
+      publicCode: 'TS-0001',
+      status: 'active',
+    });
 
     const [session] = await db
       .insert(sessions)

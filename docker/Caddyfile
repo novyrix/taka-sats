@@ -1,0 +1,23 @@
+# HTTPS front for a public Taka Sats host (docker/docker-compose.https.yml).
+# Caddy obtains and renews the certificate itself; DNS for $TAKASATS_DOMAIN must point at
+# this machine and ports 80/443 must be open. The PWA needs HTTPS: the service worker,
+# camera, geolocation and Web NFC are all disabled by browsers on plain http.
+
+{$TAKASATS_DOMAIN} {
+	encode zstd gzip
+
+	# A photo is a few MiB; the API itself caps uploads at 8 MiB.
+	request_body {
+		max_size 12MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# These are first-party features of the supervisor PWA.
+		Permissions-Policy "camera=(self), geolocation=(self), nfc=(self)"
+	}
+
+	reverse_proxy app:3000
+}

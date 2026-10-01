@@ -5,8 +5,9 @@ import { NextRequest } from 'next/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
-vi.mock('@/lib/storage', () => ({
-  StorageConfigError: class StorageConfigError extends Error {},
+// Keep the real allow-list helpers; only the S3 call is faked.
+vi.mock('@/lib/storage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/storage')>()),
   putPhoto: vi.fn(async (_bytes: Uint8Array, sha256: string) => ({
     key: `photos/${sha256}`,
     url: `https://minio/taka-sats/photos/${sha256}`,
@@ -64,6 +65,36 @@ describe('POST /api/v1/photos', () => {
     );
     expect(res.status).toBe(415);
   });
+
+  it.each([
+    'image/svg+xml',
+    'image/svg+xml; charset=utf-8',
+    'IMAGE/SVG+XML',
+    'image/gif',
+    'image/x-icon',
+    'text/html',
+    'image/', // a prefix is not a type
+  ])('415 for %s — only raster photos are stored (stored-XSS defence)', async (contentType) => {
+    authMock.mockResolvedValue(session('supervisor'));
+    const svg = new TextEncoder().encode(
+      '<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"/>',
+    );
+    const res = await POST(
+      req(svg, { 'content-type': contentType, 'x-photo-sha256': await sha256HexBytes(svg) }),
+    );
+    expect(res.status).toBe(415);
+    expect(putPhoto).not.toHaveBeenCalled();
+  });
+
+  it.each(['image/jpeg', 'image/png', 'image/webp', 'image/jpeg; charset=binary'])(
+    'accepts %s',
+    async (contentType) => {
+      authMock.mockResolvedValue(session('supervisor'));
+      const sha = await sha256HexBytes(BYTES);
+      const res = await POST(req(BYTES, { 'content-type': contentType, 'x-photo-sha256': sha }));
+      expect(res.status).toBe(201);
+    },
+  );
 
   it('422 when the bytes do not match the claimed hash', async () => {
     authMock.mockResolvedValue(session('supervisor'));

@@ -19,6 +19,8 @@
     "db:studio": "drizzle-kit studio",
     "db:create-supervisor": "tsx scripts/create-supervisor.ts",
     "db:seed": "tsx scripts/seed.ts",
+    "db:seed-pilot": "tsx scripts/seed-pilot.ts",
+    "pilot:smoke": "tsx scripts/pilot-smoke.ts",
     "db:create-partner": "tsx scripts/create-partner.ts",
     "check:design": "node scripts/check-colour-pairing.mjs",
     "worker": "tsx worker/runner.ts",

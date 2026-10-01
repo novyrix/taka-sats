@@ -3,7 +3,7 @@
 /**
  * `POST /api/v1/photos` (FR-4.2, ROADMAP M3-10). The PWA's photo upload queue
  * drains here, independently of event sync. Raw image bytes in the body;
- * `Content-Type` is the image type; `X-Photo-Sha256` is the hex hash computed
+ * `Content-Type` is the image type (JPEG/PNG/WebP/HEIC only — never SVG); `X-Photo-Sha256` is the hex hash computed
  * on-device (D-12). The server recomputes it and rejects a mismatch — the
  * stored object is content-addressed (`photos/<sha256>`), so a resend is a
  * harmless overwrite. Scope `collection:record`.
@@ -14,7 +14,7 @@ import { z } from 'zod';
 import { errorResponse } from '@/lib/api/errors';
 import { requireScope } from '@/lib/auth/session';
 import { sha256HexBytes } from '@/lib/sync/contentHash';
-import { putPhoto } from '@/lib/storage';
+import { ALLOWED_PHOTO_TYPES, baseMediaType, isAllowedPhotoType, putPhoto } from '@/lib/storage';
 
 /** Hard cap on an upload — a downscaled JPEG is well under this (M3-5). */
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
@@ -27,9 +27,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const claimed = sha256Schema.parse(request.headers.get('x-photo-sha256') ?? '');
     const contentType = request.headers.get('content-type') ?? 'application/octet-stream';
-    if (!contentType.startsWith('image/')) {
+    if (!isAllowedPhotoType(contentType)) {
       return NextResponse.json(
-        { error: { code: 'unsupported_media_type', message: 'Body must be an image' } },
+        {
+          error: {
+            code: 'unsupported_media_type',
+            message: `Body must be one of: ${ALLOWED_PHOTO_TYPES.join(', ')}`,
+          },
+        },
         { status: 415 },
       );
     }
@@ -61,7 +66,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const { url } = await putPhoto(bytes, actual, contentType);
+    const { url } = await putPhoto(bytes, actual, baseMediaType(contentType));
     return NextResponse.json({ photoUrl: url, sha256: actual }, { status: 201 });
   } catch (error) {
     return errorResponse(error);

@@ -1,0 +1,50 @@
+# HTTPS overlay for a public host — the pilot at https://taka.afribit.africa.
+#
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.https.yml \
+#     --env-file .env up -d --build
+#
+# Adds Caddy (automatic TLS) in front of the app, stops publishing the app and MinIO to the
+# internet, and mounts ./config so config/settings.toml (operator overrides, git-ignored) is
+# read by both the app and the worker. Requires TAKASATS_DOMAIN in .env.
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      TAKASATS_DOMAIN: ${TAKASATS_DOMAIN:?set TAKASATS_DOMAIN (e.g. taka.afribit.africa)}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    # Only Caddy talks to the app now.
+    ports: !reset []
+    volumes:
+      - ../config:/app/config:ro
+
+  worker:
+    volumes:
+      - ../config:/app/config:ro
+
+  # The MinIO API and console are private: photos are served through the app
+  # (GET /api/v1/photos/:sha256), never straight from the bucket.
+  minio:
+    ports: !override
+      - '127.0.0.1:${MINIO_API_PORT:-9000}:9000'
+      - '127.0.0.1:${MINIO_CONSOLE_PORT:-9001}:9001'
+
+  relay:
+    ports: !override
+      - '127.0.0.1:${NOSTR_RELAY_PORT:-8080}:8080'
+
+volumes:
+  caddy-data:
+  caddy-config:

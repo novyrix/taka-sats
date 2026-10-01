@@ -13,12 +13,36 @@
 
 import {
   CreateBucketCommand,
+  GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
   S3ServiceException,
 } from '@aws-sdk/client-s3';
+
+/**
+ * The only image types a photo may be stored and served as. Raster formats only: an SVG (or
+ * anything else a browser can execute) served from the app's own origin would run script in the
+ * session of whoever opens it — a supervisor could escalate to an admin that way.
+ */
+export const ALLOWED_PHOTO_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+] as const;
+export type AllowedPhotoType = (typeof ALLOWED_PHOTO_TYPES)[number];
+
+/** The bare media type of a `Content-Type` header (no parameters), lower-cased. */
+export function baseMediaType(contentType: string): string {
+  return (contentType.split(';')[0] ?? '').trim().toLowerCase();
+}
+
+export function isAllowedPhotoType(contentType: string): contentType is AllowedPhotoType {
+  return (ALLOWED_PHOTO_TYPES as readonly string[]).includes(baseMediaType(contentType));
+}
 
 export class StorageConfigError extends Error {
   constructor(missing: string) {
@@ -152,6 +176,41 @@ export async function photoUrlFor(sha256: string, env?: NodeJS.ProcessEnv): Prom
   try {
     await client.send(new HeadObjectCommand({ Bucket: cfg.bucket, Key: key }));
     return objectUrl(cfg.endpoint, cfg.bucket, key);
+  } catch (error) {
+    const code = error instanceof S3ServiceException ? error.name : '';
+    if (code === 'NotFound' || code === 'NoSuchKey') {
+      return null;
+    }
+    throw error;
+  }
+}
+
+export type StoredPhoto = {
+  readonly bytes: Uint8Array;
+  readonly contentType: string;
+};
+
+/**
+ * Read a stored photo back, or `null` if there is none. The browser cannot reach the
+ * storage endpoint (it is an internal address, and the bucket is private), so
+ * `GET /api/v1/photos/:sha256` streams it through the app behind a session.
+ */
+export async function getPhoto(
+  sha256: string,
+  env?: NodeJS.ProcessEnv,
+): Promise<StoredPhoto | null> {
+  const { client, env: cfg } = getClient(env);
+  try {
+    const object = await client.send(
+      new GetObjectCommand({ Bucket: cfg.bucket, Key: `photos/${sha256}` }),
+    );
+    if (!object.Body) {
+      return null;
+    }
+    return {
+      bytes: await object.Body.transformToByteArray(),
+      contentType: object.ContentType ?? 'application/octet-stream',
+    };
   } catch (error) {
     const code = error instanceof S3ServiceException ? error.name : '';
     if (code === 'NotFound' || code === 'NoSuchKey') {

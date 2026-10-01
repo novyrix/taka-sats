@@ -10,10 +10,25 @@ x-app-environment: &app-environment
   NOSTR_RELAY_URL: ws://relay:8080
   # Auth.js JWT signing secret (M2-1) — required for /api/auth/* to boot.
   AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+  CRON_SECRET: ${CRON_SECRET:?set CRON_SECRET}
   # Lightning provider secrets (D-21 §13.1) — only the one matching
   # lightning.float_provider needs a real value; unused otherwise.
   BLINK_API_KEY: ${BLINK_API_KEY:-}
   LNBITS_ADMIN_KEY: ${LNBITS_ADMIN_KEY:-}
+  LNBITS_USERMANAGER_KEY: ${LNBITS_USERMANAGER_KEY:-}
+  # The fake provider is a deliberate showcase-only rail. Production rejects it
+  # unless the operator opts in explicitly with this separate guard.
+  TAKASATS_ALLOW_FAKE_PROVIDER: ${TAKASATS_ALLOW_FAKE_PROVIDER:-}
+  # Operator-safe environment overrides for deployments that do not mount a
+  # host settings.toml (for example, a Cloudflare Tunnel origin).
+  TAKASATS__PROGRAMME__PUBLIC_BASE_URL: ${TAKASATS__PROGRAMME__PUBLIC_BASE_URL:-https://taka.afribit.africa}
+  TAKASATS__LIGHTNING__FLOAT_PROVIDER: ${TAKASATS__LIGHTNING__FLOAT_PROVIDER:-blink}
+  TAKASATS__PAYOUTS__SECOND_SIGNOFF_THRESHOLD_SATS: ${TAKASATS__PAYOUTS__SECOND_SIGNOFF_THRESHOLD_SATS:-50000}
+  TAKASATS__PAYOUTS__REQUIRE_APPROVAL_FIRST_PAYOUT: ${TAKASATS__PAYOUTS__REQUIRE_APPROVAL_FIRST_PAYOUT:-true}
+  TAKASATS__LEDGER__CHECKPOINT_INTERVAL_ENTRIES: ${TAKASATS__LEDGER__CHECKPOINT_INTERVAL_ENTRIES:-500}
+  # Ledger checkpoint signing seed (M4-7) — the worker signs with it, the app derives
+  # the public key from it; unset = checkpoints are skipped with a warning.
+  LEDGER_SIGNING_KEY: ${LEDGER_SIGNING_KEY:-}
 
 services:
   postgres:

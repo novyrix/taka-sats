@@ -24,6 +24,11 @@ export function BottomNav() {
   const t = useTranslations('SupervisorNav');
   const pathname = usePathname();
 
+  // The approved collection-flow screens carry their own home/back navigation.
+  if (pathname === '/weigh') {
+    return null;
+  }
+
   return (
     <nav className="sticky bottom-0 z-10 grid grid-cols-4 border-t border-border bg-background">
       {TABS.map(({ href, key, Icon }) => {

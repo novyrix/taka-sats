@@ -7,7 +7,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 
 export default async function LoginPage() {
   if (await auth()) {
-    redirect('/enrol');
+    redirect('/weigh');
   }
   const t = await getTranslations('Login');
 

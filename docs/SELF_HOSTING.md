@@ -43,6 +43,37 @@ docker compose --env-file .env run --rm tools scripts/create-supervisor.ts `
 | `relay` | Local Nostr relay | `8080` |
 | `tools` | One-off admin scripts (profile-gated, not started by `up`) | — |
 
+## Serve it on a real domain (HTTPS)
+
+A public deployment needs HTTPS — browsers disable the service worker, camera, GPS and Web NFC on plain
+`http`. The overlay `docker/docker-compose.https.yml` puts Caddy (automatic certificates) in front of the app,
+stops publishing the app and MinIO to the internet, and mounts `./config` so `config/settings.toml` is read by
+the app and the worker. Set `TAKASATS_DOMAIN` in `.env`, point the domain's DNS at the host, then:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.https.yml --env-file .env up -d --build
+```
+
+The full pilot procedure (migrations, seeding staff and a demo session, the smoke test, a field day) is in
+[`docs/PILOT.md`](PILOT.md).
+
+## Private Garage object storage
+
+Cloudflare R2 is a managed service, not software that can be installed on a Proxmox guest. For a
+fully self-hosted S3-compatible photo store, use the Garage overlay. Generate the three Garage
+secrets shown in `.env.example`, then include the overlay in every Compose command:
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.garage.yml \
+  --env-file .env up -d --build --wait
+```
+
+Garage's S3 endpoint is private to the Compose network and optionally bound to loopback for
+diagnostics. Its metadata and objects live in the `garage-meta` and `garage-data` volumes. A
+single-node deployment has no storage redundancy: back up both volumes off-host before collecting
+real participant data. Managed R2 remains an option when a pre-created bucket and scoped S3 access
+key pair are available.
+
 ## Check and stop the stack
 
 ```powershell
