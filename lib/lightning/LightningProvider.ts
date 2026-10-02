@@ -65,6 +65,13 @@ export type PaymentLookup = {
   readonly matches?: number;
 };
 
+/** A wallet on the provider account, for the operator to pick the float wallet. Ids are not secrets. */
+export type ProviderWallet = {
+  readonly id: string;
+  readonly currency: string;
+  readonly balance: number;
+};
+
 export interface LightningProvider {
   readonly kind: ProviderKind;
 
@@ -90,4 +97,7 @@ export interface LightningProvider {
    * operator checks the provider's own dashboard.
    */
   lookupPayment?(query: PaymentLookupQuery): Promise<PaymentLookup>;
+
+  /** Read only: the account's wallets, so an operator can find the id to configure. Optional. */
+  discoverWallets?(): Promise<ProviderWallet[]>;
 }

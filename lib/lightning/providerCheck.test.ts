@@ -299,6 +299,37 @@ describe('runProviderCheck: the supervised payment', () => {
   });
 });
 
+describe('runProviderCheck: finding the wallet id', () => {
+  it('lists the account wallets when only the wallet id is missing, and still fails the credentials check', async () => {
+    const provider: LightningProvider = {
+      ...withPay(vi.fn()),
+      discoverWallets: async () => [
+        { id: 'btc-wallet-id', currency: 'BTC', balance: 1200 },
+        { id: 'usd-wallet-id', currency: 'USD', balance: 50 },
+      ],
+    };
+    const { promise, lines } = run({
+      provider,
+      env: BLINK_ENV,
+      settings: { ...SETTINGS, blinkWalletId: '' },
+    });
+    expect((await promise).exitCode).toBe(1);
+    const wallets = lines.find((l) => l.name === 'wallets');
+    expect(wallets?.detail).toContain('BTC id btc-wallet-id');
+    expect(wallets?.detail).toContain('TAKASATS__LIGHTNING__BLINK__FLOAT_WALLET_ID');
+    expect(statusOf(lines, 'credentials')).toBe('FAIL');
+    expect(JSON.stringify(lines)).not.toContain('SECRET_VALUE');
+  });
+
+  it('does not call the provider at all when the API key itself is missing', async () => {
+    const discover = vi.fn();
+    const provider: LightningProvider = { ...withPay(vi.fn()), discoverWallets: discover };
+    const { promise } = run({ provider, env: {}, settings: { ...SETTINGS, blinkWalletId: '' } });
+    await promise;
+    expect(discover).not.toHaveBeenCalled();
+  });
+});
+
 describe('helpers', () => {
   it('credentialChecks names what each provider needs and reports presence only', () => {
     expect(credentialChecks('fake', {}, SETTINGS)).toEqual([]);

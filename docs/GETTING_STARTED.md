@@ -166,6 +166,9 @@ pnpm provider:check --address you@wallet.example
 pnpm provider:check --pay-sats 1 --to you@wallet.example
 ```
 
+If the Blink API key is set but the wallet id is not, it lists the account's wallets (BTC and USD) so you can copy
+the BTC wallet id into `TAKASATS__LIGHTNING__BLINK__FLOAT_WALLET_ID`.
+
 The payment step needs both `--pay-sats` (a whole number from 1 to 100) and `--to`, and it only
 runs after you type `yes` at the prompt. For a non interactive run pass `--yes-i-am-sure`. The
 tool refuses a destination that is not receive capable, and refuses when the float cannot cover

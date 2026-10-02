@@ -390,3 +390,27 @@ describe('BlinkProvider.lookupPayment', () => {
     });
   });
 });
+
+describe('BlinkProvider.discoverWallets', () => {
+  it('lists the BTC and USD wallets of the account', async () => {
+    const calls = stubNetwork(() =>
+      json({
+        data: {
+          me: {
+            defaultAccount: {
+              wallets: [
+                { id: 'w-btc', walletCurrency: 'BTC', balance: 1200 },
+                { id: 'w-usd', walletCurrency: 'USD', balance: 50 },
+              ],
+            },
+          },
+        },
+      }),
+    );
+    expect(await blink.discoverWallets()).toEqual([
+      { id: 'w-btc', currency: 'BTC', balance: 1200 },
+      { id: 'w-usd', currency: 'USD', balance: 50 },
+    ]);
+    expect(calls[0]?.body.query).toContain('wallets');
+  });
+});

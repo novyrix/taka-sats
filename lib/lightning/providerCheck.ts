@@ -197,6 +197,21 @@ export async function runProviderCheck(input: ProviderCheckInput): Promise<Provi
   if (needed.length === 0) {
     add('credentials', 'SKIP', 'the demo provider needs none');
   } else if (missing.length > 0) {
+    // The key is there but the wallet id is not: help the operator find it instead of just failing.
+    const onlyWalletMissing = missing.every((c) => c.name.endsWith('float_wallet_id'));
+    if (onlyWalletMissing && provider.discoverWallets) {
+      try {
+        const wallets = await provider.discoverWallets();
+        add(
+          'wallets',
+          'WARN',
+          `wallets on this account: ${wallets.map((w) => `${w.currency} id ${w.id} (${w.balance} ${w.currency === 'BTC' ? 'sats' : 'minor units'})`).join('; ') || 'none'}. ` +
+            'Set the BTC wallet id as TAKASATS__LIGHTNING__BLINK__FLOAT_WALLET_ID (or lightning.blink.float_wallet_id)',
+        );
+      } catch (error) {
+        add('wallets', 'WARN', `could not list the wallets: ${message(error)}`);
+      }
+    }
     add(
       'credentials',
       'FAIL',

@@ -31,6 +31,7 @@ import type {
   LightningProvider,
   PaymentLookup,
   PaymentLookupQuery,
+  ProviderWallet,
   PayoutDestination,
   PayResult,
   ResolvedAddress,
@@ -137,6 +138,20 @@ const WALLET_BALANCE_QUERY = /* GraphQL */ `
           id
           balance
           walletCurrency
+        }
+      }
+    }
+  }
+`;
+
+const WALLETS_QUERY = /* GraphQL */ `
+  query Wallets {
+    me {
+      defaultAccount {
+        wallets {
+          id
+          walletCurrency
+          balance
         }
       }
     }
@@ -430,6 +445,23 @@ export class BlinkProvider implements LightningProvider {
       // More than one matching send is itself something a person must see.
       matches: candidates.length,
     };
+  }
+
+  /** Every wallet on the account (a Blink account has a BTC and a USD wallet). Needs the Read scope. */
+  async discoverWallets(): Promise<ProviderWallet[]> {
+    const body = await this.graphql<{
+      me: {
+        defaultAccount: { wallets: { id: string; walletCurrency: string; balance: number }[] };
+      } | null;
+    }>(WALLETS_QUERY, {});
+    if (body.errors?.length) {
+      BlinkProvider.throwTopLevel(body.errors);
+    }
+    return (body.data?.me?.defaultAccount.wallets ?? []).map((w) => ({
+      id: w.id,
+      currency: w.walletCurrency,
+      balance: w.balance,
+    }));
   }
 
   async getFloatBalance(): Promise<FloatBalance> {
