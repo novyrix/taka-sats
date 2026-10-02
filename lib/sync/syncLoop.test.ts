@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CollectionEventDraft } from '@/types/domain';
 import { captureCollectionEvent } from './capture';
 import { closeSyncDb, getEvent, listOutbox, requeueEvent } from './store';
-import { drainEventQueue } from './syncLoop';
+import { drainEventQueue, SYNC_REQUEST_TIMEOUT_MS } from './syncLoop';
 
 const HEX64 = 'c'.repeat(64);
 
@@ -131,6 +131,31 @@ describe('drainEventQueue', () => {
 
     await drainEventQueue(reply(200, { results: [{ id, status: 'confirmed', seq: 9 }] }));
     expect((await getEvent(id))?.syncStatus.state).toBe('confirmed');
+  });
+
+  it('gives up on a request that hangs and leaves the events queued (the drain slot is freed)', async () => {
+    const id = await queueOne();
+    // The request is given SYNC_REQUEST_TIMEOUT_MS; make that elapse at once.
+    const timeout = vi.spyOn(AbortSignal, 'timeout').mockImplementation(() => AbortSignal.abort());
+    const hang = vi.fn(async (_url: unknown, init?: RequestInit) => {
+      if (init?.signal?.aborted) {
+        throw new DOMException('timeout', 'TimeoutError');
+      }
+      return new Promise<Response>(() => undefined);
+    }) as unknown as typeof fetch;
+    try {
+      const result = await drainEventQueue(hang);
+      expect(result.retryable).toBe(1);
+      expect(timeout).toHaveBeenCalledWith(SYNC_REQUEST_TIMEOUT_MS);
+    } finally {
+      timeout.mockRestore();
+    }
+    expect((await getEvent(id))?.syncStatus).toEqual({ state: 'queued' });
+    // The slot is free again: the next drain runs.
+    const next = await drainEventQueue(
+      reply(200, { results: [{ id, status: 'confirmed', seq: 2 }] }),
+    );
+    expect(next.confirmed).toBe(1);
   });
 
   it('never re-queues an event that is already confirmed', async () => {

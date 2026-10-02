@@ -55,6 +55,12 @@ type ServerResult =
 
 const BATCH = 50;
 
+/**
+ * A request that has not answered by now is treated as a failed network call: on a dead or very
+ * slow link a hanging fetch would otherwise hold the single drain slot and block every retry.
+ */
+export const SYNC_REQUEST_TIMEOUT_MS = 60_000;
+
 /** The wire shape — a `StoredEvent` minus `syncStatus` / `photoUrl`. */
 function toInput(e: StoredEvent): Record<string, unknown> {
   return {
@@ -125,6 +131,7 @@ export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ events: events.map(toInput) }),
+          signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
         });
         if (res.status === 401) {
           total.signedOut = true;
