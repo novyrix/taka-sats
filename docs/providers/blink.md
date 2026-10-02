@@ -79,3 +79,4 @@ Until that has been done and recorded below, assume any of these can still diffe
 | Date | What | Result |
 |---|---|---|
 | 2 Oct 2026 | Schema and resolver review, unit tests with documented response shapes | Passed. No live account |
+| 2 Oct 2026 | All five GraphQL documents we send (pay, balance, wallets, lookup by hash, recent transactions) validated with graphql-js against the public schema from Blink's repository (`main`) | 0 errors. Proves the query shapes, not the live behaviour |
