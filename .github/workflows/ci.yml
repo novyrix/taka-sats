@@ -61,7 +61,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
-      # Integration test suites are added with the API routes from M1 onward.
+      # Database backed tests run in the integration job against a Postgres service.
       - run: pnpm test
 
   docker:
