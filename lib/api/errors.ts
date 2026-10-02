@@ -43,6 +43,7 @@ import {
   PayoutStateError,
 } from '@/lib/payouts';
 import { RateError } from '@/lib/rates';
+import { SupervisorAccessError } from '@/lib/supervisors';
 import { RotationError } from '@/lib/rotations';
 import {
   TopupApprovalError,
@@ -163,6 +164,13 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   }
   if (error instanceof PayoutStateError) {
     return json(409, 'invalid_state', error.message, { status: error.status });
+  }
+  if (error instanceof SupervisorAccessError) {
+    return error.reason === 'not_found'
+      ? json(404, 'not_found', error.message)
+      : error.reason === 'self_change'
+        ? json(403, 'self_change', error.message)
+        : json(409, 'last_admin', error.message);
   }
   if (error instanceof PayoutResolveError) {
     switch (error.reason) {

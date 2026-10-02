@@ -65,6 +65,8 @@ matches the class. **Switch on `code`, never on `message`** (the message is Engl
 | 400 | `invalid_cursor` | a `cursor` that is not a previous response's `nextCursor` |
 | 403 | `self_resolution` | the admin recorded the weigh, or approved the payout, they tried to resolve (§5.3) |
 | 409 | `not_resolvable` / `reference_in_use` / `reference_mismatch` / `provider_disagrees` / `resolution_final` | a stuck-payout resolution was refused (§5.3, `POST /payouts/:id/resolve`) |
+| 403 | `self_change` | an admin tried to deactivate or reactivate their own account |
+| 409 | `last_admin` | the only active admin cannot be deactivated |
 | 409 | `review_final` | the same admin tried to change their own anomaly verdict (§5.9) |
 | 409 | `invalid_state` | the action does not apply to the payout's (or treasury proposal's) current status; `details.status` says what it is |
 | 410 | `tag_revoked` | a revoked tag was tapped (the attempt is logged server-side) |
@@ -478,6 +480,7 @@ The tag *content* should be `reference.payload`; `newTagId` is the chip's serial
 | `GET /rates/history?material=` | `rates:read` | full versioned history |
 | `POST /rates` | `session:configure` | `{ material, rateFiatMinor, effectiveFrom? }` → `201 { rate }`; closes the previous version. A start not after the current one → `422` |
 | `GET /supervisors?role=&includeInactive=1` | `session:configure` | `{ supervisors: [{ id, name, role, active }] }` — pickers |
+| `PATCH /supervisors/:id` | `session:configure` | body `{ active: boolean }` → `200 { supervisor, changed }`. Deactivate (lost phone, leaver) or reactivate; effective on that account's next request. `403 self_change` (your own account), `409 last_admin`, `404 not_found`. Creating accounts and passwords stays with the operator scripts |
 | `GET /rotations` · `POST /rotations` · `DELETE /rotations/:id` | `session:configure` | `{ location, supervisorId, windowStart, windowEnd }`; rotations apply at **session creation** only |
 
 `SessionView` = `{ id, location, geoBounds, scheduledStart, scheduledEnd, status, sponsorPartnerId, supervisorIds }`.
@@ -880,6 +883,7 @@ Newest first. Anything here may need a UI change.
   (the session is re-checked against the account every time it is read). A deactivated account gets `401`; a role
   change changes the scopes at once. **The PWA must treat `401` on sync as "signed out": keep the queued events,
   ask the person to sign in again, and say that an admin may have deactivated the account.**
+- **New endpoint:** `PATCH /supervisors/:id` `{ active }` (admin) to deactivate or reactivate a staff account. **UI to build:** a staff list with an Active toggle and a confirmation ("They will be signed out on their next request").
 - Failed sign-ins are throttled per identifier (`auth.login_max_failures`, `auth.login_window_minutes`); a locked
   identifier gets the same generic failure as a wrong password.
 

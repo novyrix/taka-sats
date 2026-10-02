@@ -77,6 +77,12 @@ each preserves or alters (Code Style Guide §12). Newest first.
   `script-src` keeps `'unsafe-inline'` (Next's inline bootstrap, no nonce middleware yet), so the CSP
   limits where code can load from but is not a full XSS barrier; the sandboxing CSP on served photos
   still applies on top. Checked in a headless browser: no violations on `/`, `/login`, `/about`.
+- 2026-10-02: `PATCH /api/v1/supervisors/:id` (admin only, scope `session:configure`) to deactivate or reactivate
+  a staff account, so a lost phone can be cut off without database access. Preserves: an admin cannot change
+  their own account and the last active admin can never be deactivated (an advisory lock makes two admins
+  deactivating each other race-safe); nothing here creates an account, changes a role or a password.
+  Combined with the session re-check it takes effect on the next request. Residual: the change is logged
+  (account id, actor id, new state) but not anchored on the ledger.
 - 2026-10-02: Sessions now follow the account (`lib/auth/live-account.ts`, `auth.ts`). A session is a JWT valid for
   up to 30 days, so deactivating an account or lowering its role changed nothing until it expired (a stolen phone
   or a demoted admin kept full access). The JWT callback now re-reads the account on every session read: an
