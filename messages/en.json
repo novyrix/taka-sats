@@ -1049,6 +1049,26 @@
       "deactivate": "Switch off",
       "deactivateConfirm": "Switch off {name}? They will be signed out on their next request.",
       "reactivate": "Switch on"
+    },
+    "sessions": {
+      "title": "Session",
+      "back": "Back to sessions",
+      "state": "State",
+      "status": "Status",
+      "window": "Window",
+      "assigned": "Supervisors assigned",
+      "activeHint": "A new session is only scheduled. Supervisors can record collections only while the session is active and the time is inside its window.",
+      "start": "Start session",
+      "close": "Close session",
+      "closeConfirm": "Close this session? Supervisors can no longer start new collections in it. Queued ones still sync.",
+      "edit": "Window and supervisors",
+      "start_label": "Starts",
+      "end_label": "Ends",
+      "supervisors": "Assigned supervisors",
+      "inactive": "switched off",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saved": "Saved."
     }
   },
   "Sync": {

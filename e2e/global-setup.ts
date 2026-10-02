@@ -18,7 +18,7 @@ import {
   sessionSupervisors,
   supervisors,
 } from '@/lib/db/schema';
-import { FIELD_SUPERVISOR } from './fixtures/accounts';
+import { ADMINS, FIELD_SUPERVISOR, HUB_LEAD, STORY_SUPERVISOR } from './fixtures/accounts';
 
 export default async function globalSetup(): Promise<void> {
   if (!process.env.DATABASE_URL) {
@@ -28,7 +28,7 @@ export default async function globalSetup(): Promise<void> {
   const db = getDb();
   try {
     await db.execute(
-      sql`truncate table session_supervisors, sessions, supervisors, collectors, material_rates, exchange_rate_snapshots restart identity cascade`,
+      sql`truncate table payouts, anomaly_flags, collection_events, collector_payment_destinations, collector_authorizations, tag_history, treasury_topup_signoffs, treasury_topups, ledger_entries, session_supervisors, sessions, supervisors, collectors, material_rates, exchange_rate_snapshots restart identity cascade`,
     );
 
     const [sup] = await db
@@ -40,6 +40,21 @@ export default async function globalSetup(): Promise<void> {
         passwordHash: await hashPassword(FIELD_SUPERVISOR.password),
       })
       .returning({ id: supervisors.id });
+
+    // The people of the full-story and treasury specs: three admins, a hub lead, a second supervisor.
+    const others = [
+      ...ADMINS.map((a) => ({ ...a, role: 'admin' as const })),
+      { ...HUB_LEAD, role: 'hub_lead' as const },
+      { ...STORY_SUPERVISOR, role: 'supervisor' as const },
+    ];
+    for (const person of others) {
+      await db.insert(supervisors).values({
+        name: person.name,
+        phone: person.phone,
+        role: person.role,
+        passwordHash: await hashPassword(person.password),
+      });
+    }
 
     await db.insert(materialRates).values({
       material: 'PET',

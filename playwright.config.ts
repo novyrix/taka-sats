@@ -13,6 +13,17 @@ import { defineConfig, devices } from '@playwright/test';
  */
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 
+// The demo rail pays nothing (the app refuses it in production unless explicitly allowed) and
+// every payout waits for a second person. Set here so the test workers (which run the payout
+// handler themselves, see e2e/field-story.spec.ts) and the server agree.
+const E2E_ENV = {
+  TAKASATS__LIGHTNING__FLOAT_PROVIDER: 'fake',
+  TAKASATS_ALLOW_FAKE_PROVIDER: 'true',
+  TAKASATS__PAYOUTS__SECOND_SIGNOFF_THRESHOLD_SATS: '0',
+  TAKASATS__TREASURY__TOPUP_APPROVALS_REQUIRED: '2',
+} as const;
+Object.assign(process.env, E2E_ENV);
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: false,
@@ -35,6 +46,6 @@ export default defineConfig({
     timeout: 180_000,
     stdout: 'pipe',
     stderr: 'pipe',
-    env: { E2E: '1' },
+    env: { E2E: '1', ...E2E_ENV },
   },
 });

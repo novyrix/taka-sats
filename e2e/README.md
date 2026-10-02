@@ -1,11 +1,13 @@
 # e2e/
 
-Playwright end-to-end specs. Two suites are required (Code Style Guide §10):
+Playwright end-to-end specs:
 
-| Suite                                                | File                    | Milestone        |
-| ---------------------------------------------------- | ----------------------- | ---------------- |
-| Offline weigh flow                                   | `offline-weigh.spec.ts` | **M3-11 — done** |
-| Payout: verified event → confirmed Lightning payment | _(regtest)_             | M5-10            |
+| Suite              | File                    | What it proves                                                                                                     |
+| ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Offline weigh flow | `offline-weigh.spec.ts` | a collection is saved on the phone with no network                                                                 |
+| The full story     | `field-story.spec.ts`   | session, enrolment, authorization, offline weigh, sync, approval, payout (demo rail), verification picture, ledger |
+| Treasury vote      | `treasury-vote.spec.ts` | three admins: propose, two others approve, transfer recorded, arrival checked                                      |
+| Accessibility      | `a11y.spec.ts`          | axe finds no serious or critical violation on the public, console and supervisor pages                             |
 
 ## Running
 

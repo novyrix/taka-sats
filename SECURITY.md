@@ -61,6 +61,15 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Operator console and `GET /events/:id`. The console is a client of `/api/v1`: it adds
+  no data path of its own, so every screen is gated by the same `requireScope` checks as the API
+  (hiding a nav entry or redirecting a hub lead is a convenience, not a control). The new event detail
+  endpoint is scoped like the event list: a plain supervisor reaches only events they recorded
+  (anything else is a 404, the same as an unknown id) and receives no coordinates, not even inside
+  the GPS check's detail; `hub_lead` and `admin` see everything. The supervisor PWA now treats a
+  `401` on sync as signed out and keeps every queued event, so a deactivated or expired account
+  cannot make queued weighs vanish; the server still re-validates each event on every resend.
+
 - 2026-10-02: Treasury arrival accounting (`lib/treasury/topups.ts:claimsAheadOf`), found in an attacker
   review. Two proposals in flight shared one baseline, so a SINGLE deposit made the hot-wallet balance
   satisfy both and both were confirmed, recording twice the funds that arrived. Confirmation now

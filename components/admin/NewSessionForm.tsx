@@ -86,7 +86,9 @@ export function NewSessionForm({ supervisors, partners }: Props) {
     setBusy(false);
 
     if (res.status === 201) {
-      router.push('/sessions');
+      const created = (await res.json().catch(() => null)) as { session?: { id?: string } } | null;
+      // Land on the session itself: a new session is only scheduled until someone starts it.
+      router.push(created?.session?.id ? `/sessions/${created.session.id}` : '/sessions');
       router.refresh();
       return;
     }
