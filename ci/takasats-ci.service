@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+#
+# systemd unit for the Taka Sats CI receiver. Install steps are in ci/README.md.
+# Copy to /etc/systemd/system/takasats-ci.service, then: systemctl daemon-reload
+# and systemctl enable --now takasats-ci.
+#
+# Adjust User, the Node path and WorkingDirectory to your machine. The service user must be able
+# to use Docker (member of the docker group), which is root equivalent on that host: see the
+# security notes in ci/README.md before you install this.
+
+[Unit]
+Description=Taka Sats CI receiver (GitHub webhooks to scripts/ci/run.sh)
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=takasats-ci
+Group=takasats-ci
+SupplementaryGroups=docker
+# A checkout of this repository on the machine, kept on main (see ci/README.md for updating it).
+WorkingDirectory=/opt/takasats-ci
+EnvironmentFile=/etc/takasats-ci/ci.env
+# /var/lib/takasats-ci, owned by the service user. Also used as HOME for the pnpm store.
+StateDirectory=takasats-ci
+Environment=HOME=/var/lib/takasats-ci
+Environment=NODE_OPTIONS=--max-old-space-size=2048
+ExecStart=/usr/bin/node /opt/takasats-ci/ci/receiver/server.mjs
+Restart=on-failure
+RestartSec=5
+# Be gentle with the other services on the same machine.
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+# Builds are heavy. Cap them so a runaway build cannot take the machine down.
+MemoryHigh=2500M
+MemoryMax=3000M
+TasksMax=2048
+# Let a running build finish when the service stops, then give up.
+TimeoutStopSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target
