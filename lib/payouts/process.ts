@@ -484,6 +484,12 @@ async function evaluate(
     });
   } catch (error) {
     await flagUncertain(db, claimed, 'bookkeeping_failed');
+    // The money is gone: keep the provider's reference so the person who resolves it can find it.
+    await db
+      .update(payouts)
+      .set({ providerPaymentRef: result.paymentRef })
+      .where(and(eq(payouts.id, claimed.id), eq(payouts.status, 'sending')))
+      .catch(() => undefined);
     throw error;
   }
 }

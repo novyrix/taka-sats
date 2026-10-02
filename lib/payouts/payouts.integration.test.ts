@@ -496,6 +496,35 @@ describe.skipIf(!hasDatabase)('lib/payouts (integration)', () => {
     });
   });
 
+  describe('when the money went out but the bookkeeping failed', () => {
+    it('keeps the payment reference, flags it for a person, and never sends again', async () => {
+      await db.execute(sql`
+        create or replace function test_block_paid() returns trigger as $$
+        begin
+          if new.status = 'paid' then raise exception 'simulated bookkeeping failure'; end if;
+          return new;
+        end; $$ language plpgsql`);
+      await db.execute(
+        sql`create trigger test_block_paid before update on payouts for each row execute function test_block_paid()`,
+      );
+      try {
+        const payout = await newPayout();
+        await expect(processPayout(db, fake, payout.id, NOW)).rejects.toThrow();
+        const stuck = await reload(payout.id);
+        expect(stuck.status).toBe('sending');
+        expect(stuck.providerPaymentRef).toBe(payout.id); // the demo rail's reference is the payout id
+        expect(fake.paymentsSent()).toHaveLength(1);
+        expect(await uncertainFlags()).toHaveLength(1);
+        // Running it again cannot send a second time.
+        await processPayout(db, fake, payout.id, new Date(NOW.getTime() + 3_600_000));
+        expect(fake.paymentsSent()).toHaveLength(1);
+      } finally {
+        await db.execute(sql`drop trigger if exists test_block_paid on payouts`);
+        await db.execute(sql`drop function if exists test_block_paid()`);
+      }
+    });
+  });
+
   describe('provider failures', () => {
     it('a rail that refuses for lack of funds parks the payout in pending_float (not failed), and it pays once funded', async () => {
       const payout = await newPayout();
