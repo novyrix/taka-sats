@@ -38,7 +38,7 @@ export function CredentialQr({
   }, [payload]);
 
   return (
-    <div className="flex flex-wrap items-center gap-4">
+    <div className="flex flex-wrap items-center gap-4" data-print-area>
       <div
         role="img"
         aria-label={t('qrAlt', { code: publicCode })}
@@ -51,7 +51,23 @@ export function CredentialQr({
         <p className="font-mono text-xl font-bold">{publicCode}</p>
         <p className="text-sm">{alias}</p>
         <p className="max-w-xs text-xs text-muted-foreground">{t('qrHint')}</p>
-        <Button type="button" variant="outline" size="sm" onClick={() => window.print()}>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            // Print only this card: the global print rule hides the rest of the page.
+            document.body.classList.add('printing-area');
+            window.addEventListener(
+              'afterprint',
+              () => document.body.classList.remove('printing-area'),
+              {
+                once: true,
+              },
+            );
+            window.print();
+          }}
+        >
           {t('print')}
         </Button>
       </div>

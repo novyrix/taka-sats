@@ -117,3 +117,19 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printing one area of a page (the collector credential card): hide everything else. */
+@media print {
+  body.printing-area * {
+    visibility: hidden;
+  }
+  body.printing-area [data-print-area],
+  body.printing-area [data-print-area] * {
+    visibility: visible;
+  }
+  body.printing-area [data-print-area] {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}
