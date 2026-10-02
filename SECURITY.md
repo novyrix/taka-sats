@@ -77,6 +77,13 @@ each preserves or alters (Code Style Guide §12). Newest first.
   `script-src` keeps `'unsafe-inline'` (Next's inline bootstrap, no nonce middleware yet), so the CSP
   limits where code can load from but is not a full XSS barrier; the sandboxing CSP on served photos
   still applies on top. Checked in a headless browser: no violations on `/`, `/login`, `/about`.
+- 2026-10-02: Sessions now follow the account (`lib/auth/live-account.ts`, `auth.ts`). A session is a JWT valid for
+  up to 30 days, so deactivating an account or lowering its role changed nothing until it expired (a stolen phone
+  or a demoted admin kept full access). The JWT callback now re-reads the account on every session read: an
+  inactive or deleted account ends the session at once (401 on the next request), and the role is always the
+  stored one. If the lookup fails (database outage) the token is kept, so an outage does not sign every phone
+  out. Verified live: demote -> 403, deactivate -> 401, reactivate -> 200 with the same cookie. Residual: one
+  indexed query per session read; offline queued events from a deactivated device are rejected when they sync.
 - 2026-10-02: Account creation refuses a weak password (`weakPasswordReason`: at least 12 characters, more than
   a few distinct characters, not a known placeholder) in `create-supervisor` and `create-partner`. Residual:
   it is a floor, not a strength meter, and existing accounts are not re-checked.

@@ -20,6 +20,7 @@ import Credentials from 'next-auth/providers/credentials';
 import { z } from 'zod';
 import { isRole, type Role } from '@/lib/auth/permissions';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
+import { type AccountLookup, refreshSessionToken } from '@/lib/auth/live-account';
 import { LoginThrottle } from '@/lib/auth/throttle';
 import { getSettings } from '@/lib/config';
 import { getDb } from '@/lib/db/client';
@@ -85,12 +86,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.role = user.role;
         token.locale = user.locale;
+        return token;
       }
-      return token;
+      // Every later read: the account must still exist and be active, and its role is the stored one.
+      return refreshSessionToken(token, lookupAccount, (error) =>
+        console.error(
+          '[auth] account lookup failed',
+          error instanceof Error ? error.name : typeof error,
+        ),
+      );
     },
     session({ session, token }) {
       if (session.user && token.sub) {
@@ -102,6 +110,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+/** The account behind a session token, or null if it is gone or deactivated. */
+const lookupAccount: AccountLookup = async (id, partner) => {
+  const db = getDb();
+  if (partner) {
+    const [row] = await db
+      .select({ active: partners.active })
+      .from(partners)
+      .where(eq(partners.id, id));
+    return row?.active ? { role: 'partner', locale: 'en' } : null;
+  }
+  const [row] = await db
+    .select({ active: supervisors.active, role: supervisors.role, locale: supervisors.locale })
+    .from(supervisors)
+    .where(eq(supervisors.id, id));
+  if (!row?.active || !isRole(row.role) || row.role === 'partner') {
+    return null;
+  }
+  return { role: row.role, locale: row.locale };
+};
 
 type SignedInUser = { id: string; name: string; role: Role; locale: string };
 

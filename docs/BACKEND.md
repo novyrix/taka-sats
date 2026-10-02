@@ -875,6 +875,14 @@ no real sats are sent" banner. Fetch it once on load; it does not change while t
 
 Newest first. Anything here may need a UI change.
 
+**2026-10-02 (auth): sessions follow the account**
+- Deactivating a staff or partner account, or changing a staff role, now takes effect on the very next request
+  (the session is re-checked against the account every time it is read). A deactivated account gets `401`; a role
+  change changes the scopes at once. **The PWA must treat `401` on sync as "signed out": keep the queued events,
+  ask the person to sign in again, and say that an admin may have deactivated the account.**
+- Failed sign-ins are throttled per identifier (`auth.login_max_failures`, `auth.login_window_minutes`); a locked
+  identifier gets the same generic failure as a wrong password.
+
 **2026-10-02 (payouts): resolve a stuck payout**
 - **New endpoints:** `GET /payouts/:id/check`, `POST /payouts/:id/resolve` (§5.3). **New scope** `payout:resolve`, **admin only**.
 - **New error codes:** `403 self_resolution`, `409 not_resolvable | reference_in_use | reference_mismatch | provider_disagrees | resolution_final`.
