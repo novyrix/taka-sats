@@ -540,6 +540,19 @@ describe.skipIf(!hasDatabase)('lib/payouts resolve (integration)', () => {
       ).rejects.toMatchObject({ reason: 'provider_disagrees' });
     });
 
+    it('paid is refused when the provider records a different payment than the reference given', async () => {
+      const { payout } = await stuckPayout({ hash: undefined });
+      await expect(
+        resolvePayout(
+          db,
+          lookupProvider({ state: 'paid', paymentRef: 'cd'.repeat(32), matches: 1 }),
+          { payoutId: payout.id, actor: admin(), outcome: 'paid', reference: 'tx-claimed-1' },
+          LATER,
+        ),
+      ).rejects.toMatchObject({ reason: 'reference_mismatch' });
+      expect((await reload(payout.id)).status).toBe('sending');
+    });
+
     it('paid is refused when the provider says it failed', async () => {
       const { payout } = await stuckPayout();
       await expect(

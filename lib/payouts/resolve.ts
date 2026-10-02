@@ -255,6 +255,13 @@ export async function resolvePayout(
       );
     }
   }
+  if (outcome === 'paid' && found?.paymentRef && reference && found.paymentRef !== reference) {
+    // The provider's record of this payout carries a different payment than the one being claimed.
+    throw new PayoutResolveError(
+      'reference_mismatch',
+      'The provider records a different payment reference for this payout than the one given',
+    );
+  }
   if (outcome === 'paid' && providerState === 'failed') {
     throw new PayoutResolveError(
       'provider_disagrees',
