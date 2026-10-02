@@ -201,6 +201,9 @@ test('the full story: session, enrolment, authorization, offline weigh, sync, ap
     await audit(page, '/anomalies');
     await audit(page, '/reconciliation');
   }
+  // The supervisor sees how the payout for their collection ended.
+  await sup.page.goto('/session');
+  await expect(sup.page.getByTestId('payout-state')).toContainText('Paid');
   await audit(sup.page, '/session');
 
   for (const person of [admin, hub, second, sup]) {

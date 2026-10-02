@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { api } from '@/lib/console/api';
 import { StatusPill } from '@/components/ui/status';
 import {
   drainEventQueue,
@@ -31,6 +32,8 @@ export function SessionSummary({ sessionId }: { readonly sessionId?: string }) {
   const t = useTranslations('SessionSummary');
   const tStatus = useTranslations('Status');
   const tSync = useTranslations('Sync');
+  const tPayout = useTranslations('Console.status.payout');
+  const [payoutOf, setPayoutOf] = useState<Record<string, string>>({});
   const [summary, setSummary] = useState<Summary | null>(null);
   const [names, setNames] = useState<Record<string, string>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -49,11 +52,30 @@ export function SessionSummary({ sessionId }: { readonly sessionId?: string }) {
     });
   }, [sessionId]);
 
+  // Where each confirmed collection's payout stands (needs the network; absent offline).
+  const loadPayouts = useCallback(() => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      return;
+    }
+    void api<{ events: { id: string; payout: { status: string } | null }[] }>(
+      '/events?limit=100',
+    ).then((res) => {
+      if (res.ok) {
+        setPayoutOf(
+          Object.fromEntries(
+            res.data.events.flatMap((e) => (e.payout ? [[e.id, e.payout.status] as const] : [])),
+          ),
+        );
+      }
+    });
+  }, []);
+
   useEffect(() => {
     refresh();
+    loadPayouts();
     window.addEventListener(QUEUE_CHANGED_EVENT, refresh);
     return () => window.removeEventListener(QUEUE_CHANGED_EVENT, refresh);
-  }, [refresh]);
+  }, [refresh, loadPayouts]);
 
   const syncNow = useCallback(async () => {
     setBusy(true);
@@ -163,6 +185,14 @@ export function SessionSummary({ sessionId }: { readonly sessionId?: string }) {
                     <span className="font-mono text-xs text-muted-foreground">
                       {e.weightKg.toFixed(3)} kg · ≈ {fmt.format(e.indicativeSats)} sats
                     </span>
+                    {status.state === 'confirmed' && payoutOf[e.id] ? (
+                      <span className="block text-xs" data-testid="payout-state">
+                        {tSync('payoutLabel')}:{' '}
+                        {tPayout.has(payoutOf[e.id] ?? '')
+                          ? tPayout(payoutOf[e.id] ?? '')
+                          : payoutOf[e.id]}
+                      </span>
+                    ) : null}
                   </span>
                   {isDisplayStatus(status.state) ? (
                     <StatusPill

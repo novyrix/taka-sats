@@ -1162,7 +1162,8 @@
       "outside_session_window": "This was recorded outside the session hours. Ask an admin to widen the session, then try again.",
       "future_timestamp": "The clock on this phone was ahead of the real time. Check the phone's date and time.",
       "invalid_data": "The server could not store these values. Tell an admin."
-    }
+    },
+    "payoutLabel": "Payout"
   },
   "CollectorLanding": {
     "title": "Taka Sats collector card",
