@@ -33,7 +33,11 @@ export function LoginForm() {
       setError(t('invalid'));
       return;
     }
-    router.push('/enrol');
+    const session = (await fetch('/api/auth/session', { credentials: 'same-origin' })
+      .then((r) => r.json())
+      .catch(() => null)) as { user?: { role?: string } } | null;
+    const role = session?.user?.role;
+    router.push(role === 'admin' || role === 'hub_lead' ? '/admin' : '/enrol');
     router.refresh();
   }
 
