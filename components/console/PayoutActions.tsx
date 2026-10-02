@@ -8,6 +8,7 @@ import { useConsoleUser } from '@/components/console/context';
 import { ActionButton, ErrorNotice, KeyValue, Panel, TextField } from '@/components/console/kit';
 import { Button } from '@/components/ui/button';
 import { type ApiFail, api } from '@/lib/console/api';
+import { formatSats } from '@/lib/console/format';
 
 export type PayoutRow = {
   id: string;
@@ -35,7 +36,8 @@ export function PayoutActions({
   payout,
   onChanged,
 }: {
-  readonly payout: Pick<PayoutRow, 'id' | 'status'>;
+  readonly payout: Pick<PayoutRow, 'id' | 'status'> &
+    Partial<Pick<PayoutRow, 'amountSats' | 'collectorAlias'>>;
   readonly onChanged: () => void;
 }) {
   const t = useTranslations('Console.payouts');
@@ -49,6 +51,13 @@ export function PayoutActions({
         <ActionButton
           label={t('approve')}
           testId="approve-payout"
+          confirm={t('approveConfirm', {
+            name: payout.collectorAlias ?? '',
+            sats:
+              payout.amountSats === null || payout.amountSats === undefined
+                ? ''
+                : formatSats(payout.amountSats),
+          })}
           run={() => api(`/payouts/${payout.id}/approve`, { method: 'POST' })}
           onDone={onChanged}
         />

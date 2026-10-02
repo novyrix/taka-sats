@@ -760,7 +760,8 @@
       "markPaid": "Mark paid",
       "markFailed": "Mark failed (nothing was sent)",
       "resolvedPaid": "Marked paid. The ledger has the entry.",
-      "resolvedFailed": "Marked failed. It is not re-queued; use Retry as a separate step."
+      "resolvedFailed": "Marked failed. It is not re-queued; use Retry as a separate step.",
+      "approveConfirm": "Approve paying {name} {sats}? The worker pays it as soon as you approve. The amount may change slightly because it is priced again at a fresh rate."
     },
     "treasury": {
       "title": "Treasury",
