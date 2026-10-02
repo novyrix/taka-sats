@@ -5,7 +5,7 @@
 import { CircleCheck, CircleDashed, KeyRound, RefreshCw, TriangleAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { type ComponentType, type SVGProps, useCallback, useEffect, useState } from 'react';
+import { type ComponentType, type SVGProps, useCallback, useEffect, useRef, useState } from 'react';
 import { SIGN_IN_REQUIRED_EVENT, sessionSummary } from '@/lib/sync';
 import { cn } from '@/lib/utils';
 
@@ -45,22 +45,24 @@ export function SyncStatusIndicator() {
   const [signedOut, setSignedOut] = useState(false);
   const [celebrate, setCelebrate] = useState(false);
 
+  const hadPending = useRef(false);
+
   const refresh = useCallback(() => {
-    void sessionSummary().then((s) => {
-      setCounts((prev) => {
-        const next = {
-          queued: s.byState.queued,
-          syncing: s.byState.syncing,
-          needsAttention: s.byState.needs_attention,
-          failed: s.byState.failed,
-        };
-        const hadPending = prev.queued + prev.syncing > 0;
-        if (hadPending && next.queued + next.syncing === 0 && next.needsAttention === 0) {
-          setCelebrate(true);
-          window.setTimeout(() => setCelebrate(false), COLLAPSE_MS);
-        }
-        return next;
-      });
+    void sessionSummary().then((summary) => {
+      const next = {
+        queued: summary.byState.queued,
+        syncing: summary.byState.syncing,
+        needsAttention: summary.byState.needs_attention,
+        failed: summary.byState.failed,
+      };
+      const pendingNow = next.queued + next.syncing > 0;
+      // The last waiting item just got confirmed: show "All synced" for a moment.
+      if (hadPending.current && !pendingNow && next.needsAttention === 0) {
+        setCelebrate(true);
+        window.setTimeout(() => setCelebrate(false), COLLAPSE_MS);
+      }
+      hadPending.current = pendingNow;
+      setCounts(next);
     });
   }, []);
 
