@@ -56,6 +56,14 @@ Fees: the routing fee comes back as `transaction.settlementFee` (sats) and is re
 to another Blink user and to nodes with a direct channel are free. Limits depend on the account
 level and are shown in the Blink app.
 
+## Known quirks
+
+- Paying an invoice that belongs to the **same wallet** you pay from is refused (`CANT_PAY_SELF`, classified
+  failed). For the first supervised test, use a receive address on a different wallet or account.
+- Blink to Blink payments settle inside Blink (no routing, no fee, often an intra ledger settlement). The result
+  still carries the payment hash; the preimage may or may not be present.
+- A USD wallet cannot be the float: its balance is in cents. `provider:check` and the app refuse it.
+
 ## Deposits
 
 The pool funds the wallet by sending bitcoin to a Blink on chain address, or by paying a Lightning
