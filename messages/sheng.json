@@ -1034,7 +1034,9 @@
         "recycler_sale": "Recycler sale"
       },
       "noEntries": "No entries of this type in the loaded range.",
-      "when": "When"
+      "when": "When",
+      "download": "Download the ledger export",
+      "exporting": "Preparing the export..."
     },
     "staff": {
       "title": "Staff",

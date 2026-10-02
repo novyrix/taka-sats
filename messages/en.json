@@ -1018,7 +1018,7 @@
       "noKey": "Not configured",
       "publicKeyHint": "Write this down somewhere the operator cannot change. An auditor pins it to prove a checkpoint is ours.",
       "outsiderTitle": "Verify without trusting this screen",
-      "outsiderIntro": "An auditor needs no login. Export the ledger and run the standalone verifier on their own machine.",
+      "outsiderIntro": "An auditor needs no login. Download the export and run the standalone verifier on their own machine, with the public key above pinned from a source you trust.",
       "outsiderHint": "See docs/LEDGER.md in the repository for the full guide.",
       "entries": "Entries",
       "type": "Type",
@@ -1034,7 +1034,9 @@
         "recycler_sale": "Recycler sale"
       },
       "noEntries": "No entries of this type in the loaded range.",
-      "when": "When"
+      "when": "When",
+      "download": "Download the ledger export",
+      "exporting": "Preparing the export..."
     },
     "staff": {
       "title": "Staff",

@@ -79,6 +79,72 @@ export function Ledger() {
   const entries = usePaged<Entry>('/ledger?order=desc&limit=100', 'entries');
   const shown = type ? entries.items.filter((e) => e.entryType === type) : entries.items;
 
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<ApiFail | null>(null);
+
+  /** Page through the whole chain and its checkpoints and save them as the file the standalone verifier reads. */
+  async function downloadExport(): Promise<void> {
+    setExporting(true);
+    setExportError(null);
+    const all: unknown[] = [];
+    let cursor: number | null = null;
+    for (;;) {
+      const res: Awaited<
+        ReturnType<typeof api<{ entries: unknown[]; nextCursor: number | null }>>
+      > = await api(`/ledger?order=asc&limit=500${cursor === null ? '' : `&cursor=${cursor}`}`);
+      if (!res.ok) {
+        setExporting(false);
+        setExportError(res);
+        return;
+      }
+      all.push(...res.data.entries);
+      cursor = res.data.nextCursor;
+      if (cursor === null) {
+        break;
+      }
+    }
+    const cps: unknown[] = [];
+    let cpCursor: number | null = null;
+    let publicKey: string | null = null;
+    for (;;) {
+      const res: Awaited<
+        ReturnType<
+          typeof api<{
+            checkpoints: unknown[];
+            nextCursor: number | null;
+            publicKey: string | null;
+          }>
+        >
+      > = await api(
+        `/ledger/checkpoints?limit=100${cpCursor === null ? '' : `&cursor=${cpCursor}`}`,
+      );
+      if (!res.ok) {
+        setExporting(false);
+        setExportError(res);
+        return;
+      }
+      cps.push(...res.data.checkpoints);
+      publicKey = res.data.publicKey;
+      cpCursor = res.data.nextCursor;
+      if (cpCursor === null) {
+        break;
+      }
+    }
+    const blob = new Blob(
+      [JSON.stringify({ entries: all, checkpoints: cps, publicKey }, null, 2)],
+      {
+        type: 'application/json',
+      },
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ledger-export.json';
+    link.click();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+  }
+
   async function verify(): Promise<void> {
     setVerifying(true);
     setVerifyError(null);
@@ -200,6 +266,23 @@ export function Ledger() {
             'pnpm exec tsx scripts/verify-ledger.ts --export ledger.json\npnpm exec tsx scripts/verify-ledger.ts ledger.json --public-key <base64 key above>'
           }
         </pre>
+        <div className="mt-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={exporting}
+            onClick={() => void downloadExport()}
+            data-testid="download-export"
+          >
+            {exporting ? t('exporting') : t('download')}
+          </Button>
+          {exportError ? (
+            <div className="mt-2">
+              <ErrorNotice error={exportError} />
+            </div>
+          ) : null}
+        </div>
         <p className="mt-2 text-xs text-muted-foreground">{t('outsiderHint')}</p>
       </Panel>
 
