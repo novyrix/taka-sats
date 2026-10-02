@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { auth } from '@/auth';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { SignOutButton } from '@/components/auth/SignOutButton';
+import { ModeBanner } from '@/components/console/ModeBanner';
 import { ConsoleProvider } from '@/components/console/context';
 import { isRole } from '@/lib/auth/permissions';
 import { getSettings } from '@/lib/config';
@@ -34,6 +35,7 @@ export default async function AdminLayout({ children }: { readonly children: Rea
       <div className="flex min-h-screen flex-col bg-background text-foreground md:flex-row">
         <AdminNav role={role} />
         <div className="flex min-w-0 flex-1 flex-col">
+          <ModeBanner />
           <header className="flex min-h-14 flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2 md:px-6">
             <span className="font-display text-sm font-bold tracking-[-0.02em]">
               Taka Sats <span className="text-muted-foreground">Admin</span>

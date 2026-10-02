@@ -1091,6 +1091,10 @@
       "from": "From",
       "until": "Until",
       "open": "Still in force"
+    },
+    "mode": {
+      "demo": "Demo mode. No real sats are sent.",
+      "live": "Live payments. Real sats are sent."
     }
   },
   "Sync": {
