@@ -23,11 +23,15 @@ cp config/settings.default.toml config/settings.toml   # optional overrides
 pnpm dev
 ```
 
-Before pushing, the same gate CI runs:
+Before pushing, run the same checks CI runs:
 
 ```bash
-pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build
+pnpm ci:local          # every check, with a throwaway Postgres container (needs Docker)
+pnpm ci:local --no-db  # without Docker: skips the steps that need a database
 ```
+
+`scripts/ci/run.sh` is the source of truth for what "CI passes" means, and it works without
+GitHub Actions. [`docs/CI.md`](docs/CI.md) explains each step and how maintainers host their own.
 
 The `pre-commit` hook runs format/lint/typecheck; the `commit-msg` hook runs commitlint.
 
@@ -50,8 +54,8 @@ A PR that touches `lib/money.ts`, `lib/lightning/`, or any part of the payout pa
 - **Conventional Commits**, enforced: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`,
   `chore:`, `build:`, `ci:`, `perf:`, `revert:`. A scope helps: `fix(payouts): …`.
 - **Every commit needs a `Signed-off-by` trailer** (Developer Certificate of Origin,
-  <https://developercertificate.org/>). Use `git commit -s`. There is no CLA. CI rejects a
-  PR with an unsigned commit.
+  <https://developercertificate.org/>). Use `git commit -s`. There is no CLA. The CI checks
+  (`pnpm ci:local`) reject an unsigned commit.
 
 By signing off you certify you wrote the change or have the right to submit it under the
 project licence.
