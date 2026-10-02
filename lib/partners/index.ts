@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Reading sponsoring partners (ROADMAP M2-6; M7 reuses this). Partner *login*
+ * Reading sponsoring partners (; M7 reuses this). Partner *login*
  * is set up by `scripts/create-partner.ts` (M2-1); this is just the pickable
  * list for "which partner sponsors this session". Framework-free apart from
  * Drizzle (D-04).

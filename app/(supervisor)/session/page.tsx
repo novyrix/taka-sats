@@ -5,7 +5,7 @@ import { SignOutButton } from '@/components/auth/SignOutButton';
 import { SessionSummary } from '@/components/weigh/SessionSummary';
 
 /**
- * The session rollup + queue (DESIGN §11.3, ROADMAP M3-9). No `<SessionGate>`
+ * The session rollup + queue (DESIGN §11.3). No `<SessionGate>`
  * — a supervisor can review what they've queued even after the session
  * window closes. All data is read from IndexedDB by the client component.
  */

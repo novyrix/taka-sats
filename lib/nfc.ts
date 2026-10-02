@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Web NFC helpers (DESIGN §6.4, ROADMAP M1-7/M1-8). `NDEFReader` is
+ * Web NFC helpers (DESIGN §6.4). `NDEFReader` is
  * Chrome-on-Android only — every caller must have a manual fallback (gate
  * G2). The DOM lib has no types for it, so a minimal surface is declared
  * here. Browser-only; do not import from a Server Component.

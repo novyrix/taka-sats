@@ -5,7 +5,7 @@
 ## Context
 
 One licensed custodial operator and one unlicensed non-custodial operator should run the
-**same** code with no diff — only settings.
+**same** code with no diff - only settings.
 
 ## Decision
 

@@ -1,4 +1,4 @@
-# ADR-0011: Config-first — nothing operational is hardcoded
+# ADR-0011: Config-first - nothing operational is hardcoded
 
 **Status:** Accepted (records D-21)
 
@@ -13,7 +13,7 @@ A committed `config/settings.default.toml` holds every tunable with a documented
 operator overrides via a git-ignored `config/settings.toml` and/or `TAKASATS__SECTION__KEY`
 environment variables. `lib/config/` merges the layers, validates the result with a Zod
 schema, and exports a frozen typed object; **a missing or out-of-range value fails the boot**.
-Secrets never live in TOML — DB URL, provider keys, `AUTH_SECRET`, Nostr key are environment
+Secrets never live in TOML - DB URL, provider keys, `AUTH_SECRET`, Nostr key are environment
 only. A literal operational value in `lib/` or a component is a review-blocking defect. A new
 tunable touches `settings.default.toml` + the schema + `docs/CONFIGURATION.md` in one change.
 

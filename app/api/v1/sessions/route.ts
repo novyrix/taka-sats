@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/sessions` (FR-8.1, FR-6.1, ROADMAP M2-5).
+ * `/api/v1/sessions` (FR-8.1, FR-6.1).
  *  - `GET` — scoped list: admin → all, staff → own, partner → sponsored.
  *  - `POST` — create a session — scope `session:configure` (admin only).
  */

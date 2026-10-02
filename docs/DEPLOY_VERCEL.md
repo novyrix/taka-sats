@@ -44,7 +44,7 @@ Configure values in the Vercel project rather than committing them:
 | `DATABASE_URL` | Neon pooled PostgreSQL connection | required only when Vercel runs API routes; not read in the split VM topology |
 | `AUTH_SECRET` | Auth.js JWT signing secret (`openssl rand -base64 32`) | required only when Vercel runs Auth.js; kept on the VM in the split topology |
 | `BLINK_API_KEY` / `LNBITS_ADMIN_KEY` | Lightning provider secret matching `lightning.float_provider` | required once M5 executes payouts |
-| `LEDGER_SIGNING_KEY` | Base64 Ed25519 seed that signs ledger checkpoints (`openssl rand -base64 32`) | secret — required for the checkpoint job (M4-7), see `docs/LEDGER.md` |
+| `LEDGER_SIGNING_KEY` | Base64 Ed25519 seed that signs ledger checkpoints (`openssl rand -base64 32`) | secret - required for the checkpoint job (M4-7), see `docs/LEDGER.md` |
 | `S3_ENDPOINT` | Cloudflare R2 S3 endpoint | required when object uploads land |
 | `S3_BUCKET` | R2 bucket name | required when object uploads land |
 | `S3_REGION` | R2 region (`auto`) | required when object uploads land |

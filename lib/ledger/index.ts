@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The one global append-only hash chain (D-13, REQUIREMENTS §11, ROADMAP M4-2).
+ * The one global append-only hash chain (D-13, REQUIREMENTS §11).
  *
  * Every money- or trust-relevant fact becomes a `ledger_entries` row. On
  * append the server takes an advisory lock, reads the head, assigns

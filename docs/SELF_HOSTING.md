@@ -12,7 +12,7 @@ The Docker Compose path runs the same Next.js code used by Vercel with local Pos
 
 ```powershell
 Copy-Item .env.example .env
-# Replace the AUTH_SECRET and CRON_SECRET placeholders with real random values —
+# Replace the AUTH_SECRET and CRON_SECRET placeholders with real random values -
 # the app will not boot with the committed placeholder text:
 #   AUTH_SECRET generated with: openssl rand -base64 32
 docker compose up --build --wait
@@ -41,11 +41,11 @@ docker compose --env-file .env run --rm tools scripts/create-supervisor.ts `
 | `minio` | R2-compatible object storage | `9000`, `9001` |
 | `worker` | Background-worker process scaffold | internal only |
 | `relay` | Local Nostr relay | `8080` |
-| `tools` | One-off admin scripts (profile-gated, not started by `up`) | — |
+| `tools` | One-off admin scripts (profile-gated, not started by `up`) | - |
 
 ## Serve it on a real domain (HTTPS)
 
-A public deployment needs HTTPS — browsers disable the service worker, camera, GPS and Web NFC on plain
+A public deployment needs HTTPS - browsers disable the service worker, camera, GPS and Web NFC on plain
 `http`. The overlay `docker/docker-compose.https.yml` puts Caddy (automatic certificates) in front of the app,
 stops publishing the app and MinIO to the internet, and mounts `./config` so `config/settings.toml` is read by
 the app and the worker. Set `TAKASATS_DOMAIN` in `.env`, point the domain's DNS at the host, then:

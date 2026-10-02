@@ -88,11 +88,11 @@ Read it in full in [`docs/VERIFICATION.md`](docs/VERIFICATION.md).
 Taka Sats is **ready for a supervised pilot**. It runs in **demo mode** by default: payments are
 simulated and no real money moves.
 
-|                        |                                                                                                                                                                                          |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Working and tested** | Collector approval, offline capture, sync, the ledger and its public verifier, payments with second person approval, reconciliation against recycler sales, anomaly flags, public totals |
-| **Not yet verified**   | Real Lightning payments through Blink or LNbits. The first one must be a supervised test with a tiny amount                                                                              |
-| **Not built**          | The treasury funding vote, connected scales, automatic reading of the scale display                                                                                                      |
+|                        |                                                                                                                                                                                                                                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Working and tested** | Collector approval, offline capture, sync, the ledger and its public verifier, payments with second person approval, the treasury funding vote (a recorded vote that refills the hot wallet), reconciliation against recycler sales, anomaly flags, public totals               |
+| **Not yet verified**   | Real Lightning payments through Blink or LNbits, and a real Blink balance read. The code is checked against Blink's published schema and a tool (`pnpm provider:check`) exists for the first supervised test with a tiny amount, but it has not been run against a live account |
+| **Not built**          | Connected scales, automatic reading of the scale display, a read only view of the pool's own balance, offline enrolment of new collectors, Swahili and Sheng translations (placeholders today)                                                                                  |
 
 ## Get involved
 

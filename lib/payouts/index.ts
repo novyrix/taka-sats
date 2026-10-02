@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Payouts (ROADMAP M5, REQUIREMENTS §10.4): one row per collection event, driven to
+ * Payouts (REQUIREMENTS §10.4): one row per collection event, driven to
  * `paid` by {@link processPayout}. Framework-free apart from Drizzle (D-04): callers pass a
  * `Database` and a `LightningProvider`, so the same code runs from a worker job, a route
  * handler or a test. There is no function here that accepts a destination — it is always

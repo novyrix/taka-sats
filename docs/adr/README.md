@@ -1,7 +1,7 @@
 # Architecture Decision Records
 
 One file per decision, numbered, append-only. A decision that is later reversed gets a new
-ADR that supersedes it (and a `Superseded by` line here) — existing files are not rewritten.
+ADR that supersedes it (and a `Superseded by` line here) - existing files are not rewritten.
 
 **Format:** Status · Context · Decision · Consequences · Related. Keep each to a screen.
 
@@ -22,7 +22,7 @@ ADR differ, REQUIREMENTS is authoritative.
 | [0008](0008-api-first-standalone.md) | API-first, standalone system | Accepted | D-01 |
 | [0009](0009-single-nextjs-app-router-project.md) | Single Next.js App Router project, monorepo-ready | Accepted | D-04 |
 | [0010](0010-fiat-per-kg-rate-table.md) | Rate table stores fiat-per-kg, not sats-per-kg | Accepted | D-14 |
-| [0011](0011-config-first.md) | Config-first — nothing operational is hardcoded | Accepted | D-21 |
+| [0011](0011-config-first.md) | Config-first - nothing operational is hardcoded | Accepted | D-21 |
 | [0012](0012-dual-deployment.md) | Dual deployment: Docker Compose and Vercel | Accepted | D-03 |
 | [0013](0013-two-collector-address-sources.md) | Two collector address sources, per-collector | Accepted | D-05 |
 | [0014](0014-append-only-ledger.md) | Append-only ledger, corrections are new rows | Accepted | D-13 |

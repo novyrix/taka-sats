@@ -1,4 +1,4 @@
-# Backend contract — what the frontend builds against
+# Backend contract - what the frontend builds against
 
 **Audience:** anyone building or changing UI for Taka Sats (the supervisor PWA, the admin
 console, public pages). **Source of truth:** the code; this file is its map. If they disagree the
@@ -18,10 +18,10 @@ the definition of done for any API change.
 | | |
 |---|---|
 | Production URL | `https://taka.afribit.africa` (programme setting `programme.public_base_url`) |
-| API base | `/api/v1` — same origin as the app, no CORS to configure |
+| API base | `/api/v1` - same origin as the app, no CORS to configure |
 | Format | JSON in, JSON out. UUIDs are lower-case strings; timestamps are ISO-8601 UTC strings; sats are integers; kilograms are numbers with ≤ 3 decimals; fiat is **minor units** (KES cents) |
 | Validation | Every body/query is Zod-validated server-side. A bad request is always `400 invalid_request` with the Zod issues in `error.details` |
-| Idempotency | Writes that a device may resend carry a client-generated UUID (`id`) — a resend returns the original result, never a duplicate |
+| Idempotency | Writes that a device may resend carry a client-generated UUID (`id`) - a resend returns the original result, never a duplicate |
 
 ### Authentication
 
@@ -39,7 +39,7 @@ Raw HTTP: `GET /api/auth/csrf`, then `POST /api/auth/callback/credentials` (form
 `{ user: { id, role, locale }, expires }` or `null`.
 
 A `401` from any `/api/v1` call means the session is gone → send the user to `/login`. **Never
-clear the offline queue on a 401** — the queued events are still valid and drain after sign-in.
+clear the offline queue on a 401** - the queued events are still valid and drain after sign-in.
 
 There is no self-service sign-up. Accounts are created by an operator
 (`pnpm db:create-supervisor`, `pnpm db:create-partner`). Collectors never log in.
@@ -70,16 +70,16 @@ matches the class. **Switch on `code`, never on `message`** (the message is Engl
 | 409 | `review_final` | the same admin tried to change their own anomaly verdict (§5.9) |
 | 409 | `invalid_state` | the action does not apply to the payout's (or treasury proposal's) current status; `details.status` says what it is |
 | 410 | `tag_revoked` | a revoked tag was tapped (the attempt is logged server-side) |
-| 413 / 415 | `payload_too_large` / `unsupported_media_type` | photo upload limits — only JPEG, PNG, WebP and HEIC are accepted (**never SVG**) |
-| 422 | `spend_credential_rejected` | **a wallet card's Pay QR was scanned** — show "flip the card, scan Receive" (§3.2) |
+| 413 / 415 | `payload_too_large` / `unsupported_media_type` | photo upload limits - only JPEG, PNG, WebP and HEIC are accepted (**never SVG**) |
+| 422 | `spend_credential_rejected` | **a wallet card's Pay QR was scanned** - show "flip the card, scan Receive" (§3.2) |
 | 422 | `not_receive_capable` | a withdraw (LNURL-w) code, or anything that cannot receive |
 | 422 | `unsafe_lnurl_target` | the code points somewhere unsafe (non-https / private address) |
 | 422 | `invalid_lightning_address` | not a Lightning address / LNURL, or it does not resolve |
 | 422 | `photo_hash_mismatch` | uploaded bytes ≠ `X-Photo-Sha256` |
 | 422 | `unprocessable` | a business rule (bad rate window, session window, rotation, …) |
 | 422 | `hot_wallet_cap_exceeded` | a treasury top-up would take the hot wallet above `treasury.hot_wallet_cap_sats`; `details: { capSats, headroomSats }` (§5.3.1) |
-| 502 | `lightning_endpoint_unreachable` / `exchange_feed_error` | an upstream is down — retry later |
-| 503 | `provider_misconfigured` | the payment rail is configured unsafely (e.g. the demo `fake` rail in production without the explicit opt-in) — an operator problem, not a user one |
+| 502 | `lightning_endpoint_unreachable` / `exchange_feed_error` | an upstream is down - retry later |
+| 503 | `provider_misconfigured` | the payment rail is configured unsafely (e.g. the demo `fake` rail in production without the explicit opt-in) - an operator problem, not a user one |
 | 503 | `stale_exchange_rate` / `storage_unconfigured` / `ledger_key_invalid` / `float_unavailable` | server-side configuration / freshness / the payment rail is unreachable (`float_unavailable` also from the treasury endpoints that must read the hot-wallet balance) |
 | 500 | `internal_error` | a bug; nothing about it is exposed |
 
@@ -99,27 +99,27 @@ Source: `lib/auth/permissions.ts` (the matrix test `lib/auth/rbac-matrix.test.ts
 
 | Scope | supervisor | hub_lead | admin | partner |
 |---|:--:|:--:|:--:|:--:|
-| `collector:enrol` — register a collector, attach a destination, issue a tag | ✅ | ✅ | ✅ | |
-| `collector:read` — search / read collectors | ✅ | ✅ | ✅ | |
-| **`collector:authorize`** — authorize/revoke a collector; replace a verified destination | | ✅ | ✅ | |
-| `collection:record` — weigh, sync events, upload photos, bootstrap the PWA | ✅ | ✅ | ✅ | |
+| `collector:enrol` - register a collector, attach a destination, issue a tag | ✅ | ✅ | ✅ | |
+| `collector:read` - search / read collectors | ✅ | ✅ | ✅ | |
+| **`collector:authorize`** - authorize/revoke a collector; replace a verified destination | | ✅ | ✅ | |
+| `collection:record` - weigh, sync events, upload photos, bootstrap the PWA | ✅ | ✅ | ✅ | |
 | `rates:read` / `session:read` | ✅ | ✅ | ✅ | |
-| `tag:revoke` — revoke an NFC tag | | | ✅ | |
-| `session:configure` — sessions, rates, rotations, the staff roster | | | ✅ | |
-| `payout:read` — see payouts (a supervisor only those of events **they** recorded) | ✅ | ✅ | ✅ | |
-| `payout:approve` — approve / retry a payout (never your own collection) | | ✅ | ✅ | |
+| `tag:revoke` - revoke an NFC tag | | | ✅ | |
+| `session:configure` - sessions, rates, rotations, the staff roster | | | ✅ | |
+| `payout:read` - see payouts (a supervisor only those of events **they** recorded) | ✅ | ✅ | ✅ | |
+| `payout:approve` - approve / retry a payout (never your own collection) | | ✅ | ✅ | |
 | **`payout:resolve`**: check and resolve a payout stuck in `sending` | | | ✅ | |
-| `ledger:read` — stream the ledger, checkpoints, verify | | | ✅ | |
-| `reconciliation:write` — enter recycler sales, run reconciliation reports | | | ✅ | |
-| `report:generate:all` — read reconciliation reports and recycler sales | | | ✅ | |
-| `anomaly:review` — the anomaly queue and verdicts | | | ✅ | |
+| `ledger:read` - stream the ledger, checkpoints, verify | | | ✅ | |
+| `reconciliation:write` - enter recycler sales, run reconciliation reports | | | ✅ | |
+| `report:generate:all` - read reconciliation reports and recycler sales | | | ✅ | |
+| `anomaly:review` - the anomaly queue and verdicts | | | ✅ | |
 | **`treasury:read`**: the treasury view and funding proposals | | | ✅ | |
 | **`treasury:propose`**: propose a pool→hot-wallet refill, cancel your own proposal, record the transfer reference | | | ✅ | |
 | **`treasury:approve`**: approve or reject a refill proposed by someone else, check that the funds arrived | | | ✅ | |
 | `treasury:topup:initiate`: read the hot-wallet float (`GET /treasury/float`) | | | ✅ | |
 | `session:metrics:read:*`, `report:generate:own`, `apikey:manage` | per role, see the file; most are for milestones not built yet | | | |
 
-`payout:execute` exists in **no** role — paying is a system function. There is no endpoint that
+`payout:execute` exists in **no** role - paying is a system function. There is no endpoint that
 executes a payout and none will be added.
 
 The treasury scopes are **admin only**. `hub_lead` (a field-side role that authorizes collectors and
@@ -133,7 +133,7 @@ no_active_session` otherwise); `hub_lead` and `admin` are not shift-bound.
 
 ## 3. The domain in one page
 
-### 3.1 A collector — three states, one gate
+### 3.1 A collector - three states, one gate
 
 ```
 register ──► pending ──authorize──► active ◄──authorize── revoked
@@ -141,58 +141,58 @@ register ──► pending ──authorize──► active ◄──authorize─
                 └───────revoke───────┴──┴──────revoke───────┘
 ```
 
-- **`pending`** — registered by a supervisor, not yet vetted. Cannot be weighed, cannot be issued an
+- **`pending`** - registered by a supervisor, not yet vetted. Cannot be weighed, cannot be issued an
   NFC tag, is not in the offline cache, cannot be paid.
-- **`active`** — *authorized*. Everything works. (Same word the API has always used for "usable".)
-- **`revoked`** — switched off. Events for them are rejected at sync (`collector_not_authorized`).
+- **`active`** - *authorized*. Everything works. (Same word the API has always used for "usable".)
+- **`revoked`** - switched off. Events for them are rejected at sync (`collector_not_authorized`).
 
 Who lands where: a **supervisor** registers → `pending`; a **hub_lead/admin** registers →
 `active` immediately. Setting `collectors.authorization_required = false` makes everyone `active`
 (self-hosters who don't want the gate). Every decision is a ledger-anchored row, so *who authorized
 whom* is provable. Pre-existing collectors were grandfathered `active`.
 
-**UI consequences:** the enrol flow ends in "Registered — waiting for authorization" for a
+**UI consequences:** the enrol flow ends in "Registered - waiting for authorization" for a
 supervisor (show the `publicCode`); there should be a **pending queue** for hub_lead/admin
 (`GET /collectors?status=pending`) with the collector's destination visible so they can eyeball it
 before approving; a supervisor can list *their own* pending registrations.
 
-### 3.2 Identity, credentials and payment — three separate things
+### 3.2 Identity, credentials and payment - three separate things
 
 | Thing | What it is | Where |
 |---|---|---|
 | **Collector** | permanent record; `id` (UUID, client-generatable) + `alias` + `publicCode` | `collectors` |
-| **Credential** | a lookup shortcut: manual code, **QR**, or **NFC tag**. Carries `takasats:<publicCode>` — *identity only, never a payment target* | `publicCode`, `reference`, `tag_history` |
+| **Credential** | a lookup shortcut: manual code, **QR**, or **NFC tag**. Carries `takasats:<publicCode>` - *identity only, never a payment target* | `publicCode`, `reference`, `tag_history` |
 | **Payment destination** | where sats go: a Lightning Address / LNURL-pay | `collector_payment_destinations` |
 
 - `publicCode` looks like `TS-KBR-0042` (`TS` = `collectors.code_prefix`, `KBR` = optional site, `0042` =
   a global sequence). Search finds it by the full code or any substring (`0042`).
-- `reference.payload` = `takasats:TS-KBR-0042` — put exactly this in a QR code or an NFC text record.
+- `reference.payload` = `takasats:TS-KBR-0042` - put exactly this in a QR code or an NFC text record.
   `reference.url` = `https://taka.afribit.africa/c/TS-KBR-0042` (the same thing as a link; `/c/<code>` is a public page that reveals nothing: it does not look the code up, shows no name or
   wallet, and is `noindex`).
 - **Parsing a scan:** import `parseCollectorRef` from `@/lib/collectors/reference` (pure, safe in the
-  browser — do **not** import the `@/lib/collectors` barrel, it pulls in the database). It accepts
+  browser - do **not** import the `@/lib/collectors` barrel, it pulls in the database). It accepts
   `takasats:…`, a `…/c/<code>` link, or a bare code and returns the normalised code or `null`. On
   `null`, fall back to alias search.
-- **A found card pays nobody and reveals nothing** — it is only a pointer.
+- **A found card pays nobody and reveals nothing** - it is only a pointer.
 
 **Payment destinations** have a status: `pending_validation` → `verified` | `invalid`, or `revoked`.
 
 - A collector has **at most one live** (`pending_validation`/`verified`) destination; the same wallet
-  cannot be live for two collectors (`409 destination_in_use`) **however it is written** — `me@blink.sv`,
+  cannot be live for two collectors (`409 destination_in_use`) **however it is written** - `me@blink.sv`,
   `ME@Blink.SV`, its `…/.well-known/lnurlp/me` URL and its `lnurl1…` bech32 are all one wallet. An LNURL
   with a `?query` or `#fragment` is refused (`422`); ask for the wallet's Lightning Address instead.
 - **Who may write a destination:** staff (`collector:authorize`) always. A **supervisor only for a collector
   they registered, only while it is `pending`, and only inside an active session** (`403 not_your_collector`
   / `destination_replace_forbidden` / `no_active_session` otherwise). Once staff authorize, the wallet is
-  what they vouched for — a supervisor can no longer change it, and a collector authorized with *no* wallet
+  what they vouched for - a supervisor can no longer change it, and a collector authorized with *no* wallet
   can still receive its first one from its registrar (the first payout then waits for approval).
 - **Who sees the address:** staff and the registering supervisor. Any other supervisor gets
   `destination.address = null` (and `collector.lightningAddress/lnurlPayRaw = null`) but still sees the
-  `status` and `providerHint` — enough for a "wallet ✓ verified (Paybee)" badge.
+  `status` and `providerHint` - enough for a "wallet ✓ verified (Paybee)" badge.
 - If the wallet host is unreachable at attach time the destination is stored `pending_validation`
   (HTTP **202**) and a background job re-checks it; **payouts only use `verified`**.
 - **Paybee cards:** a card has two QR codes. **Receive** is a Lightning Address
-  (`sample-card@flow.paybee.buzz`) — that is the one to scan. **Pay** is
+  (`sample-card@flow.paybee.buzz`) - that is the one to scan. **Pay** is
   `https://card.paybee.buzz/<name>`, a *spending* page. Scanning Pay is rejected with
   `422 spend_credential_rejected` **before any network call**, and the payload is never stored,
   logged or echoed. Tell the user to flip the card. Do not try to "convert" a Pay link into a
@@ -204,7 +204,7 @@ before approving; a supervisor can list *their own* pending registrations.
 
 Captured offline on the supervisor's phone, signed (`contentHash`), queued, synced. Server states
 (`SyncResult`): `confirmed` (+ ledger `seq`) or `needs_attention` (+ `code` + English `reason`).
-`code` is stable — **translate from `code`**:
+`code` is stable - **translate from `code`**:
 
 | `code` | Cause |
 |---|---|
@@ -215,18 +215,18 @@ Captured offline on the supervisor's phone, signed (`contentHash`), queued, sync
 | `no_rate` / `rate_mismatch` | no rate active for that material at `recordedAt`, or a different one than signed |
 | `supervisor_not_assigned` | the supervisor is not assigned to the session |
 | `event_not_yours` | a plain supervisor tried to sync another supervisor's event |
-| `invalid_event` | this one event is malformed (the `reason` names the field, never its value) — e.g. `weightKg` over 999.999 or with more than 3 decimals. The rest of the batch is unaffected |
+| `invalid_event` | this one event is malformed (the `reason` names the field, never its value) - e.g. `weightKg` over 999.999 or with more than 3 decimals. The rest of the batch is unaffected |
 | `session_not_found` | the `sessionId` does not exist |
-| `outside_session_window` | `recordedAt` is outside the session window (± the configured grace). Widen the session, then **re-queue the event** — it is re-validated on every resend |
+| `outside_session_window` | `recordedAt` is outside the session window (± the configured grace). Widen the session, then **re-queue the event** - it is re-validated on every resend |
 | `future_timestamp` | `recordedAt` is in the future (a wrong phone clock) |
-| `invalid_data` | the database refused the values (a data error) — report it; resending will not help |
+| `invalid_data` | the database refused the values (a data error) - report it; resending will not help |
 
 Local UI states (`SyncStatus.state`): `queued` → `syncing` → `confirmed` | `needs_attention` | `failed`.
 Map to the shared `DisplayStatus` vocabulary in `lib/status.ts`.
 
 **Weight provenance (signed into the event):** `weightSource` ∈ `manual` (default) | `ble_scale` |
 `serial_scale` | `industrial_scale`, plus optional `scaleId` and `scaleReadingRaw`. The pilot only
-produces `manual`. These are part of the hash — see §4.3. **Verification** (OCR/AI/mass-balance) is
+produces `manual`. These are part of the hash - see §4.3. **Verification** (OCR/AI/mass-balance) is
 *derived*, never part of the signed event: `collection_events.verification_level` (`V0` manual … `V4`
 audited) is independent of payout state. 🚧 (the verification pipeline is a later slice; `V0` today).
 
@@ -240,7 +240,7 @@ when it was **recorded**, not the current one.
 
 ### 3.5 Payouts ✅
 
-A payout is created **automatically** when a collection event is confirmed — nobody creates one, and **nobody pays
+A payout is created **automatically** when a collection event is confirmed - nobody creates one, and **nobody pays
 one through the API**: only the worker pays, and only after the checks below. The amount is computed once, on the
 server, in integer sats, at *that day's* BTC/KES rate and at the material rate that was active **when the event was
 recorded**. No request field anywhere carries a destination or an address; the wallet is always the collector's
@@ -254,14 +254,14 @@ recorded**. No request field anywhere carries a destination or an address; the w
 
 | status | meaning | `lastError` | UI |
 |---|---|---|---|
-| `awaiting_rate` | no fresh BTC price yet | `stale_exchange_rate` | wait — retried automatically |
+| `awaiting_rate` | no fresh BTC price yet | `stale_exchange_rate` | wait - retried automatically |
 | `awaiting_destination` | the collector has no **verified** wallet | `no_destination`, `destination_not_verified` | prompt to attach/verify a wallet |
-| `pending_approval` | held for a second person | — | **Approve** button (hub_lead/admin, **not** the person who recorded it) |
-| `pending_float` | the operating float is too low or unreadable | `insufficient_float`, `float_unavailable` | top up — resumes by itself |
-| `queued` | approved/retried, waiting for the worker | — | wait |
+| `pending_approval` | held for a second person | - | **Approve** button (hub_lead/admin, **not** the person who recorded it) |
+| `pending_float` | the operating float is too low or unreadable | `insufficient_float`, `float_unavailable` | top up - resumes by itself |
+| `queued` | approved/retried, waiting for the worker | - | wait |
 | `sending` | being paid right now | `outcome_unknown` = **a human must check the wallet** | none; if it sits long it is flagged for an admin, who **checks** and **resolves** it (§5.3) |
-| `paid` | done — `providerPaymentRef` (the payment hash) and `settledAt` are the proof | — | show the proof |
-| `failed` | not paid | `collector_not_authorized`, `amount_not_payable`, `payment_failed`, `destination_rejected`, `resolved_failed` (an admin confirmed nothing was sent) | staff may **Retry** — confirm with the provider first |
+| `paid` | done - `providerPaymentRef` (the payment hash) and `settledAt` are the proof | - | show the proof |
+| `failed` | not paid | `collector_not_authorized`, `amount_not_payable`, `payment_failed`, `destination_rejected`, `resolved_failed` (an admin confirmed nothing was sent) | staff may **Retry** - confirm with the provider first |
 
 - **Pilot mode:** with `payouts.second_signoff_threshold_sats = 0` *every* payout stops at `pending_approval`, so the
   approval queue is the main admin screen. By default the **first payout to any new wallet always needs approval**
@@ -269,16 +269,16 @@ recorded**. No request field anywhere carries a destination or an address; the w
   approval is voided and the payout asks again.
 - `amountSats` / `amountFiatMinor` are `null` until the payout has been priced (integers; KES cents).
 - After approval the payout is re-priced at a fresh rate, so the sats can differ slightly from what the approver saw.
-- A payout in **`sending` for longer than `payouts.sending_stale_minutes`** is never retried automatically — it may have
+- A payout in **`sending` for longer than `payouts.sending_stale_minutes`** is never retried automatically - it may have
   gone out. It raises a flag for an admin, who uses `GET /payouts/:id/check` and `POST /payouts/:id/resolve` (§5.3).
-- Supervisor view: a supervisor sees only the payouts of events they recorded (others return `404`) — enough to show
+- Supervisor view: a supervisor sees only the payouts of events they recorded (others return `404`) - enough to show
   "paid ✓" next to each event. `hub_lead`/`admin` see everything. Partners see nothing here.
 
 ---
 
 ## 4. Offline contract
 
-### 4.1 Prime the cache — `GET /api/v1/weigh/bootstrap`
+### 4.1 Prime the cache - `GET /api/v1/weigh/bootstrap`
 
 Call while online (the weigh screen does on mount). Scope `collection:record`.
 `403 no_active_session` if the caller has no active assigned session.
@@ -294,7 +294,7 @@ Call while online (the weigh screen does on mount). Scope `collection:record`.
 }
 ```
 
-- `collectors` contains **only `active` collectors** — the gate holds offline. A collector authorized
+- `collectors` contains **only `active` collectors** - the gate holds offline. A collector authorized
   later appears after the next bootstrap, so prime again when the supervisor taps "Sync now".
 - `publicCode` is new (2026-10-01): a cache primed earlier lacks it (`CachedCollector.publicCode` is
   optional). **Add a `by_code` index** to the IndexedDB `collectors` store and search on it so
@@ -302,12 +302,12 @@ Call while online (the weigh screen does on mount). Scope `collection:record`.
   indicative amount).
 - `exchangeRate` is KES (major units) per 1 BTC. The indicative sats figure is **display only**.
 
-### 4.2 Sync — `POST /api/v1/sync/events`
+### 4.2 Sync - `POST /api/v1/sync/events`
 
 Scope `collection:record`. A plain `supervisor` may sync only events they recorded.
 
 ```json
-// request                                   // response — one result per event, same order
+// request                                   // response - one result per event, same order
 { "events": [ {                              { "results": [
   "id": "uuid-v4",                             { "id": "…", "status": "confirmed", "seq": 17 },
   "collectorId": "…", "supervisorId": "…",     { "id": "…", "status": "needs_attention",
@@ -323,11 +323,11 @@ Scope `collection:record`. A plain `supervisor` may sync only events they record
 ```
 
 - **Idempotent by `id`.** Resend freely; a stored event returns its stored result.
-- A whole batch is never failed by one bad event — each is validated and answered on its own, **even a malformed one**
+- A whole batch is never failed by one bad event - each is validated and answered on its own, **even a malformed one**
   (it comes back `invalid_event`; the request only fails with `400` if the envelope itself is broken: no `events`
   array, empty, or over 200). A `needs_attention` event
   is *not* retried automatically (its inputs are wrong); surface it to a human.
-- `geo` is either a fix or `{ "kind": "unavailable", "reason": "…" }` (reason required — US-2.3).
+- `geo` is either a fix or `{ "kind": "unavailable", "reason": "…" }` (reason required - US-2.3).
 - Limits: `weightKg` ∈ [0.001, 999.999] with **at most 3 decimals** (the database column is `numeric(6,3)`; a 4th decimal
   would be silently rounded, so it is refused); `recordedAt` must fall inside the session window (± grace) and not be in
   the future; `photoSha256`/`contentHash` are 64 lowercase hex.
@@ -335,12 +335,12 @@ Scope `collection:record`. A plain `supervisor` may sync only events they record
 - **Order matters for new collectors:** a collector registered offline must reach the server
   (`POST /collectors` with its client `id`) **before** its events sync, or they come back
   `collector_not_found`. Drain a `collector` outbox kind before `collection_event`. 🚧 (offline enrol
-  and its outbox kind are frontend work — see §9.)
+  and its outbox kind are frontend work - see §9.)
 - A collector registered offline is `pending`; the gate means its events will come back
-  `collector_not_authorized` until staff authorize — so the PWA should not offer to weigh a
+  `collector_not_authorized` until staff authorize - so the PWA should not offer to weigh a
   `pending` collector at all (it is not in the cache).
 
-### 4.3 The content hash — a frozen contract
+### 4.3 The content hash - a frozen contract
 
 `contentHash = sha256(canonicalJSON(payload))` where canonical JSON has sorted keys at every level, no
 whitespace, and drops `undefined`. The signed payload is exactly:
@@ -351,12 +351,12 @@ indicativeSats, photoSha256, geo, registrationType, recordedAt, weightSource, sc
 (`scaleId`/`scaleReadingRaw` only when set.) `lib/sync/events.ts:collectionEventPayload` builds it on
 both sides; **do not hand-roll it**. It is pinned by fixed-vector tests
 (`lib/sync/events.test.ts`) whose pre-images were hashed by an independent implementation. An event
-queued before 2026-10-01 has no weight fields and still verifies — the server hashes only what it
+queued before 2026-10-01 has no weight fields and still verifies - the server hashes only what it
 receives. **Never rename or reshape a field; only add.**
 
 `recordedAt` is the device clock, honestly labelled; the server orders by ingestion (`seq`).
 
-### 4.4 Photos — `POST` and `GET /api/v1/photos`
+### 4.4 Photos - `POST` and `GET /api/v1/photos`
 
 Raw image bytes as the body, `Content-Type: image/*`, header `X-Photo-Sha256: <hex>` (computed on-device
 from the same bytes). The server re-hashes and rejects a mismatch. `201 { photoUrl, sha256 }`. Stored
@@ -364,9 +364,9 @@ content-addressed at `photos/<sha256>`, so resending is harmless. ≤ 8 MiB. Pho
 of event sync; the event's `photoUrl` is back-filled when both have arrived. Capture guidance for the
 pilot: **the photo must show the waste, the scale and the scale's display** (the verification slice reads it).
 
-**Showing a photo:** `GET /api/v1/photos/<sha256>` (scope `collector:read` — staff only) streams the stored image
+**Showing a photo:** `GET /api/v1/photos/<sha256>` (scope `collector:read` - staff only) streams the stored image
 with `Cache-Control: private, max-age=31536000, immutable` (it is content-addressed, so it never changes).
-`404` until the upload queue has delivered the bytes. **Never render `collection_events.photo_url`** — it is an
+`404` until the upload queue has delivered the bytes. **Never render `collection_events.photo_url`** - it is an
 internal storage address a browser cannot reach and the bucket is private.
 
 ---
@@ -377,7 +377,7 @@ All paths are under `/api/v1`. "Scope" is what the caller needs.
 
 ### 5.1 Collectors ✅
 
-#### `POST /collectors` — register · scope `collector:enrol`
+#### `POST /collectors` - register · scope `collector:enrol`
 
 Plus `requireActiveSession` for a plain supervisor.
 
@@ -396,16 +396,16 @@ Plus `requireActiveSession` for a plain supervisor.
                                                    "authorizedBy": null, "authorizedAt": null } }
 ```
 
-Only `alias` is required. `siteCode` (2–6 letters) is optional; falls back to `collectors.default_site_code`.
+Only `alias` is required. `siteCode` (2-6 letters) is optional; falls back to `collectors.default_site_code`.
 Resending the same `id` returns the original row (and the same code).
 
-#### `GET /collectors` — search / queue · scope `collector:read`
+#### `GET /collectors` - search / queue · scope `collector:read`
 
 | Query | |
 |---|---|
 | `q` | alias **or** public code, case-insensitive substring. **Required** when `status=active` |
 | `status` | `active` (default) · `pending` · `revoked` · `all` |
-| `limit` | 1–100 (default 20) |
+| `limit` | 1-100 (default 20) |
 
 - A **supervisor** may use `active` (needs `q`) or `pending` (**only their own** registrations). `revoked`/`all` → 403.
 - **hub_lead/admin** (`collector:authorize`) may use any status; each item then also has
@@ -416,7 +416,7 @@ Resending the same `id` returns the original row (and the same code).
                     "nfcTagId": null, "status": "active" } ] }
 ```
 
-#### `GET /collectors/:id` — one collector + its live destination · scope `collector:read`
+#### `GET /collectors/:id` - one collector + its live destination · scope `collector:read`
 
 ```json
 { "collector": { …as above… },
@@ -425,14 +425,14 @@ Resending the same `id` returns the original row (and the same code).
                    "verifiedAt": "…", "createdAt": "…", "revokedAt": null } }   // or "destination": null
 ```
 
-#### `POST /collectors/:id/authorization` — authorize / revoke · scope `collector:authorize`
+#### `POST /collectors/:id/authorization` - authorize / revoke · scope `collector:authorize`
 
 ```json
 { "decision": "authorize" | "revoke", "reason": "optional, ≤ 500 chars" }
 → 200 { "collector": { … }, "changed": true }      // changed:false = it was already in that state; nothing written
 ```
 
-#### `POST /collectors/:id/destinations` — attach or replace the payout destination · scope `collector:enrol`
+#### `POST /collectors/:id/destinations` - attach or replace the payout destination · scope `collector:enrol`
 
 ```json
 { "rawCode": "sample-card@flow.paybee.buzz" }   // a Lightning Address, an lnurl1… string, or the scanned Receive QR text
@@ -446,31 +446,31 @@ Sending the same address again is a no-op that returns the existing destination.
 **can** receive a destination (so staff can review it before authorizing). See §3.2 for who may write one. The address is normalised
 (trimmed, lower-cased, `lightning:` prefix stripped). The scanned payload itself is never stored.
 
-#### `GET /collectors/:id/destinations` — history, newest first · scope `collector:read`
-`{ "destinations": [ …destination views… ] }` — staff and the registering supervisor only (`403 not_your_collector` for any other supervisor).
+#### `GET /collectors/:id/destinations` - history, newest first · scope `collector:read`
+`{ "destinations": [ …destination views… ] }` - staff and the registering supervisor only (`403 not_your_collector` for any other supervisor).
 
 #### `POST /collectors/:id/destinations/:destinationId/revoke` · scope `collector:authorize`
 `→ 200 { "destination": { …"status":"revoked" } }`. Idempotent. The collector then has no live destination.
 
-#### `POST /collectors/:id/address` — **deprecated alias** · scope `collector:enrol`
+#### `POST /collectors/:id/address` - **deprecated alias** · scope `collector:enrol`
 Body `{ "rawCode" }`; same as `…/destinations` but always `200`, response `{ collector, destination }`.
 Kept so the current enrol screen works. Migrate to `…/destinations`.
 
-#### `POST /collectors/:id/tags` — issue/replace an NFC tag · scope `collector:enrol`
+#### `POST /collectors/:id/tags` - issue/replace an NFC tag · scope `collector:enrol`
 `{ "newTagId": "<NFC serial>" }` → `201 { tag }`. **`409 collector_not_authorized` unless the collector is `active`.**
 The tag *content* should be `reference.payload`; `newTagId` is the chip's serial, used only for revocation.
 
 #### `POST /collectors/:id/tags/revoke` · scope `tag:revoke` (admin)
 `{ "tagId"?: "…" }` (defaults to the collector's current tag) → `200 { tag }`; `404` if none is active.
 
-#### `GET /tags/:tagId` — resolve a tapped tag · scope `collector:read`
+#### `GET /tags/:tagId` - resolve a tapped tag · scope `collector:read`
 `200 { collector, tag }` · `410 tag_revoked` · `409 collector_not_authorized` · `404` never issued.
 
 ### 5.2 Sessions, rates, roster ✅
 
 | Endpoint | Scope | Notes |
 |---|---|---|
-| `GET /sessions/current` | any staff | `{ "session": SessionView \| null }` — the session the caller may act in **now** |
+| `GET /sessions/current` | any staff | `{ "session": SessionView \| null }` - the session the caller may act in **now** |
 | `GET /sessions` | staff/partner (scoped) | admin: all · staff: assigned · partner: sponsored. `{ sessions }` |
 | `POST /sessions` | `session:configure` | `{ location, scheduledStart, scheduledEnd, geoBounds?, sponsorPartnerId?, supervisorIds[] }` → `201 { session }`. Supervisors rostered via rotations at that location/window are **added automatically** |
 | `GET /sessions/:id` | assigned staff / admin | `{ session }` (includes `supervisorIds`); `403` if not yours |
@@ -478,7 +478,7 @@ The tag *content* should be `reference.payload`; `newTagId` is the chip's serial
 | `GET /rates` | `rates:read` | `{ rates: [{ id, material, rateFiatMinor, fiatCurrency, effectiveFrom, effectiveTo }] }` current only |
 | `GET /rates/history?material=` | `rates:read` | full versioned history |
 | `POST /rates` | `session:configure` | `{ material, rateFiatMinor, effectiveFrom? }` → `201 { rate }`; closes the previous version. A start not after the current one → `422` |
-| `GET /supervisors?role=&includeInactive=1` | `session:configure` | `{ supervisors: [{ id, name, role, active }] }` — pickers |
+| `GET /supervisors?role=&includeInactive=1` | `session:configure` | `{ supervisors: [{ id, name, role, active }] }` - pickers |
 | `PATCH /supervisors/:id` | `session:configure` | body `{ active: boolean }` → `200 { supervisor, changed }`. Deactivate (lost phone, leaver) or reactivate; effective on that account's next request. `403 self_change` (your own account), `409 last_admin`, `404 not_found`. Creating accounts and passwords stays with the operator scripts |
 | `GET /rotations` · `POST /rotations` · `DELETE /rotations/:id` | `session:configure` | `{ location, supervisorId, windowStart, windowEnd }`; rotations apply at **session creation** only |
 
@@ -488,7 +488,7 @@ The tag *content* should be `reference.payload`; `newTagId` is the chip's serial
 
 #### `GET /payouts` · scope `payout:read`
 
-Query: `status`, `collectorId`, `sessionId`, `eventId` (all optional; uuids), `cursor`, `limit` (1–100, default 50).
+Query: `status`, `collectorId`, `sessionId`, `eventId` (all optional; uuids), `cursor`, `limit` (1-100, default 50).
 Newest first; pass `nextCursor` back as `cursor`. A supervisor only ever gets payouts of events they recorded.
 
 ```json
@@ -504,7 +504,7 @@ Newest first; pass `nextCursor` back as `cursor`. A supervisor only ever gets pa
   "nextCursor": null }
 ```
 
-`openFlags` = unreviewed anomaly flags on the payout's event (§5.9) — warn the approver; a flag never blocks.
+`openFlags` = unreviewed anomaly flags on the payout's event (§5.9) - warn the approver; a flag never blocks.
 There is **no address field**. Errors: `400 invalid_request` (bad filter), `400 invalid_cursor`.
 
 #### `GET /payouts/:id` · scope `payout:read`
@@ -512,17 +512,17 @@ There is **no address field**. Errors: `400 invalid_request` (bad filter), `400 
 
 #### `GET /payouts/summary` · scope `payout:read`
 `{ "byStatus": [{ "status": "paid", "count": 12, "totalSats": 12480 }, …all 8 statuses, zero-filled…], "total": { "count": 20, "totalSats": 21100 } }`
-— `totalSats` sums priced payouts only. A supervisor's numbers cover only their own events.
+- `totalSats` sums priced payouts only. A supervisor's numbers cover only their own events.
 
-#### `POST /payouts/:id/approve` · scope `payout:approve` (hub_lead, admin) — no body
+#### `POST /payouts/:id/approve` · scope `payout:approve` (hub_lead, admin) - no body
 `200 { "payout": { … }, "changed": true }` · `403 self_approval` (you recorded this collection) · `403 forbidden` ·
 `404 not_found` · `409 invalid_state` (not awaiting approval; `details.status`). Idempotent (`changed: false`).
 
-#### `POST /payouts/:id/retry` · scope `payout:approve` — no body
+#### `POST /payouts/:id/retry` · scope `payout:approve` - no body
 `failed → queued`. `200 { payout, changed }` · `409 invalid_state` for any other status. **Check the wallet first:**
 a retry fetches a fresh invoice, so nothing but you stops it paying twice if the first attempt actually landed.
 
-#### `GET /payouts/:id/check` · scope `payout:resolve` (admin only) — read only
+#### `GET /payouts/:id/check` · scope `payout:resolve` (admin only) - read only
 Asks the payment provider what it recorded for a payout that was sent (by the stored payment hash, else by the payout
 id in the memo). It changes nothing.
 `200 { "check": { "supported": true, "state": "paid" | "failed" | "pending" | "not_found", "paymentRef": "…"|null,
@@ -531,7 +531,7 @@ id in the memo). It changes nothing.
 `409 invalid_state` (the payout was never sent) · `403 forbidden`. `not_found` is **not** proof that nothing was sent.
 `proofVerified` means the provider returned a preimage whose sha256 equals the payment hash. `matches` above 1 needs a person's eyes.
 
-#### `POST /payouts/:id/resolve` · scope `payout:resolve` (admin only) — body `{ outcome, reference?, note? }`
+#### `POST /payouts/:id/resolve` · scope `payout:resolve` (admin only) - body `{ outcome, reference?, note? }`
 Settles a payout stuck in `sending` (outcome unknown) by a person's decision, from the provider's own records.
 `outcome: "paid"` needs the provider payment reference (`reference`, 6 to 200 of letters, digits and `. : _ -`; it defaults
 to the hash the payout already holds, and must equal it). The payout becomes `paid` and a `payout` ledger entry is
@@ -629,9 +629,9 @@ Both are idempotent and return `409 invalid_state` once a transfer is recorded o
 
 ### 5.4 Ledger ✅ (admin only)
 
-All need `ledger:read`. Rows carry only ids, hashes and timestamps — never collector PII.
+All need `ledger:read`. Rows carry only ids, hashes and timestamps - never collector PII.
 
-**`GET /ledger`** — keyset-paginated chain. Query `order=asc|desc` (default `asc`), `cursor=<seq>`
+**`GET /ledger`** - keyset-paginated chain. Query `order=asc|desc` (default `asc`), `cursor=<seq>`
 (`asc` → `seq > cursor`; `desc` → `seq < cursor`), `limit` (default 100, clamped to 500).
 
 ```json
@@ -645,10 +645,10 @@ All need `ledger:read`. Rows carry only ids, hashes and timestamps — never col
 `entryType` ∈ `collection_event` · `payout` · `correction` · `treasury_topup` · `rate_change` · `tag_revocation` ·
 `collector_authorization` · `recycler_sale`. A funding vote writes one `treasury_topup` entry per state change (proposed, each approval, transfer recorded, confirmed, rejected, cancelled). `prevEntryHash` is `null` only at `seq` 1.
 
-**`GET /ledger/checkpoints`** — signed anchors, newest first. `cursor=<throughSeq>`, `limit`.
+**`GET /ledger/checkpoints`** - signed anchors, newest first. `cursor=<throughSeq>`, `limit`.
 `{ "checkpoints": [{ id, throughSeq, entryHash, signature, nostrEventId, opentimestamps, createdAt }], "nextCursor", "publicKey": "<base64 Ed25519>" | null }`
 
-**`GET /ledger/verify?mode=full|windowed`** — recompute the chain server-side. Always `200`; check `ok`:
+**`GET /ledger/verify?mode=full|windowed`** - recompute the chain server-side. Always `200`; check `ok`:
 
 ```json
 { "ok": true,  "mode": "full", "count": 4, "throughSeq": 4, "headHash": "…", "checkpoints": { "verified": 1, "signaturesChecked": true } }
@@ -657,7 +657,7 @@ All need `ledger:read`. Rows carry only ids, hashes and timestamps — never col
 
 How the chain works and how an outsider verifies it: `docs/LEDGER.md` and `scripts/verify-ledger.ts`.
 
-### 5.5 Weigh, photos ✅ — see §4.
+### 5.5 Weigh, photos ✅ - see §4.
 
 ### 5.6 Meta and health ✅ (public)
 
@@ -666,11 +666,11 @@ How the chain works and how an outsider verifies it: `docs/LEDGER.md` and `scrip
 
 ### 5.7 Not endpoints, but worth knowing
 
-`/api/v1/internal/jobs/enqueue` is a `CRON_SECRET`-bearer bridge for Vercel Cron — not for the UI.
+`/api/v1/internal/jobs/enqueue` is a `CRON_SECRET`-bearer bridge for Vercel Cron - not for the UI.
 
 ### 5.8 Collection events list ✅
 
-#### `GET /events` — review screens and session logs · scope `collector:read`
+#### `GET /events` - review screens and session logs · scope `collector:read`
 
 A plain **supervisor sees only the events they recorded**; `hub_lead`/`admin` see all. Newest
 `recordedAt` first.
@@ -680,7 +680,7 @@ A plain **supervisor sees only the events they recorded**; `hub_lead`/`admin` se
 | `sessionId`, `collectorId` | uuid filters |
 | `material` | exact match, e.g. `PET` |
 | `from` / `to` | ISO timestamps on `recordedAt`; `from` inclusive, `to` exclusive |
-| `cursor`, `limit` | cursor = the previous `nextCursor` (opaque); `limit` 1–100, default 50. A bad cursor is `400 invalid_cursor` |
+| `cursor`, `limit` | cursor = the previous `nextCursor` (opaque); `limit` 1-100, default 50. A bad cursor is `400 invalid_cursor` |
 
 ```json
 { "events": [ {
@@ -698,10 +698,10 @@ A plain **supervisor sees only the events they recorded**; `hub_lead`/`admin` se
   "nextCursor": "…" }                       // null = last page
 ```
 
-- `geo` for a **supervisor** is only `{ "kind": "fix" }` or `{ "kind": "unavailable" }` — no
+- `geo` for a **supervisor** is only `{ "kind": "fix" }` or `{ "kind": "unavailable" }` - no
   coordinates, no reason. `hub_lead`/`admin` get `lat/lng/accuracyM` or `reason`.
 - Render the photo with `photoPath` (`<img src>`); there is no `photoUrl` field. `payout` is `null`
-  until a payout exists. `openFlags` = unreviewed anomaly flags on the event — show a warning badge.
+  until a payout exists. `openFlags` = unreviewed anomaly flags on the event - show a warning badge.
 
 #### `GET /events/:id`: one event and its verification picture · scope `collector:read`
 
@@ -741,7 +741,7 @@ after an event is confirmed, so a flag may appear a moment after the event.
 | `identical_weight_repeat` | one supervisor records the same weight `anomaly.identical_weight_repeat_count` (4) times in a row for a material | `{ weightKg, repeatCount }` |
 | `gps_outlier` | the GPS fix is outside the session's `geoBounds` (on the edge counts as inside) | `{ lat, lng, accuracyM }` |
 | `weight_outlier` | the weight is further than `anomaly.weight_outlier_mad_k` (6) scaled-MADs from the material's median, once ≥ `weight_outlier_min_events` (20) earlier events exist | `{ material, weightKg, median, scaledMad, k, history }` |
-| `payout_concentration` | paid sats in a session are concentrated (Gini ≥ `anomaly.payout_concentration_gini`, ≥ 5 collectors) — raised by a reconciliation run | `{ gini, collectors, threshold }` |
+| `payout_concentration` | paid sats in a session are concentrated (Gini ≥ `anomaly.payout_concentration_gini`, ≥ 5 collectors) - raised by a reconciliation run | `{ gini, collectors, threshold }` |
 | `mass_balance_variance` | a reconciliation run found a material over tolerance | `{ reportId, material, periodStart, periodEnd, collectedKg, recyclerKg, varianceKg, variancePct, tolerancePct }` |
 | `revoked_tag_tap`, `payout_uncertain` | older flags (a revoked tag was tapped; a payout's outcome is unknown) | `{ tagId }` / `{ payoutId, reason }` |
 
@@ -772,7 +772,7 @@ Query: `status=open|confirmed|dismissed|all` (default `open`), `type`, `eventId`
 
 Repeating the same outcome is a no-op (`changed: false`). A **different admin** may overturn a
 verdict; the superseded one is kept in `anomaly.context.history[]` as
-`{ outcome, reviewedBy, reviewedAt, note }` — show it as an audit trail.
+`{ outcome, reviewedBy, reviewedAt, note }` - show it as an audit trail.
 
 ### 5.10 Recycler sales and reconciliation ✅ (admin)
 
@@ -795,7 +795,7 @@ as-is.
 
 Only `material`, `grossKg`, `buyer`, `soldAt` are required; `tareKg` defaults to 0. `weightKg`
 is the **net accepted weight** (gross − tare), computed by the server and the figure
-reconciliation uses. `totalFiatMinor` is what the receipt says — it is never computed. Upload
+reconciliation uses. `totalFiatMinor` is what the receipt says - it is never computed. Upload
 the receipt photo with `POST /photos` first and send its `receiptSha256`. Resending the same
 `id` returns the original sale (still `201`), never a second one.
 
@@ -813,7 +813,7 @@ Computed live for `[from, to)`; nothing is saved. `from` and `to` are required.
               "status": "within_tolerance" } ] }
 ```
 
-`varianceKg = collectedKg − recyclerKg` (negative = the recycler took **more** than was collected —
+`varianceKg = collectedKg − recyclerKg` (negative = the recycler took **more** than was collected -
 also a problem); `variancePct = varianceKg / collectedKg × 100`. `paidKg` counts events whose
 payout is `paid`. `status`:
 
@@ -821,12 +821,12 @@ payout is `paid`. `status`:
 |---|---|
 | `within_tolerance` | `\|variancePct\| ≤ tolerancePct` (exactly at the tolerance passes) |
 | `flagged` | over the tolerance, **or** kilograms were sold that were never collected |
-| `no_recycler_data` | no recycler sale recorded for that material in the period — *not* a pass; prompt for data entry |
+| `no_recycler_data` | no recycler sale recorded for that material in the period - *not* a pass; prompt for data entry |
 
 #### `POST /reconciliation/runs` · scope `reconciliation:write`
 Body `{ "from", "to", "material"? }` → `201 { "reports": [ { "id", "periodStart", "periodEnd", "material",
 "collectedKg", "paidKg", "recyclerKg", "varianceKg", "variancePct", "tolerancePct", "status", "createdBy",
-"createdAt" } ] }`. Saves one report per material (never edited afterwards — a new run is new rows;
+"createdAt" } ] }`. Saves one report per material (never edited afterwards - a new run is new rows;
 `tolerancePct` is the setting at run time) and raises a `mass_balance_variance` anomaly for each
 `flagged` row. Also checks each session in the period for `payout_concentration`.
 
@@ -835,7 +835,7 @@ Body `{ "from", "to", "material"? }` → `201 { "reports": [ { "id", "periodStar
 
 ### 5.11 Public summary ✅ (no session)
 
-#### `GET /stats/summary` — public, aggregate-only, cacheable
+#### `GET /stats/summary` - public, aggregate-only, cacheable
 
 `Cache-Control: public, max-age=60`. Safe for a public page: no alias, no per-person figure, no
 GPS, no wallet, no photo. Precision follows `transparency.amount_disclosure` (`exact` | `bucketed`
@@ -867,7 +867,7 @@ The **worker** (`pnpm worker`, pg-boss) runs these; the UI never calls them, but
 | `create-ledger-checkpoint` | new rows in `GET /ledger/checkpoints` |
 | anomaly detectors (inline, right after a sync confirms an event) | new flags in `GET /anomalies`; `openFlags` on events and payouts (§5.8, §5.9) |
 | `provision-collector-wallet` | custodial path only (off by default, gate G1) |
-| `process-payout` / `sweep-payouts` | a payout moves through its states (§3.5); the sweep (every 5 min) resumes anything parked — a stale rate, a missing wallet, a low float |
+| `process-payout` / `sweep-payouts` | a payout moves through its states (§3.5); the sweep (every 5 min) resumes anything parked - a stale rate, a missing wallet, a low float |
 | `confirm-treasury-topups` | a `transferred` funding proposal becomes `confirmed` once the hot-wallet balance shows the funds (same cadence as the sweep); waiting payouts are then woken (§5.3.1) |
 
 ---
@@ -886,7 +886,7 @@ exposes the non-sensitive ones so the UI never guesses:
   "build": "<git sha or null>" }
 ```
 
-`lightning.demo: true` means payouts are **simulated** (the `fake` provider) — show a persistent "Demo mode —
+`lightning.demo: true` means payouts are **simulated** (the `fake` provider) - show a persistent "Demo mode -
 no real sats are sent" banner. Fetch it once on load; it does not change while the app runs.
 
 | Setting | UI effect |
@@ -948,50 +948,50 @@ Newest first. Anything here may need a UI change.
 - **UI to build:** a steward panel (float, cap and headroom, pending proposals with approve / reject / cancel, "record the transfer txid",
   "check arrival"), and a "waiting for funds" count from `pendingPayouts`. Show the pool as **not configured**, never as zero.
 
-**2026-10-01 (reconciliation) — anomalies, recycler sales, reconciliation, events list, public summary**
+**2026-10-01 (reconciliation) - anomalies, recycler sales, reconciliation, events list, public summary**
 - **New endpoints:** `GET /events`, `GET /anomalies`, `POST /anomalies/:id/review`, `POST`/`GET /recycler-sales`,
-  `GET /reconciliation`, `POST /reconciliation/runs`, `GET /reconciliation/reports`, `GET /stats/summary` (§5.8–5.11).
+  `GET /reconciliation`, `POST /reconciliation/runs`, `GET /reconciliation/reports`, `GET /stats/summary` (§5.8-5.11).
 - **New scope** `reconciliation:write` (admin). Payout items gain `openFlags` (unreviewed anomaly flags on the payout's
-  event) — show a warning on the approval screen.
+  event) - show a warning on the approval screen.
 - **Behaviour:** after a sync confirms an event, detectors may write anomaly flags. The sync result is unchanged.
 - New lists use an opaque `nextCursor`; `limit` ≤ 100.
 
-**2026-10-01 (payouts) — the payout engine**
+**2026-10-01 (payouts) - the payout engine**
 - **New:** `GET /payouts`, `/payouts/:id`, `/payouts/summary`, `POST /payouts/:id/approve|retry`, `GET /treasury/float`;
   scope `payout:read`; `GET /meta` now reports `lightning.demo`. A payout appears for every confirmed event. See §3.5 and §5.3.
 - **UI to build:** an **approval queue** (the main admin screen in pilot mode), a per-event "paid ✓ / waiting / failed"
   badge for supervisors, a float widget for admins, and a visible **Demo mode** banner when `lightning.demo` is true.
 
-**2026-10-01 (review pass) — security hardening that changes behaviour**
+**2026-10-01 (review pass) - security hardening that changes behaviour**
 - **Destinations:** supervisors can now write a wallet only for a collector they registered, while it is pending
   and inside an active session (see §3.2). The enrol flow already fits this (the registrar attaches the wallet
   right after registering); an "add a wallet later" screen for an *authorized* collector is now **staff-only**.
   New error `403 not_your_collector`. Addresses are hidden (`null`) from other supervisors.
 - **Photos:** upload accepts only JPEG/PNG/WebP/HEIC (`415` otherwise); `GET /photos/:sha256` now sends a
-  sandboxing CSP — render it in an `<img>`, never as a navigated page.
+  sandboxing CSP - render it in an `<img>`, never as a navigated page.
 - **Invoices:** a payout whose destination answers with an invoice for a different amount now **fails** (the
   payout shows `failed`, `lastError: payment_failed`) instead of paying it. A rail answering "pending" or a server
-  error is **not** a failure — the payout stays `sending` with `outcome_unknown` and is flagged for a human.
+  error is **not** a failure - the payout stays `sending` with `outcome_unknown` and is flagged for a human.
 - **Sync:** a malformed event is now an `invalid_event` *result*, not a failed request; weights are limited to
   [0.001, 999.999] with 3 decimals; `recordedAt` must be inside the session window; new `needs_attention` codes (§3.3).
 - **Exchange rate:** an outlier source is now set aside (as long as two others agree); two sources must agree
   within the tolerance of each other. No client change.
 
-**2026-10-01 (later) — photos, meta, a corrected exchange feed**
+**2026-10-01 (later) - photos, meta, a corrected exchange feed**
 - **New:** `GET /api/v1/photos/:sha256` (render evidence photos through this, not `photo_url`); `GET /api/v1/meta`;
   `GET /api/v1/health`.
 - **Fixed:** the BTC/KES exchange feed was wrong in two ways when first run against the real services (an inverted
   Yadio endpoint; CoinGecko has no KES). Defaults are now `yadio` + `coinbase` + `kraken_fx` and the indicative
   figure in `bootstrap.exchangeRate` is now trustworthy. No client change needed.
 - **Behaviour:** a wallet written in different spellings (`ME@Blink.sv`, its `.well-known` URL, its `lnurl1…`
-  bech32) is one wallet — the same collision rule applies (`409 destination_in_use`).
+  bech32) is one wallet - the same collision rule applies (`409 destination_in_use`).
 
-**2026-10-01 — cardless identity, the authorization gate, payment destinations, weight provenance**
+**2026-10-01 - cardless identity, the authorization gate, payment destinations, weight provenance**
 - **New:** `publicCode` + `reference` on every collector; search by code. `collectors.status` gains `pending`.
 - **New endpoints:** `POST /collectors/:id/authorization`; `POST|GET /collectors/:id/destinations`;
   `POST …/destinations/:id/revoke`; `GET /collectors?status=…`; `GET /ledger`, `/ledger/checkpoints`, `/ledger/verify`.
 - **Behaviour change:** `POST /collectors` now returns `pending` for a supervisor. The current `EnrolFlow`
-  assumes the collector is usable immediately and **forces a tag step** — it must be changed: show the
+  assumes the collector is usable immediately and **forces a tag step** - it must be changed: show the
   `publicCode`, make the tag step optional (and unavailable until authorized), end in "waiting for authorization".
 - **Behaviour change:** `POST /collectors/:id/tags` → `409 collector_not_authorized` for a non-`active` collector.
   `GET /tags/:tagId` → `409` likewise.
@@ -1001,10 +1001,10 @@ Newest first. Anything here may need a UI change.
   fetched the page). Add a clear message and an illustration of flipping the card.
 - **Signed payload gains** `weightSource` (+ optional `scaleId`, `scaleReadingRaw`). `assembleCollectionEvent`
   defaults `weightSource: 'manual'`, so the weigh flow needs no change; `lib/sync/syncLoop.ts` already sends them.
-- **Deprecated:** `collector.lightningAddress`, `collector.lnurlPayRaw`, and `POST …/address` — use
+- **Deprecated:** `collector.lightningAddress`, `collector.lnurlPayRaw`, and `POST …/address` - use
   `destination` from `GET /collectors/:id` and `…/destinations`. `EnrolFlow` currently writes
   `collector.lnurlPayRaw ?? collector.lightningAddress` **onto the NFC tag**; per D-24 a tag must carry
-  `reference.payload` instead — change `writeTagAndReadSerial(...)`'s argument.
+  `reference.payload` instead - change `writeTagAndReadSerial(...)`'s argument.
 - **Bootstrap:** `collectors[].publicCode` added; only `active` collectors are returned (as before, but now
   `pending` exists, so it matters).
 - The collector response no longer includes `lnbitsWalletId`.
@@ -1019,14 +1019,14 @@ Newest first. Anything here may need a UI change.
 1. Enrol flow: public code, optional tag step, "waiting for authorization", scan **Receive** (reject Pay nicely).
 2. Authorization queue for hub_lead/admin (`GET /collectors?status=pending` + `POST …/authorization`).
 3. Weigh flow: search by `publicCode`; QR scan of `takasats:` references; add the `by_code` index (IndexedDB v3).
-4. Offline enrolment (`collector` outbox kind drained before `collection_event`) — still online-only today.
+4. Offline enrolment (`collector` outbox kind drained before `collection_event`) - still online-only today.
 5. The sync loop (`lib/sync/syncLoop.ts`) and the SyncStatus UI states (M4-4/5).
 6. Scale-photo capture guidance (waste + scale + display in frame) for the verification slice.
 7. ~~A public `/c/<code>` landing page~~ (built: it reveals nothing).
 
 **Known gaps (backend):** a read-only balance view of the multisig pool (📋; `GET /treasury` reports `pool.configured: false`), OCR/AI verification of the scale
 photo (📋), Nostr/OpenTimestamps anchoring (📋), a scheduled (periodic) reconciliation run and hub_lead read access to reconciliation (📋), a minimum-n suppression on the public summary (📋). The real Blink/LNbits `pay()` has never been exercised against a
-live account — `docs/PILOT.md §6` makes the first real payment a deliberate, tiny, supervised step.
+live account - `docs/PILOT.md §6` makes the first real payment a deliberate, tiny, supervised step.
 
 **Decisions this contract rests on:** D-24 cardless identity · D-25 authorization gate · D-26 payment
-destinations · D-27 weight provenance — `docs/REQUIREMENTS.md §2`, `docs/adr/0017..0019`.
+destinations · D-27 weight provenance - `docs/REQUIREMENTS.md §2`, `docs/adr/0017..0019`.

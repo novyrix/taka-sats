@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `POST /api/v1/photos` (FR-4.2, ROADMAP M3-10). The PWA's photo upload queue
+ * `POST /api/v1/photos` (FR-4.2). The PWA's photo upload queue
  * drains here, independently of event sync. Raw image bytes in the body;
  * `Content-Type` is the image type (JPEG/PNG/WebP/HEIC only — never SVG); `X-Photo-Sha256` is the hex hash computed
  * on-device (D-12). The server recomputes it and rejects a mismatch — the

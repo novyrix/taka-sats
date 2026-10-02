@@ -12,7 +12,7 @@ and independently testable.
 One Next.js App Router project. `lib/` subpackages (`money`, `sync`, `fraud`, `lightning`,
 `ledger`, `db`, `config`, `auth`, `i18n`) contain **zero framework imports** so they lift into
 `packages/*` later without a rewrite. Route handlers validate input, call a `lib/` function,
-and shape the response — no business logic in handlers.
+and shape the response - no business logic in handlers.
 
 ## Consequences
 

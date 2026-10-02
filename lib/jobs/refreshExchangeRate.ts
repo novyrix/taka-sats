@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Periodic exchange-rate refresh (D-18, ROADMAP M2-9). The worker schedules
+ * Periodic exchange-rate refresh (D-18). The worker schedules
  * this on a cron derived from `settings.money.rate_staleness_ttl_seconds`;
  * on Vercel the Cron bridge enqueues it. Failures are logged and left for
  * the next run — a stale rate is handled at the payout path (`requireFreshRate`).

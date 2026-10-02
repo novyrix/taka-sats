@@ -16,8 +16,8 @@ Ship both models, selected in `config/settings.toml`:
 - **Non-custodial (default):** `custody.default_address_source = "byo"`,
   `provisioning_enabled = false`, `lightning.float_provider = "blink"`. The collector's own
   wallet receives; the operator holds no collector-designated balance.
-- **Custodial (operator opt-in):** `provisioning_enabled = true` — which requires pasting the
-  exact `PROVISIONING_ACKNOWLEDGEMENT` string, checked at boot — plus `float_provider = "lnbits"`.
+- **Custodial (operator opt-in):** `provisioning_enabled = true` - which requires pasting the
+  exact `PROVISIONING_ACKNOWLEDGEMENT` string, checked at boot - plus `float_provider = "lnbits"`.
   Per-collector LNbits wallets. Gated on **G1** (a recorded jurisdiction legal review) before
   real funds.
 

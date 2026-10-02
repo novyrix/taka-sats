@@ -17,7 +17,7 @@ Background Sync drains the outbox.
 ## Consequences
 
 One codebase, no app-store dependency, install via link or QR. Trade-off: Web NFC support
-varies by browser/OS — verified against real devices (gate G2), with manual search + BYO QR
+varies by browser/OS - verified against real devices (gate G2), with manual search + BYO QR
 scan as first-class fallbacks. iOS is not an NFC target but the PWA still loads there for
 admin use.
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The client sync loop (FR-4.2, US-4.2, ROADMAP M4-4). Drains the
+ * The client sync loop (FR-4.2, US-4.2). Drains the
  * `collection_event` outbox to `POST /api/v1/sync/events` in batches:
  *
  *   queued → syncing → confirmed (+ seq, drop the outbox entry)

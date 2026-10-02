@@ -7,7 +7,7 @@ import { listRotations } from '@/lib/rotations';
 import { listSupervisors } from '@/lib/supervisors';
 
 /**
- * Supervisor rotations (ROADMAP M2-8, FR-3.7, FR-6.1). A rotation rosters a
+ * Supervisor rotations (FR-3.7, FR-6.1). A rotation rosters a
  * supervisor to a location for a window; a new session whose location + window
  * overlaps one auto-assigns the rostered supervisor (`createSession`).
  */

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Payout jobs (ROADMAP M5). `process-payout` drives one payout as far as it can go;
+ * Payout jobs. `process-payout` drives one payout as far as it can go;
  * `sweep-payouts` (cron) re-enqueues payouts parked on something that may have changed
  * and flags any stuck mid-send. Both are safe to run twice — `processPayout` is
  * idempotent and never re-sends (see `lib/payouts`).

@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 /**
- * The weight keypad (DESIGN §11.1 step 3, ROADMAP M3-4). Builds a
+ * The weight keypad (DESIGN §11.1 step 3). Builds a
  * `NUMERIC(6,3)` string — up to 3 digits before the point, up to 3 after,
  * one point. BLE auto-fill lands later; manual entry is always available.
  */

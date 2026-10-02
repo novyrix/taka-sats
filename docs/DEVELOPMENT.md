@@ -1,7 +1,7 @@
 # Development
 
 How to run Taka Sats on your own computer and check your changes. For contributing rules
-(commits, reviews, licensing) see [`CONTRIBUTING.md`](../CONTRIBUTING.md). 
+(commits, reviews, licensing) see [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ## Requirements
 
@@ -9,20 +9,50 @@ Node 24, [pnpm](https://pnpm.io) 11, Git, and Docker if you want a local databas
 
 ## Run it
 
+You need a Postgres database. The quickest way is a throwaway one in Docker:
+
+```bash
+docker run -d --name takasats-dev-pg -e POSTGRES_PASSWORD=dev -e POSTGRES_DB=taka_sats   -p 55432:5432 postgres:17-alpine
+```
+
+Then, from a clean clone:
+
 ```bash
 pnpm install
-cp config/settings.default.toml config/settings.toml   # optional: your overrides
-pnpm dev                                                # http://localhost:3000
+cp .env.example .env.local        # Next.js loads this file for `pnpm dev`
 ```
 
-Most features need a database and object storage. The easiest way to get both is the Docker
-Compose stack, described in [`SELF_HOSTING.md`](SELF_HOSTING.md). Then:
+Edit `.env.local` and set these two lines (the `DATABASE_URL` in `.env.example` uses the host name
+`postgres`, which only works inside Docker Compose):
 
 ```bash
-pnpm db:migrate      # create the tables
-pnpm db:seed         # seed material rates
-pnpm db:seed-pilot -- --location "Test Hub"   # staff accounts, a session, a rate snapshot
+DATABASE_URL=postgresql://postgres:dev@localhost:55432/taka_sats
+AUTH_SECRET=any-long-random-string-for-local-use-only
 ```
+
+The scripts below read `DATABASE_URL` from your shell, not from `.env.local`, so export it too
+(PowerShell: `$env:DATABASE_URL = "postgresql://postgres:dev@localhost:55432/taka_sats"`):
+
+```bash
+export DATABASE_URL=postgresql://postgres:dev@localhost:55432/taka_sats
+pnpm db:migrate                  # create the tables
+pnpm db:seed                     # seed material rates
+pnpm db:seed-team --out ./team-credentials.txt   # test staff accounts, passwords go to that file
+pnpm dev                         # http://localhost:3000
+```
+
+`./team-credentials.txt` is refused unless git ignores it. Use a path outside the repository, for
+example `~/team-credentials.txt`. Sign in at `/login` with a staff code from that file (for example
+`TESTADM01`). By default payouts use the demo rail, so no real money can move.
+
+Photo upload needs an S3 compatible store. Without one the weigh flow still records, but the photo
+upload waits. To run MinIO locally: `docker compose up -d minio` starts one on port 9000 with the
+keys from `.env.example` (set the `S3_*` variables in `.env.local` to match). Everything else, the
+console, the ledger, payouts on the demo rail, works without it.
+
+The full Compose stack (app, worker, Postgres, storage) is described in
+[`SELF_HOSTING.md`](SELF_HOSTING.md). The payout worker is a separate process: `pnpm worker`.
+Without it payouts stay at "waiting for a rate".
 
 ## Check your changes
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Offline verification of an exported ledger (D-19, ROADMAP M4-8): the entries
+ * Offline verification of an exported ledger (D-19): the entries
  * (and optionally the checkpoints + public key) as JSON or NDJSON, checked with
  * no database. Used by `scripts/verify-ledger.ts`. Accepts the `GET /api/v1/ledger`
  * field names (camelCase) and raw table column names (snake_case).

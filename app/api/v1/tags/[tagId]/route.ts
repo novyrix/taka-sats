@@ -2,7 +2,7 @@
 
 /**
  * `GET /api/v1/tags/:tagId` — resolve a tapped NFC tag to its collector
- * (§7.1, ROADMAP M1-8). Scope: `collector:read`.
+ * (§7.1). Scope: `collector:read`.
  *
  *  - 200 `{ collector, tag }` — an active mapping exists and the collector is authorized.
  *  - 409 `collector_not_authorized` — the tag maps to a collector who is not `active` (D-25).

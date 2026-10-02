@@ -2,7 +2,7 @@
 
 /**
  * Sync ingest for offline-recorded collection events (FR-4.2, REQUIREMENTS
- * §10.3, ROADMAP M4-3). Each event carries its client UUID + `content_hash`.
+ * §10.3). Each event carries its client UUID + `content_hash`.
  * For each one, in submitted order:
  *
  *   - idempotent by `id` — a resent, already-ingested event returns its stored

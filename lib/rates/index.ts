@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The versioned material-rate table (D-14, D-21, §8.3, ROADMAP M2-4).
+ * The versioned material-rate table (D-14, D-21, §8.3).
  *
  * Rows are never overwritten. A rate change inserts a new row and closes the
  * prior one's `effective_to`. A historical event always resolves the rate

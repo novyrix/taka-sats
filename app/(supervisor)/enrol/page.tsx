@@ -7,7 +7,7 @@ import { SessionGate } from '@/components/supervisor/session-context';
 import { getSettings } from '@/lib/config';
 
 /**
- * Enrol a collector (DESIGN §11.2, ROADMAP M1-5/M1-7). One alias field, then
+ * Enrol a collector (DESIGN §11.2). One alias field, then
  * "Scan their wallet QR" (BYO — the default) or, only when
  * `custody.provisioning_enabled`, "Issue a wallet".
  *

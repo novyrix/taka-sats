@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `GET /api/v1/weigh/bootstrap` (ROADMAP M3-3/M3-4). One call the PWA makes
+ * `GET /api/v1/weigh/bootstrap`. One call the PWA makes
  * while still online to prime everything the offline weigh flow needs:
  *
  *   - the caller's active assigned session (M2-7 — 403 `no_active_session`

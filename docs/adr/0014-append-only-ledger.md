@@ -1,4 +1,4 @@
-# ADR-0014: Append-only ledger — corrections are new linked rows
+# ADR-0014: Append-only ledger - corrections are new linked rows
 
 **Status:** Accepted (records D-13; see ADR-0004 for the chain construction)
 
@@ -10,7 +10,7 @@ to hand a non-technical auditor.
 ## Decision
 
 Collection events, payouts, corrections, and treasury movements all append to the single
-`ledger_entries` chain. There is no `UPDATE` or `DELETE` — the privilege is revoked at the
+`ledger_entries` chain. There is no `UPDATE` or `DELETE` - the privilege is revoked at the
 database role level. A mistake is fixed by appending a new entry that references the one it
 corrects. Signed checkpoints every `ledger.checkpoint_interval_entries` give external verifiers
 stable anchors.

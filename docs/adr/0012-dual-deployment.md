@@ -1,4 +1,4 @@
-# ADR-0012: Dual deployment — Docker Compose and Vercel, equal priority
+# ADR-0012: Dual deployment - Docker Compose and Vercel, equal priority
 
 **Status:** Accepted (records D-03)
 
@@ -17,7 +17,7 @@ authenticated internal route that enqueues the same pg-boss jobs the worker runs
 ## Consequences
 
 Two paths to keep green (CI builds the Docker image and the Vercel-style build). No infra that
-only works on one — no Redis, no k8s. `output: 'standalone'` is set off-Vercel only.
+only works on one - no Redis, no k8s. `output: 'standalone'` is set off-Vercel only.
 
 ## Related
 

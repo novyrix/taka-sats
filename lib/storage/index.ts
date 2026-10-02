@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Object storage for collection-event photos (FR-4.2, ROADMAP M3-10). Any
+ * Object storage for collection-event photos (FR-4.2). Any
  * S3-compatible backend — MinIO in Docker, Cloudflare R2 on the hosted path.
  *
  * Config is environment-only (like the Lightning secrets): `S3_ENDPOINT`,

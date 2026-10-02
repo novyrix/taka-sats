@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The offline write path (ROADMAP M3-8/M3-10, FR-4.1, US-4.3). One call:
+ * The offline write path (FR-4.1, US-4.3). One call:
  *
  *   1. assemble the event (id, time, indicative sats, content hash),
  *   2. write it to IndexedDB as `queued`,

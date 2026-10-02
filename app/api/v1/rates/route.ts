@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/rates` (§8.3, ROADMAP M2-5).
+ * `/api/v1/rates` (§8.3).
  *  - `GET` current material rates — scope `rates:read` (staff).
  *  - `POST` a new rate version — scope `session:configure` (admin only).
  */

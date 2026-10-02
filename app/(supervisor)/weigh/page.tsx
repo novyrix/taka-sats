@@ -6,7 +6,7 @@ import { auth } from '@/auth';
 import { getActor } from '@/lib/auth/session';
 
 /**
- * The offline weigh flow (DESIGN §11.1, ROADMAP M3-4). Behind `<SessionGate>`
+ * The offline weigh flow (DESIGN §11.1). Behind `<SessionGate>`
  * (M2-7 — a plain supervisor needs an active assigned session); `<WeighFlow>`
  * primes the offline cache on mount, then never touches the network.
  */

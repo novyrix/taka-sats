@@ -4,15 +4,15 @@
  * The offline store (M3-2). A thin, typed `idb` wrapper around four object
  * stores:
  *
- *  - `events`        — assembled {@link CollectionEvent}s, each with a
+ *  - `events`       — assembled {@link CollectionEvent}s, each with a
  *                      {@link SyncStatus}. The source of truth until the server
  *                      confirms them (M4).
- *  - `collectors`    — collector rows cached for offline lookup (M3-3).
+ *  - `collectors`   — collector rows cached for offline lookup (M3-3).
  *  - `sessionConfig` — the active session + its rate/exchange snapshot.
- *  - `outbox`        — items awaiting delivery, drained by M4's sync loop.
+ *  - `outbox`       — items awaiting delivery, drained by M4's sync loop.
  *
- * Every write completes before the UI shows success (Code Style Guide §6,
- * ROADMAP M3-8). Framework-free apart from `idb` (D-04). Browser/worker only —
+ * Every write completes before the UI shows success (Code Style Guide §6).
+ * Framework-free apart from `idb` (D-04). Browser/worker only —
  * callers on the server must not import this.
  */
 

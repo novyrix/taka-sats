@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Collection sessions (FR-8.1, FR-6.1, ROADMAP M2-5). A session is a place +
+ * Collection sessions (FR-8.1, FR-6.1). A session is a place +
  * time window with assigned supervisors, an optional geo polygon, and an
  * optional sponsoring partner. Only `admin` writes (enforced at the API
  * layer); reads are scoped there too. Framework-free apart from Drizzle (D-04).
@@ -25,7 +25,7 @@ export class SessionError extends Error {
 
 /**
  * A `supervisor` tried to act (enrol, weigh) with no session they may act in
- * right now (ROADMAP M2-7, FR-6.1, US-6.1). `hub_lead`/`admin` are not
+ * right now (FR-6.1, US-6.1). `hub_lead`/`admin` are not
  * shift-bound and never hit this.
  */
 export class NoActiveSessionError extends Error {
@@ -213,7 +213,7 @@ export async function listSessions(
 }
 
 /**
- * The one session a supervisor may act in **right now** (ROADMAP M2-7,
+ * The one session a supervisor may act in **right now** (
  * FR-6.1): they are assigned to it, its `status` is `active`, and `now` is
  * within `[scheduledStart, scheduledEnd)`. Null when there is none — the
  * caller (an API route, later the weigh flow) then refuses the action for a

@@ -4,7 +4,7 @@
 
 ## Context
 
-Collection events are append-only facts, not collaboratively-edited shared documents — the
+Collection events are append-only facts, not collaboratively-edited shared documents - the
 classic CRDT use case (concurrent edits to the same mutable object) barely applies.
 
 ## Decision

@@ -2,7 +2,7 @@
 
 Thanks for helping build an open, offline-first waste-to-Bitcoin system. This document
 covers how the project is run. How code is _written_ is [`Initial assets/Taka_Sats_Code_Style_Guide.md`](Initial%20assets/Taka_Sats_Code_Style_Guide.md);
-how the UI is built is [`docs/DESIGN.md`](docs/DESIGN.md) (canonical — compose from its §6
+how the UI is built is [`docs/DESIGN.md`](docs/DESIGN.md) (canonical - compose from its §6
 inventory, don't hand-roll); what the product must do is [`docs/REQUIREMENTS.md`](docs/REQUIREMENTS.md).
 
 ## Before you start
@@ -34,16 +34,16 @@ The `pre-commit` hook runs format/lint/typecheck; the `commit-msg` hook runs com
 ## Branches and PRs
 
 - Branch off `main`: `feat/m2-rate-table`, `fix/sync-idempotency`.
-- One PR = one issue or one focused change. Don't "also fix" unrelated things —
+- One PR = one issue or one focused change. Don't "also fix" unrelated things -
   open an issue for them instead.
 - Keep PRs reviewable. Rebase on `main`; don't merge `main` into your branch.
-- The PR template checklist is not decorative — every box must be true, including
+- The PR template checklist is not decorative - every box must be true, including
   that the relevant `docs/` page is updated.
 
 ### Two-reviewer paths
 
 A PR that touches `lib/money.ts`, `lib/lightning/`, or any part of the payout path
-**requires two reviewers** (Code Style Guide §11). This is a branch-protection rule.
+**requires two reviewers** (Code Style Guide §11). Maintainers enforce this in review.
 
 ## Commits: Conventional + signed off
 
@@ -70,7 +70,7 @@ CI fails a source file without it.
 
 - Unit tests (Vitest) for everything in `lib/`; money and fraud logic target near-total
   coverage.
-- Money- or auth-affecting functions carry at least one adversarial case — negative
+- Money- or auth-affecting functions carry at least one adversarial case - negative
   weight, zero rate, over-float, duplicate idempotency key (Code Style Guide §9.5).
 - Integration tests for every API route include the failure and RBAC-denied paths.
 
@@ -78,7 +78,7 @@ CI fails a source file without it.
 
 Any change to money-handling or RBAC-enforcement code carries a one-line note in
 [`SECURITY.md`](SECURITY.md) stating which property it preserves or alters. To report a
-vulnerability, see [`SECURITY.md`](SECURITY.md) — not a public issue.
+vulnerability, see [`SECURITY.md`](SECURITY.md) - not a public issue.
 
 ## Code of Conduct
 

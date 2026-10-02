@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/sessions/current` (ROADMAP M2-7, FR-6.1). The session the caller
+ * `/api/v1/sessions/current` (FR-6.1). The session the caller
  * may act in **right now** — assigned, `status='active'`, `now` within the
  * window — or `{ session: null }`. The PWA polls this to gate weigh/enrol.
  * Staff only; a `partner` does not "act" and gets 403.

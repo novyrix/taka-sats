@@ -11,11 +11,11 @@ rail, not a Phase-3 unknown. Blink is Afribit's established, Kibera-proven provi
 
 `lib/lightning/LightningProvider` has three production implementations plus one for tests:
 
-- `BlinkProvider` — default operating float; also resolves and validates a collector's Blink
+- `BlinkProvider` - default operating float; also resolves and validates a collector's Blink
   Paycode / Lightning Address for BYO enrolment.
-- `LNbitsProvider` — custodial per-collector provisioning and float (opt-in, gate G1).
-- `FedimintProvider` — pay via the Fedi federation.
-- `FakeLightningProvider` — local dev and unit tests; never real funds. The Playwright payout
+- `LNbitsProvider` - custodial per-collector provisioning and float (opt-in, gate G1).
+- `FedimintProvider` - pay via the Fedi federation.
+- `FakeLightningProvider` - local dev and unit tests; never real funds. The Playwright payout
   e2e runs against a regtest backend.
 
 Chosen from `settings.toml`. Each must pass one shared provider contract test suite.

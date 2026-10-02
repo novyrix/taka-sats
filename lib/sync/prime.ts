@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Prime the offline caches (ROADMAP M3-3/M3-4). Call this on weigh-page entry
+ * Prime the offline caches. Call this on weigh-page entry
  * while online: it pulls `GET /api/v1/weigh/bootstrap` and writes the session
  * config + collector list into IndexedDB. Offline, or on any failure, it falls
  * back to whatever is already cached — the weigh flow stays usable.

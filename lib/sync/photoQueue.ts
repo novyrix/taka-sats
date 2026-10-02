@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The photo upload queue (FR-4.2, ROADMAP M3-10). Drains `outbox` entries of
+ * The photo upload queue (FR-4.2). Drains `outbox` entries of
  * kind `photo`: read the stored blob → `POST /api/v1/photos` → on success set
  * the event's `photoUrl`, drop the outbox entry and the local blob; on failure
  * bump the attempt count and leave it for the next drain.

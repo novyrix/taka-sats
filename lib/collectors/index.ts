@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Collector identity and tag lifecycle (§7, ROADMAP M1). Framework-free
+ * Collector identity and tag lifecycle (§7). Framework-free
  * (D-04): callers pass a Drizzle `Database` and (where needed) a
  * `LightningProvider`, so these functions are usable from a route handler, a
  * worker job, or a test with no HTTP layer involved.

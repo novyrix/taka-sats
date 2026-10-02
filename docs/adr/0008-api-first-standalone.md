@@ -10,8 +10,8 @@ consumer, not a host. Third parties must be able to self-host and integrate.
 ## Decision
 
 Taka Sats is its own system exposing a documented, versioned HTTP API (`/api/v1`, OpenAPI
-3.1, generated from the Zod schemas and CI-checked for drift). Every surface — the admin
-dashboard included — is a client of that API. Breaking changes go to `/api/v2`.
+3.1, generated from the Zod schemas and CI-checked for drift). Every surface - the admin
+dashboard included - is a client of that API. Breaking changes go to `/api/v2`.
 
 ## Consequences
 

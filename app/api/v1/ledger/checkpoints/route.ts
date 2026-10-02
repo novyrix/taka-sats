@@ -2,7 +2,7 @@
 
 /**
  * `GET /api/v1/ledger/checkpoints` — the signed anchors, newest first
- * (REQUIREMENTS §11.2, ROADMAP M4-8). Scope `ledger:read` (admin). `publicKey`
+ * (REQUIREMENTS §11.2). Scope `ledger:read` (admin). `publicKey`
  * is the Ed25519 key (base64) the server signs with — pin it out of band; it is
  * `null` when no `LEDGER_SIGNING_KEY` is configured. Keyset-paginated on
  * `through_seq` (`cursor` = the last `throughSeq` seen).

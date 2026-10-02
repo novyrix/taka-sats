@@ -7,9 +7,10 @@ welcome and taken seriously.
 
 **Do not open a public issue for a security problem.**
 
-- Preferred: open a private advisory at
-  <https://github.com/novyrix/taka-sats/security/advisories/new>.
-- Or email **security@afribit.africa** with enough detail to reproduce.
+- Email **security@afribit.africa** with enough detail to reproduce. This is the reporting channel
+  for now.
+- GitHub private vulnerability reporting is not enabled on this repository yet. When it is, this
+  page will say so and you will be able to open a private advisory instead.
 
 You will get an acknowledgement within **3 working days** and a substantive response within
 **10 working days** with an assessment and a remediation timeline. We will credit you in
@@ -24,7 +25,7 @@ and validation, API-key scoping and PII filtering, and secret handling.
 
 Out of scope: findings that require a compromised operator device or database, denial of
 service from unrealistic request volume, and issues in third-party services (Blink, LNbits,
-Neon, Vercel, relays) — report those upstream.
+Neon, Vercel, relays) - report those upstream.
 
 ## Supported versions
 
@@ -37,22 +38,22 @@ one of them must say so (see "Notes" below).
 
 | Property                                                                                                                                | Where enforced                                                                                                                   |
 | --------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| No human role (`supervisor`, `hub_lead`, `admin`) can execute or direct a payout                                                        | `lib/auth/permissions.ts` — `payout:execute` in no role; `permissions.test.ts`                                                   |
-| A payout destination is never taken from client input — always the collector's `verified` destination, resolved server-side             | `lib/payouts/process.ts` (no address parameter); the payout API has no `destination` field and returns no address                |
+| No human role (`supervisor`, `hub_lead`, `admin`) can execute or direct a payout                                                        | `lib/auth/permissions.ts` - `payout:execute` in no role; `permissions.test.ts`                                                   |
+| A payout destination is never taken from client input - always the collector's `verified` destination, resolved server-side             | `lib/payouts/process.ts` (no address parameter); the payout API has no `destination` field and returns no address                |
 | Only an authorized (`active`) collector can be weighed, issued an NFC tag, or paid; each authorize/revoke is a ledger-anchored row      | `lib/collectors/authorization.ts`, ingest (`collector_not_authorized`), `reissueTag`, payout worker; scope `collector:authorize` |
 | A wallet card's Pay QR (a spend link) is rejected before any network call and is never stored, logged, or echoed                        | `lib/lightning/lnurl.ts` (`lightning.spend_link_hosts`), `lib/collectors/destinations.ts`                                        |
 | An address is live for at most one collector; replacing a verified destination is staff-only                                            | partial unique indexes (migration 0008), `attachDestination` (`collector:authorize`)                                             |
 | Weight provenance is signed with the event (`weightSource`, scale fields); later verification is derived data and never edits the event | `lib/sync/events.ts:collectionEventPayload`, frozen vectors in `lib/sync/events.test.ts`                                         |
 | Exactly one function does sats arithmetic for a payout                                                                                  | `lib/money.ts:computePayoutDetail` (`computePayout` wraps it)                                                                    |
-| A BYO address is validated receive-capable before it is stored or written to a tag; a withdraw (`LNURLw`) code is rejected              | `LightningProvider.resolveReceiveAddress` (M1-2, M1-10)                                                                          |
-| `ledger_entries` is append-only — a DB trigger blocks `UPDATE`/`DELETE` (any role); corrections are new linked rows; the chain verifies | migration 0006 (`ledger_entries_immutable()`), `lib/ledger/` (`appendEntry`, `verifyChain`)                                      |
+| A BYO address is validated receive-capable before it is stored or written to a tag; a withdraw (`LNURLw`) code is rejected              | `LightningProvider.resolveReceiveAddress`                                                                                        |
+| `ledger_entries` is append-only - a DB trigger blocks `UPDATE`/`DELETE` (any role); corrections are new linked rows; the chain verifies | migration 0006 (`ledger_entries_immutable()`), `lib/ledger/` (`appendEntry`, `verifyChain`)                                      |
 | Ledger checkpoints are Ed25519-signed with an environment-only key (never returned or logged); the whole ledger is `admin`-read-only    | `lib/ledger/{signing,checkpoints}.ts`, `LEDGER_SIGNING_KEY`; scope `ledger:read`                                                 |
 | Above-threshold payouts (and a destination's first payout) require a second, distinct approver; self-approval is refused                | `lib/payouts/process.ts` (`approvePayout`, `processPayout`), scope `payout:approve`                                              |
 | A payout is never sent twice; an unknown outcome is flagged for a human, never retried automatically                                    | `lib/payouts/process.ts` (conditional-UPDATE claim before `pay`, `payout_uncertain`), UNIQUE `payouts.collection_event_id`       |
 | A hot-wallet top-up needs a vote: a proposer never approves their own, each approver counts once; no pool key is held                   | `lib/treasury/`; trigger `treasury_topup_signoff_guard` + UNIQUE (topup, approver), migration 0011; scopes `treasury:*` (admin)  |
 | A payout will not run against an exchange rate older than the configured TTL                                                            | `lib/payouts/process.ts` (`requireFreshRate`), `lib/money.ts` (`computePayoutDetail` re-checks)                                  |
-| Secrets (DB URL, provider keys, `AUTH_SECRET`, Nostr key) live in the environment only — never in `config/*.toml`, client code, or logs | `lib/config/` (schema rejects them), structured-logging allow-list                                                               |
-| `partner` / `public:read` responses carry no collector PII or individual payout amounts                                                 | central response serialiser (M7-4) + contract tests (M7-12)                                                                      |
+| Secrets (DB URL, provider keys, `AUTH_SECRET`, Nostr key) live in the environment only - never in `config/*.toml`, client code, or logs | `lib/config/` (schema rejects them), structured-logging allow-list                                                               |
+| `partner` / `public:read` responses carry no collector PII or individual payout amounts                                                 | central response serialiser + contract tests                                                                                     |
 | Every `/api/v1` route is deny-by-default: no session → 401, wrong role → 403, before the handler body runs                              | `lib/auth/session.ts:requireScope`; `session.test.ts`, `app/api/v1/**/*.test.ts`                                                 |
 | Passwords are never stored or logged in plaintext                                                                                       | `lib/auth/password.ts` (`scrypt`, random salt, `timingSafeEqual`)                                                                |
 
@@ -144,7 +145,7 @@ each preserves or alters (Code Style Guide §12). Newest first.
   timeout. Residual: no live account has been exercised; the allow list is from the open source
   resolver and may need extending after the supervised first payment.
 
-- 2026-10-01: The treasury funding vote (M5-7, ADR-0020, migration 0011). Adds three scopes,
+- 2026-10-01: The treasury funding vote (ADR-0020, migration 0011). Adds three scopes,
   `treasury:read`, `treasury:propose` and `treasury:approve`, held by `admin` only (matrix test
   updated; `hub_lead` deliberately holds none, so nobody who vets collectors also approves the money
   that pays them). `payout:execute` is still in no role and nothing here pays a collector. Preserves:
@@ -160,33 +161,33 @@ each preserves or alters (Code Style Guide §12). Newest first.
   accounts defeats the distinct approver rule, and nothing yet links a recorded approval
   cryptographically to the pool wallet's signatures (compare the recorded transfer reference).
 
-- 2026-10-01 — Vercel-to-VM same-origin API forwarding: the optional
+- 2026-10-01 - Vercel-to-VM same-origin API forwarding: the optional
   `TAKASATS_API_ORIGIN` build setting forwards only `/api/*` with a `beforeFiles` rewrite. It is
   unset on the VM to prevent a proxy loop. Authentication, authorization and request validation
   still execute on the VM; the Vercel layer does not mint or interpret sessions. Deploy checks
   cover CSRF, `Set-Cookie`, authenticated session reads and upload limits through the public origin.
 
-- 2026-10-01 — Reconciliation, anomaly detection and the review/read APIs.
+- 2026-10-01 - Reconciliation, anomaly detection and the review/read APIs.
   Adds ONE scope, `reconciliation:write` (admin only; matrix test updated), guarding `POST
 /recycler-sales` and `POST /reconciliation/runs`; the reads reuse `report:generate:all`
-  (admin) and `anomaly:review` (admin). Preserves: **no flag blocks anything** — detectors run
+  (admin) and `anomaly:review` (admin). Preserves: **no flag blocks anything** - detectors run
   after the ingest commit, are wrapped so a failure never changes a sync result, and nothing
   reads `anomaly_flags` to gate a payout (they only warn: `openFlags` on `GET /payouts`).
   A recycler sale is trust evidence, so it is a `recycler_sale` ledger entry written in the
   same transaction as its row. Reconciliation sums kilograms in Postgres `numeric` and compares
   in integer milli-kg (no float accumulation); `reconciliation_reports` rows are never
-  updated. A review is final for its reviewer — only a DIFFERENT admin may overturn it, and the
+  updated. A review is final for its reviewer - only a DIFFERENT admin may overturn it, and the
   superseded verdict is kept in `context.history`. `GET /events` shows a plain supervisor only
   their own events and withholds GPS from them; it never returns `photo_url`. `GET
 /stats/summary` is public by design: aggregates only, precision set by
   `transparency.amount_disclosure`, a test proves no alias, wallet, code, coordinate or id leaks.
 
-- 2026-10-01 — Independent-review hardening (found by a read-only adversarial review of the
+- 2026-10-01 - Independent-review hardening (found by a read-only adversarial review of the
   identity/gate/destinations change set; each was reproduced from the code before fixing):
   1. **Inflated-invoice drain (high).** `pay()` took the invoice a destination's LNURL server
      returned and handed it to the rail, and rails pay the invoice's _own_ amount. `requestLnurlInvoice`
      now decodes the BOLT11 amount (`lib/lightning/bolt11.ts`, BigInt, no float) and refuses anything
-     but exactly the requested sats, plus an amount outside the wallet's sendable range — before any
+     but exactly the requested sats, plus an amount outside the wallet's sendable range - before any
      rail is called. Preserves: the ledger records what actually moved.
   2. **Destination ownership (high).** Any supervisor could set a wallet on any collector, or swap
      one staff had just authorized. A supervisor may now write a destination only for a collector
@@ -210,12 +211,12 @@ each preserves or alters (Code Style Guide §12). Newest first.
      `invalid` (and clears the stale copy) instead of leaving collectors silently unpayable.
      `payout:execute` unaffected.
 
-- 2026-10-01 — The payout engine (M5): `lib/money.ts:computePayout` implemented, `lib/payouts/`,
+- 2026-10-01 - The payout engine (M5): `lib/money.ts:computePayout` implemented, `lib/payouts/`,
   the payout jobs and `/api/v1/payouts` (migration 0009). Money and RBAC-enforcement code touched:
   `lib/auth/permissions.ts` gains `payout:read` (`supervisor`, `hub_lead`, `admin`; a plain
   supervisor is scoped in the handler to payouts of events THEY recorded; `partner` has none;
   `rbac-matrix.test.ts` pins every cell). `payout:execute` is still in no role and no HTTP route
-  can start a payment — the only caller of `LightningProvider.pay` is the worker's
+  can start a payment - the only caller of `LightningProvider.pay` is the worker's
   `processPayout`. Properties:
   1. **One arithmetic core.** `computePayoutDetail` (BigInt integer maths, half-up, a 0-sat
      result is a `MoneyError`) is the only code that turns weight × rate into an amount.
@@ -227,17 +228,17 @@ each preserves or alters (Code Style Guide §12). Newest first.
      payout id is the provider idempotency key. A payout whose outcome is unknown (crash,
      timeout, bookkeeping failure) stays `sending`, raises one `payout_uncertain` flag and is
      NEVER re-sent automatically.
-  4. **Approval.** Above `payouts.second_signoff_threshold_sats` — and, by default, for the first
-     payout to any destination — a distinct `hub_lead`/`admin` must approve; the supervisor who
+  4. **Approval.** Above `payouts.second_signoff_threshold_sats` - and, by default, for the first
+     payout to any destination - a distinct `hub_lead`/`admin` must approve; the supervisor who
      recorded the event cannot. An approval is bound to the destination it was given for: a
      destination swapped afterwards voids it.
   5. **Fresh price, event-time rate.** Priced at the rate active when the event was recorded, against
      a snapshot within `money.rate_staleness_ttl_seconds`; stale means parked, not paid.
   6. `lightning.float_provider = "fake"` (marks payouts paid without paying) is refused in
      production unless `TAKASATS_ALLOW_FAKE_PROVIDER=true`.
-     Logs use a field allow-list (id, status, attempts, error code, provider) — no address or amount.
+     Logs use a field allow-list (id, status, attempts, error code, provider) - no address or amount.
 
-- 2026-10-01 — Cardless identity, the collector authorization gate and payment destinations
+- 2026-10-01 - Cardless identity, the collector authorization gate and payment destinations
   (D-24 / D-25 / D-26 / D-27, ADR-0017..0019, migration 0008). RBAC-enforcement code touched:
   `lib/auth/permissions.ts` gains `collector:authorize`, granted to `hub_lead` and `admin`
   (`rbac-matrix.test.ts` pins every cell). Properties:
@@ -247,25 +248,25 @@ each preserves or alters (Code Style Guide §12). Newest first.
      pre-authorized registration) writes a `collector_authorizations` row anchored by a
      `collector_authorization` ledger entry in the same transaction. Enforced at four points: the
      offline cache lists only `active` collectors; ingest returns `needs_attention`
-     (`collector_not_authorized` / `collector_not_found` — previously an unknown collector was an
+     (`collector_not_authorized` / `collector_not_found` - previously an unknown collector was an
      FK error that failed the whole batch); `reissueTag` and the tag-resolve route refuse a
      non-`active` collector; the payout worker will refuse one. `authorization_required = false`
-     removes the gate by operator choice — its absence is then the operator's decision, not a bug.
+     removes the gate by operator choice - its absence is then the operator's decision, not a bug.
   2. **Destinations (preserves "destination is never client input").** The payout target is a
      `collector_payment_destinations` row, validated receive-capable before it is written
      (`attachDestination` calls the provider first, writes nothing on a 4xx-class failure). A live
      address is unique across collectors, so a supervisor cannot point many invented collectors at
      one wallet; **replacing a verified destination is the redirect-fraud path, so it needs
      `collector:authorize`** (a supervisor may set the first one, or fix one that is still
-     unverified). `DestinationInUseError` is deliberately generic — it never says whose address it is.
+     unverified). `DestinationInUseError` is deliberately generic - it never says whose address it is.
      A transient wallet-host failure stores `pending_validation` and a worker re-checks; **only
      `verified` is ever payable**.
-  3. **Credentials carry identity only.** A QR/NFC payload is `takasats:<public_code>` — a pointer.
+  3. **Credentials carry identity only.** A QR/NFC payload is `takasats:<public_code>` - a pointer.
      It grants nothing and pays nobody; the earlier "tag encodes the Lightning address" half of
      ADR-0001 is superseded (the receive-only guarantee is kept and made stronger: nothing on a
      credential can move or even address money).
   4. **Signed payload.** `weightSource` / `scaleId` / `scaleReadingRaw` are inside the hash, so a
-     supervisor cannot later claim a scale produced a number that was typed (and vice versa) — the
+     supervisor cannot later claim a scale produced a number that was typed (and vice versa) - the
      server recomputes the hash from what it receives and rejects any difference. Verification
      results stay outside the signed event so the original claim is never overwritten.
   5. **Not yet covered.** `collector_authorizations` and `collector_payment_destinations` have no
@@ -273,24 +274,24 @@ each preserves or alters (Code Style Guide §12). Newest first.
      convention and by the ledger anchor for authorizations. Destination changes are not
      ledgered. `payout:execute` is unaffected (still in no role); no money arithmetic changed.
 
-- 2026-10-01 — Signed ledger checkpoints + the read/verify API (M4-7/M4-8, D-19, §11.2).
+- 2026-10-01 - Signed ledger checkpoints + the read/verify API (M4-7/D-19, §11.2).
   RBAC-enforcement code touched: `lib/auth/permissions.ts` gains the scope `ledger:read`,
   granted to `admin` alone (`rbac-matrix.test.ts` pins the row); the three new routes
   (`GET /api/v1/ledger`, `/ledger/checkpoints`, `/ledger/verify`) are
-  `requireScope('ledger:read')` — a `supervisor`, `hub_lead` or `partner` gets 403. Ledger
+  `requireScope('ledger:read')` - a `supervisor`, `hub_lead` or `partner` gets 403. Ledger
   rows hold ids, hashes and timestamps only (no alias, phone, address, GPS or amount), and
   that must stay true of anything appended. Properties and key handling:
   1. **What a checkpoint proves.** An Ed25519 signature over the UTF-8 string
      `<through_seq>|<entry_hash>`. Given a pinned public key it shows the programme key holder
      vouched for the chain head at that seq; because `entry_hash` commits to every prior link,
      any later rewrite of entries `<= through_seq` is detectable. It does **not** prove the
-     facts were true, and it does not stop the key holder signing a rewritten chain — hence
+     facts were true, and it does not stop the key holder signing a rewritten chain - hence
      the optional Nostr / OpenTimestamps anchoring (not yet built) and out-of-band key pinning.
-  2. **Key handling.** The signing seed is `LEDGER_SIGNING_KEY` (base64, 32 bytes) —
+  2. **Key handling.** The signing seed is `LEDGER_SIGNING_KEY` (base64, 32 bytes) -
      environment only, read lazily at use (`lib/ledger/signing.ts`), never in TOML, a response
      or a log. The worker uses it to sign; the app process (same env on Compose/Vercel) only
      derives and serves the **public** key (`GET /ledger/checkpoints` -> `publicKey`) and
-     checks signatures with it — the seed never leaves the process. Unset: the job logs a warning and signs
+     checks signatures with it - the seed never leaves the process. Unset: the job logs a warning and signs
      nothing; malformed: the job fails and the API answers 503 `ledger_key_invalid`.
      Rotation: sign new checkpoints with the new key, keep the old public key to verify old
      ones (see `docs/LEDGER.md`).
@@ -299,96 +300,96 @@ each preserves or alters (Code Style Guide §12). Newest first.
      `verifyLedger` fails on a bad signature, a checkpoint whose `entry_hash` the chain does
      not have, or a `through_seq` past the head (a truncated tail). `ledger_checkpoints`
      itself has no immutability trigger: a deleted checkpoint is not detectable from the DB
-     alone — verifiers keep their own copy of published checkpoints.
+     alone - verifiers keep their own copy of published checkpoints.
      `payout:execute` unaffected; no money arithmetic.
-- 2026-10-01 — LNURL resolution hardened (`lib/lightning/{lnurl,lnurlPay,errors}.ts`). Adds,
+- 2026-10-01 - LNURL resolution hardened (`lib/lightning/{lnurl,lnurlPay,errors}.ts`). Adds,
   without loosening the receive-only guarantee: (1) a code on a configured spend-link host
-  (`lightning.spend_link_hosts`, default `card.paybee.buzz` — the Pay side of a Paybee card) is
+  (`lightning.spend_link_hosts`, default `card.paybee.buzz` - the Pay side of a Paybee card) is
   rejected with `SpendCredentialRejectedError` **before any network call**, is never stored or
   logged, and is never converted into a receive address; (2) SSRF guard on the scanned URL and
-  on the `callback` a remote LNURL server returns — https only, no URL credentials, no
+  on the `callback` a remote LNURL server returns - https only, no URL credentials, no
   loopback/private/link-local/CGNAT/metadata/local-only target (literal or DNS-resolved) →
   `UnsafeLnurlTargetError`, redirects never followed, `lightning.lnurl_timeout_ms` timeout, 64
   KiB response cap; (3) error messages carry a hostname or a generic description, never the
   scanned code (a spend/withdraw link must not reach API error JSON or logs). Transient
   failures are a distinct `LightningEndpointUnreachableError`. Residual: DNS-rebinding between
   the DNS check and the connect (THREAT_MODEL T16).
-- 2026-09-07 — Sync ingest (M4-3, FR-4.2, §10.3). New route `POST /api/v1/sync/events`,
+- 2026-09-07 - Sync ingest (FR-4.2, §10.3). New route `POST /api/v1/sync/events`,
   `requireScope('collection:record')` (no matrix change) + `lib/collection-events` +
   migration 0007 (`collection_events`). Trust properties it establishes:
   1. **Content binding.** Each event's `content_hash` is **recomputed server-side** from the
      submitted fields via the same `collectionEventPayload` + `canonicalize` the PWA used; a
      mismatch is `needs_attention`, never ingested. The confirmed `ledger_entries` row's
-     `payload_hash` is that same hash — the fact in the chain is provably the one the device
+     `payload_hash` is that same hash - the fact in the chain is provably the one the device
      recorded.
   2. **Idempotency (FR-4.2).** `id` (client UUID) is the `collection_events` PK; a resent
      event returns its stored `{ status: 'confirmed', seq }` with no second ledger entry. A
      concurrent duplicate that loses the unique-violation race is resolved to the same result.
   3. **Authorisation at the boundary.** A plain `supervisor` may only sync events whose
-     `supervisorId` is their own (`hub_lead`/`admin` may sync on behalf — device recovery);
+     `supervisorId` is their own (`hub_lead`/`admin` may sync on behalf - device recovery);
      and every event is rejected unless that supervisor is in `session_supervisors` for its
      `session_id` (M2-7 enforced where offline events actually enter the system).
   4. **Rate integrity.** `rate_id` must be the `material_rates` row active for that material
-     at `recorded_at` (`rateActiveAt`) — a queued event cannot be revalued by a later rate
+     at `recorded_at` (`rateActiveAt`) - a queued event cannot be revalued by a later rate
      change. No sats arithmetic here (`indicative_sats` is display, §8.3).
-  5. Never a silent drop — every submitted event gets a `confirmed`/`needs_attention` result
+  5. Never a silent drop - every submitted event gets a `confirmed`/`needs_attention` result
      in order. `photo_url` is a soft back-fill (`photoUrlFor`), a missing photo does not block.
-- 2026-09-07 — The append-only ledger (M4-1/M4-2, D-13, REQUIREMENTS §11). New
+- 2026-09-07 - The append-only ledger (M4-1/D-13, REQUIREMENTS §11). New
   `ledger_entries` / `ledger_checkpoints` tables (migration 0006) + `lib/ledger`. Properties
   it establishes (a review of anything touching the chain must re-check these):
   1. **Append-only at the DB.** A `BEFORE UPDATE OR DELETE … FOR EACH STATEMENT` trigger
-     (`ledger_entries_immutable()`) raises `restrict_violation` — enforced regardless of the
+     (`ledger_entries_immutable()`) raises `restrict_violation` - enforced regardless of the
      connecting role, so it holds on managed Postgres too. `TRUNCATE` is _not_ blocked
      (operator reset / test isolation); operators `REVOKE TRUNCATE` for defence in depth. A
-     correction is a new `entry_type = 'correction'` row with `references_id` set — never an
+     correction is a new `entry_type = 'correction'` row with `references_id` set - never an
      edit.
   2. **Hash chain.** `appendEntry` runs under `pg_advisory_xact_lock`, so `seq` (app-assigned,
      `= head.seq + 1`, `UNIQUE` backstop) and `prev_entry_hash = head.entry_hash` are
      race-free. `entry_hash = sha256(seq | entry_type | payload_hash | prev_entry_hash)`,
      `prev` = `GENESIS` at `seq 1`. Both forms are frozen by fixed-vector tests.
-  3. **Client-bound payload.** `payload_hash` is the SHA-256 of the fact's canonical JSON —
+  3. **Client-bound payload.** `payload_hash` is the SHA-256 of the fact's canonical JSON -
      the _same_ `canonicalize` the PWA computes its `content_hash` with (`lib/sync/contentHash`,
      imported by `lib/ledger`), so an offline event's client hash is the ledger payload hash
      verbatim. If the two serialisations ever diverge, `content_hash` checks fail spuriously.
-  4. `verifyChain(db)` recomputes every link and returns the first `brokenAt` seq + reason —
-     the basis for `GET /ledger/verify` and `scripts/verify-ledger.ts` (M4-8).
+  4. `verifyChain(db)` recomputes every link and returns the first `brokenAt` seq + reason -
+     the basis for `GET /ledger/verify` and `scripts/verify-ledger.ts`.
      No money arithmetic and no RBAC change here; the sync-ingest route + its authz land in M4-3.
-- 2026-09-07 — Photo upload queue (M3-10, FR-4.2, D-12). New route
-  `POST /api/v1/photos`, `requireScope('collection:record')` (supervisor / hub_lead / admin —
+- 2026-09-07 - Photo upload queue (FR-4.2, D-12). New route
+  `POST /api/v1/photos`, `requireScope('collection:record')` (supervisor / hub_lead / admin -
   no matrix change). Evidence-integrity property it establishes: the server **recomputes**
   SHA-256 over the received bytes and rejects (422 `photo_hash_mismatch`) anything that does
-  not match the `X-Photo-Sha256` header the device computed at capture — so the stored object
+  not match the `X-Photo-Sha256` header the device computed at capture - so the stored object
   is provably the bytes the supervisor photographed. Objects are content-addressed
   (`photos/<sha256>`), making a re-send an idempotent overwrite. `Content-Type` must be
   `image/*` (415), body ≤ 8 MiB (413). Storage credentials (`S3_*`) stay environment-only
   (`lib/storage`, read lazily). No money path; `payout:execute` unaffected.
-- 2026-09-06 — Supervisor rotations (M2-8, FR-3.7). New CRUD routes
+- 2026-09-06 - Supervisor rotations (FR-3.7). New CRUD routes
   (`GET`/`POST /api/v1/rotations`, `DELETE /api/v1/rotations/:id`) all behind
-  `requireScope('session:configure')` (admin only) — no RBAC-matrix change. The one
+  `requireScope('session:configure')` (admin only) - no RBAC-matrix change. The one
   authorization-relevant behaviour change: `lib/sessions.createSession` now **unions** the
   explicit `supervisorIds` with anyone rostered for the session's location+window
   (`rotationSupervisorsFor`, window-overlap, exact location match). Those auto-assigned
-  supervisors then pass M2-7's `requireActiveSession` for that session — i.e. a rotation can
+  supervisors then pass M2-7's `requireActiveSession` for that session - i.e. a rotation can
   grant a supervisor the ability to act in a session without the session's creator listing
   them explicitly. Bounded by: admin-only rotation writes, exact location-string match, and
   the M2-7 window/active checks still apply. `applyRotations: false` opts a `createSession`
   call out. `payout:execute` unaffected.
-- 2026-09-06 — Session access window (M2-7, FR-6.1). New authz gate, not a scope
+- 2026-09-06 - Session access window (FR-6.1). New authz gate, not a scope
   change: `lib/sessions/requireActiveSession(db, actor)` throws `NoActiveSessionError`
   (→ 403 `no_active_session`) when `actor.role === 'supervisor'` and there is no session
   that is assigned to them, `status='active'`, and open at `now` (`currentSessionForSupervisor`,
   window end exclusive). `hub_lead`/`admin` are not shift-bound and pass through. Wired into
   `POST /api/v1/collectors` (the only supervisor-initiated write today); M3's
   `collection:record` route must call the same helper. `POST /collectors/:id/{address,tags}`
-  are **not** gated yet — they are sub-steps reached only after a gated `POST /collectors`
+  are **not** gated yet - they are sub-steps reached only after a gated `POST /collectors`
   in the enrol flow; standalone use (e.g. a later tag reissue) by an unassigned supervisor
   is a known gap. The PWA mirrors the gate in the UI
   (`components/supervisor/session-context.tsx` `<SessionGate>`) but the server check is
   authoritative. `payout:execute` unaffected; the RBAC matrix (`permissions.ts`) is unchanged.
-- 2026-09-06 — Sessions + rates API, exchange feed, partner login (M2-5, M2-9, M2-1).
+- 2026-09-06 - Sessions + rates API, exchange feed, partner login.
   RBAC-enforcement code touched: `lib/auth/permissions.ts` gains two fine-grained staff read
   scopes, `rates:read` and `session:read`, granted to `supervisor` / `hub_lead` / `admin`
-  and to no other role — `partner` does **not** hold them; `rbac-matrix.test.ts` pins the
+  and to no other role - `partner` does **not** hold them; `rbac-matrix.test.ts` pins the
   full row for each. `lib/auth/session.ts` gains `requireAnyScope([...])` (deny-by-default,
   same 401-then-403 shape as `requireScope`) and widens `Actor.kind` to
   `'supervisor' | 'partner'`. `auth.ts` gains a second credentials branch: an `identifier`
@@ -398,39 +399,39 @@ each preserves or alters (Code Style Guide §12). Newest first.
   `lib/auth/password.ts` path; there is no self-service partner sign-up (`scripts/create-partner.ts`
   only). Write routes stay admin-only: `POST /api/v1/rates`, `POST /api/v1/sessions`,
   `PATCH /api/v1/sessions/[id]` all `requireScope('session:configure')` (in `admin` alone).
-  `GET /api/v1/sessions` and `/sessions/[id]` scope visibility to the actor — `admin` sees
+  `GET /api/v1/sessions` and `/sessions/[id]` scope visibility to the actor - `admin` sees
   all, a `partner` sees only sessions whose `sponsor_partner_id` is its own id, a supervisor
   sees only sessions it is assigned to; a mismatch is a 403 (`ForbiddenError('session:read')`),
-  not a 404. `payout:execute` remains in no role — unaffected. New exchange feed
+  not a 404. `payout:execute` remains in no role - unaffected. New exchange feed
   (`lib/money/rates/`) only reads/writes `exchange_rate_snapshots` and does no sats
   arithmetic; `requireFreshRate()` is the guard M5's payout path will call for the
-  rate-staleness property (still unused — no payout path exists yet).
-- 2026-09-04 — Auth.js credentials login (`auth.ts`) + `lib/auth/session.ts` + the first
+  rate-staleness property (still unused - no payout path exists yet).
+- 2026-09-04 - Auth.js credentials login (`auth.ts`) + `lib/auth/session.ts` + the first
   `/api/v1` routes (`app/api/v1/collectors/**`), pulled forward from M2-1/M2-2 to unblock
   M1-4. Establishes: every route resolves its actor via `requireScope(scope)`, which is
-  deny-by-default (`lib/auth/permissions.ts`, unchanged) — no session is 401, the wrong role
+  deny-by-default (`lib/auth/permissions.ts`, unchanged) - no session is 401, the wrong role
   is 403, before any handler body runs. `auth.ts` refuses to sign in a supervisor row whose
   `role` fails `isRole()` or equals `'partner'` (defense in depth on top of the DB CHECK
   constraint). Passwords are `scrypt`-hashed (`lib/auth/password.ts`, `node:crypto`, random
-  salt per password, `timingSafeEqual` comparison) — the hash is never logged. Sessions are
+  salt per password, `timingSafeEqual` comparison) - the hash is never logged. Sessions are
   JWT (no `sessions` table, no DB round trip to validate one), signed with `AUTH_SECRET` from
-  the environment only. `payout:execute` remains reachable by no role — unaffected by this
+  the environment only. `payout:execute` remains reachable by no role - unaffected by this
   change; `session.test.ts` asserts it explicitly for every role via the new `requireScope`
   path too.
-- 2026-09-04 — `lib/lightning/` (LightningProvider implementations) and `lib/collectors/`
-  introduced. Establishes the receive-only guarantee (ADR-0001, M1-10) at the one point every
+- 2026-09-04 - `lib/lightning/` (LightningProvider implementations) and `lib/collectors/`
+  introduced. Establishes the receive-only guarantee (ADR-0001) at the one point every
   provider and `attachByoAddress` funnel through: `lib/lightning/lnurlPay.ts` resolves a code
   and throws `NotReceiveCapableError` for anything but a `payRequest` (in particular a
-  withdraw `LNURLw`) — before the code is ever stored on a collector row or written to a tag.
+  withdraw `LNURLw`) - before the code is ever stored on a collector row or written to a tag.
   `FakeLightningProvider.pay()` re-validates the destination even though it was "already
   resolved", so a future caller cannot bypass the check by skipping straight to `pay`.
   `receive-only.test.ts` asserts this for every provider and asserts `PayoutDestination` has
   no field a withdraw/callback primitive could hide in. No payout execution path exists yet
   (M5); `pay()` on `BlinkProvider`/`LNbitsProvider` is unreachable from any route or worker
   until then.
-- 2026-09-04 — `lib/auth/permissions.ts` introduced. Establishes: `payout:execute` exists
+- 2026-09-04 - `lib/auth/permissions.ts` introduced. Establishes: `payout:execute` exists
   as a scope but is in no role's set; `permissions.test.ts` fails the build if any human
   role gains it. Preserves separation of duties (ADR-003).
-- 2026-09-04 — `lib/money.ts` introduced. `Sats` is a branded integer built only via
+- 2026-09-04 - `lib/money.ts` introduced. `Sats` is a branded integer built only via
   `sats()`; `computePayout` is the sole payout-arithmetic entry point and currently throws
   `NotYetImplemented`. No destination parameter exists on its signature.

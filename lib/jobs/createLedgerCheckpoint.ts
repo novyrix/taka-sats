@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Sign a ledger checkpoint (D-19, ROADMAP M4-7). The worker schedules this on
+ * Sign a ledger checkpoint (D-19). The worker schedules this on
  * `ledger.checkpoint_cron`; on Vercel the Cron bridge enqueues it. A no-op
  * when disabled, when too few entries have landed, or when the head is already
  * checkpointed — so a repeated or concurrent run never writes a duplicate.

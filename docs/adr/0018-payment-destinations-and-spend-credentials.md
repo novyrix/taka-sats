@@ -5,7 +5,7 @@
 ## Context
 
 Payout destinations lived as a single `lightning_address` column on the collector, written at
-enrolment and overwritten on change — no history, no way to say "this was validated", and no
+enrolment and overwritten on change - no history, no way to say "this was validated", and no
 defence against two collectors sharing one wallet. Separately, a wallet partner's physical card
 showed that a scanned QR can be a *spend* credential: the Paybee card's Pay QR is
 `https://card.paybee.buzz/<username>`, a page that moves the card holder's money, and the
@@ -16,9 +16,9 @@ username is the same as the Receive address's.
 1. A collector's payout target is a row in `collector_payment_destinations` (`lightning_address`
    or `lnurl_pay`), with a status (`pending_validation` → `verified` | `invalid`, or `revoked`),
    at most one *live* destination per collector (that destination is the primary), and an
-   address that is **unique across live destinations** — two collectors cannot share a wallet.
+   address that is **unique across live destinations** - two collectors cannot share a wallet.
 2. The payout destination is **always the collector's primary verified destination, resolved
-   server-side** — never request input (this restates D-22/§12.3 without the tag).
+   server-side** - never request input (this restates D-22/§12.3 without the tag).
 3. The first destination may be set by the registering supervisor; **replacing** a verified
    destination needs `collector:authorize` (hub_lead/admin) and revokes the old one in the same
    transaction. A destination change is the cleanest way to redirect money, so it is staff-only.

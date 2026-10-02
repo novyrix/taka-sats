@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The payout engine (REQUIREMENTS §10.4, ROADMAP M5). One payout row per collection
+ * The payout engine (REQUIREMENTS §10.4). One payout row per collection
  * event; {@link processPayout} walks it through a fixed sequence of checks and either
  * parks it (with a reason) or sends it:
  *

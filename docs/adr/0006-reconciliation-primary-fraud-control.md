@@ -5,20 +5,20 @@
 ## Context
 
 Biometric verification measurably slowed comparable cash-transfer rollouts and risks
-excluding undocumented residents — the exact population Taka Sats serves.
+excluding undocumented residents - the exact population Taka Sats serves.
 
 ## Decision
 
 Lead with structural controls (separation of duties, dual sign-off, hash-chained ledger) and
-revenue-side reconciliation — `SUM(collection weight)` by material/period vs `recycler_sales`
-tonnage, variance flagged above a configurable tolerance — as the primary fraud-detection
+revenue-side reconciliation - `SUM(collection weight)` by material/period vs `recycler_sales`
+tonnage, variance flagged above a configurable tolerance - as the primary fraud-detection
 mechanism. Anomaly detectors write flags but never auto-block a payout. Biometrics are out of
 scope unless reconciliation later reveals a phantom-collector problem these controls can't solve.
 
 ## Consequences
 
 Enrolment stays frictionless (earn-first). Trade-off: reconciliation is a *detective* control
-(catches fraud after the fact via variance), not a *preventive* one — accepted, because
+(catches fraud after the fact via variance), not a *preventive* one - accepted, because
 biometric gatekeeping trades a smaller fraud-detection gain for a larger exclusion cost.
 Depends on the recycler-sales data pipeline (gate G3).
 

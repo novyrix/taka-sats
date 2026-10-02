@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/sessions/:id` (ROADMAP M2-5).
+ * `/api/v1/sessions/:id`.
  *  - `GET` one session (with its assigned supervisor ids). A staff member
  *    may only read a session they are assigned to; admin reads any.
  *  - `PATCH` — scope `session:configure` (admin only).

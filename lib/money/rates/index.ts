@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The BTC↔fiat exchange feed (US-7.3, D-18, ROADMAP M2-9).
+ * The BTC↔fiat exchange feed (US-7.3, D-18).
  *
  * Fetches every configured source, requires at least two to succeed, rejects
  * the batch if any reading diverges too far from the median, then persists

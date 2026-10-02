@@ -296,7 +296,7 @@ export const supervisorRotations = pgTable(
 );
 
 /**
- * A point-in-time BTC↔fiat rate (US-7.3, D-18, ROADMAP M2-9). A payout will
+ * A point-in-time BTC↔fiat rate (US-7.3, D-18). A payout will
  * not run against a snapshot older than `settings.money.rate_staleness_ttl_seconds`.
  * `rate` is `quote` units per 1 `base` (e.g. KES per BTC); `numeric` (never
  * float) — Code Style Guide §8. `sources` records each feed's raw reading.
@@ -646,7 +646,7 @@ export const payoutResolutions = pgTable(
   ],
 );
 
-// ── TREASURY FUNDING VOTE (M5-7, ADR-0020) ───────────────────────────────
+// ── TREASURY FUNDING VOTE (ADR-0020) ───────────────────────────────
 
 /**
  * A proposal to refill the capped hot wallet from the multisig pool. Taka Sats only RECORDS

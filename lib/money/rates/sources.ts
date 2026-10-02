@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Exchange-rate sources (D-18, ROADMAP M2-9). Each returns `quote` units per
+ * Exchange-rate sources (D-18). Each returns `quote` units per
  * 1 `base` (e.g. KES per BTC). `fetchImpl` is injectable so tests never hit
  * the network. Zero framework imports (D-04).
  */

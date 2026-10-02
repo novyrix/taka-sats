@@ -7,14 +7,14 @@ address" half of ADR-0001; its receive-only guarantee still holds.
 
 The first design made an NFC tag the collector: the tag carried the Lightning address, and the
 tag mapping resolved the payout. Field testing the first wallet partner showed a card need not
-be NFC at all — a Paybee card has a Receive QR and a Pay QR and nothing to tap. Meanwhile an
+be NFC at all - a Paybee card has a Receive QR and a Pay QR and nothing to tap. Meanwhile an
 alias-only enrolment with no credential makes "ghost collectors" (invented aliases that point
 at a supervisor's own wallet) the cheapest fraud.
 
 ## Decision
 
 1. **A collector exists independently of any physical credential** (D-24). Every collector has a
-   permanent internal `id` (a client-generatable UUID — it is inside the signed event payload,
+   permanent internal `id` (a client-generatable UUID - it is inside the signed event payload,
    so it never changes) and a server-allocated, human-readable `public_code` (`TS-KBR-0042`).
    Search by alias or code, a QR, and an NFC tag are all *lookup shortcuts into the supervisor's
    cached collector directory*. If every credential disappeared, Taka Sats would still work.
@@ -27,7 +27,7 @@ at a supervisor's own wallet) the cheapest fraud.
    Each decision is a row in `collector_authorizations` anchored in the ledger
    (`entry_type = 'collector_authorization'`). `collectors.authorization_required = false`
    turns the gate off for operators who do not want it.
-4. The NFC tag is **issued only to authorized collectors** — the physical credential becomes the
+4. The NFC tag is **issued only to authorized collectors** - the physical credential becomes the
    visible mark of vetting, not the identity itself.
 
 ## Consequences
@@ -36,7 +36,7 @@ at a supervisor's own wallet) the cheapest fraud.
 - `tag_history` stays (it handles revocation by tag serial) but is optional per collector.
 - Pre-existing collectors are grandfathered as `active`.
 - A pending collector cannot be weighed, so field enrolment is "register now, weigh after
-  authorization" — a deliberate friction for the pilot, relaxable by config.
+  authorization" - a deliberate friction for the pilot, relaxable by config.
 
 ## Related
 

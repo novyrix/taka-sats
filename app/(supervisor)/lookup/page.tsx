@@ -3,7 +3,7 @@
 import { getTranslations } from 'next-intl/server';
 import { CollectorLookupScreen } from '@/components/collectors/CollectorLookupScreen';
 
-/** Find a collector by NFC tap or alias search (ROADMAP M1-8). */
+/** Find a collector by NFC tap or alias search. */
 export default async function LookupPage() {
   const t = await getTranslations('Lookup');
 

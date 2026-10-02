@@ -8,7 +8,7 @@ import { listPartners } from '@/lib/partners';
 import { listSupervisors } from '@/lib/supervisors';
 
 /**
- * The admin "New Session" one-flow (ROADMAP M2-6, DESIGN §5.2, FR-8.1): one
+ * The admin "New Session" one-flow (DESIGN §5.2, FR-8.1): one
  * page — location, window, assigned supervisors, optional geo scope, optional
  * sponsoring partner — that leaves a session ready for its window. The staff
  * roster and partner list are loaded server-side and passed to the form.

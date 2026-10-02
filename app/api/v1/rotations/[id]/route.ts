@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `DELETE /api/v1/rotations/:id` (ROADMAP M2-8) — remove a rotation. Scope
+ * `DELETE /api/v1/rotations/:id` — remove a rotation. Scope
  * `session:configure` (admin only). Removing a rotation does not touch
  * sessions already created from it.
  */

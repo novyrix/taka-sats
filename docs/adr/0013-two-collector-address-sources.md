@@ -20,7 +20,7 @@ Both resolve to a Lightning-address string at payout time; `address_source` is a
 
 ## Consequences
 
-Blink's one-account-one-address limit only bites for bulk minting — exactly what the LNbits
+Blink's one-account-one-address limit only bites for bulk minting - exactly what the LNbits
 mode exists for. BYO is the default and the G2 mitigation, so its scan + manual-fallback paths
 must be genuinely usable, not stubs.
 

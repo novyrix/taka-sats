@@ -12,7 +12,7 @@ custodial account is a single point of failure to avoid.
 
 ## Decision
 
-The payout rail is a `lib/lightning/LightningProvider` interface with four implementations —
+The payout rail is a `lib/lightning/LightningProvider` interface with four implementations -
 `BlinkProvider` (shipped default float + BYO Paycode validation), `LNbitsProvider` (opt-in
 per-collector provisioning + float), `FedimintProvider` (Fedi federation), `FakeLightningProvider`
 (tests). The active one is chosen in `config/settings.toml` (`lightning.float_provider`).

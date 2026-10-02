@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `GET /api/v1/ledger` — stream the global hash chain (REQUIREMENTS §10, §11,
- * ROADMAP M4-8). Scope `ledger:read` (admin). Rows carry only ids, hashes and
+ * `GET /api/v1/ledger` — stream the global hash chain (REQUIREMENTS §10, §11).
+ * Scope `ledger:read` (admin). Rows carry only ids, hashes and
  * timestamps — never collector data. Keyset-paginated on `seq`:
  *  - `order=asc` (default) → `seq > cursor`; `order=desc` → `seq < cursor`
  *  - `limit` is clamped to `LEDGER_PAGE_MAX`

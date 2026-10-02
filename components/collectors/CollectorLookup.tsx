@@ -15,7 +15,7 @@ export type ResolvedCollector = { id: string; alias: string };
 type Summary = { id: string; alias: string; nfcTagId: string | null; status: string };
 
 /**
- * Resolve a collector by NFC tap or by alias search (§7.1, ROADMAP M1-8).
+ * Resolve a collector by NFC tap or by alias search (§7.1).
  * NFC is Chrome-Android only; the alias search is a first-class path, not a
  * degraded fallback (gate G2). Offline search against the cached list is
  * M3-2/M3-3 — this hits the API directly for now.

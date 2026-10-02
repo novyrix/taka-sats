@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * The exhaustive role × scope matrix (ROADMAP M2-10, REQUIREMENTS §3.2,
+ * The exhaustive role × scope matrix (REQUIREMENTS §3.2,
  * Code Style Guide §9.4). EXPECTED is transcribed by hand from §3.2 — if
  * `lib/auth/permissions.ts` ever widens a scope, a cell here fails loudly.
  *

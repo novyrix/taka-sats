@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/supervisors` (ROADMAP M2-6).
+ * `/api/v1/supervisors`.
  *  - `GET` — the staff roster for the admin session/rotation pickers.
  *    Scope `session:configure` (admin only); active staff by default,
  *    `?includeInactive=1` for all, `?role=supervisor&role=hub_lead` to filter.

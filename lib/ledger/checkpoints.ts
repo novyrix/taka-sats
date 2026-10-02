@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Signed ledger checkpoints (REQUIREMENTS §11.2, D-19, ROADMAP M4-7). A
+ * Signed ledger checkpoints (REQUIREMENTS §11.2, D-19). A
  * checkpoint is a programme-key signature over `(through_seq, entry_hash)` —
  * a stable anchor an outside party can pin, and what lets verification start
  * from the last signed point instead of genesis. Server only.

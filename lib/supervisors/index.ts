@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Reading the staff roster (ROADMAP M2-6, M2-8). The admin "New Session" flow
+ * Reading the staff roster. The admin "New Session" flow
  * and the rotations UI both need a pickable list of supervisors. Writes still
  * go only through `scripts/create-supervisor.ts` (§3.1). Framework-free apart
  * from Drizzle (D-04).

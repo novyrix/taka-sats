@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Full-bleed camera QR scan (DESIGN §11.2, ROADMAP M1-5). Decodes with
+ * Full-bleed camera QR scan (DESIGN §11.2). Decodes with
  * `@zxing/browser`. `onResult` fires once with the raw decoded string; the
  * caller normalises/validates it server-side.
  *

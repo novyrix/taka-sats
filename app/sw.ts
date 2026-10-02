@@ -2,7 +2,7 @@
 /// <reference lib="webworker" />
 
 /**
- * The Taka Sats service worker (DESIGN §6.4, ROADMAP M3-1). Built by
+ * The Taka Sats service worker (DESIGN §6.4). Built by
  * `@serwist/next` (see `next.config.ts`) during `next build --webpack` — the
  * webpack build is required because `@serwist/next@9` injects the precache
  * manifest via a webpack plugin (Turbopack can't, hence the flag on `build`).

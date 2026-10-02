@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * End-of-session rollup (ROADMAP M3-9). Pure aggregation over the local
+ * End-of-session rollup. Pure aggregation over the local
  * `events` store — a supervisor sees their session's totals and the state of
  * every queued item without the network. Browser only (imports `./store`).
  */

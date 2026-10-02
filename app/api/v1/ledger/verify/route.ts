@@ -2,7 +2,7 @@
 
 /**
  * `GET /api/v1/ledger/verify` — recompute the chain server-side and report the
- * first broken link, if any (REQUIREMENTS §11.2, ROADMAP M4-8). Scope
+ * first broken link, if any (REQUIREMENTS §11.2). Scope
  * `ledger:read` (admin). Always 200: a tampered ledger is a *result*
  * (`ok: false`), not a request error. `?mode=windowed` starts from the latest
  * checkpoint instead of genesis. Checkpoint signatures are checked against the

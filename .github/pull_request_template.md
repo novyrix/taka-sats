@@ -14,6 +14,6 @@
 - [ ] User-facing strings are i18n keys; operational values are `config/` keys, not literals (D-21).
 - [ ] Migrations have a working `down` (`db/<tag>.down.sql`); no destructive prod migration without a reviewed backup step.
 - [ ] Relevant `docs/` page updated in this PR; `SECURITY.md` note added if enforcement code changed.
-- [ ] Every commit is a Conventional Commit and carries `Signed-off-by` (DCO — `git commit -s`).
+- [ ] Every commit is a Conventional Commit and carries `Signed-off-by` (DCO - `git commit -s`).
 - [ ] Any follow-up work you are deferring is written down in the PR description or an issue.
 - [ ] New UI dependency/pattern recorded in `docs/DESIGN.md §7`/`§16`.

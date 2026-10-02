@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Standing supervisor→location rotations (FR-3.7, FR-6.1, ROADMAP M2-8). A
+ * Standing supervisor→location rotations (FR-3.7, FR-6.1). A
  * rotation says "this supervisor covers this location for this window". When
  * a session is created for a location whose window overlaps a rotation, the
  * rostered supervisor is auto-assigned — see `rotationSupervisorsFor`, which

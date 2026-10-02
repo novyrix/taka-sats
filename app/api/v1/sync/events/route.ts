@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `POST /api/v1/sync/events` (FR-4.2, REQUIREMENTS §10.3, ROADMAP M4-3). The
+ * `POST /api/v1/sync/events` (FR-4.2, REQUIREMENTS §10.3). The
  * PWA's outbox drains here. Body: `{ events: SyncEventInput[] }`, each carrying
  * its client UUID + `content_hash`. Idempotent per `id`; one result per event,
  * in submitted order; a rejected event is `needs_attention` + reason, never a

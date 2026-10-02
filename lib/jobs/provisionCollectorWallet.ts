@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * Provisioned enrolment, Path B (§7.1, D-05, gate G1, ROADMAP M1-6). For a
+ * Provisioned enrolment, Path B (§7.1, D-05, gate G1). For a
  * collector enrolled without an address while `custody.provisioning_enabled`,
  * mint an LNbits wallet + LNURLp and store it on the row. Idempotent — safe
  * to retry (pg-boss handles the backoff). Zero framework imports (D-04).

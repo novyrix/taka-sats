@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `/api/v1/rotations` (ROADMAP M2-8, FR-3.7, FR-6.1).
+ * `/api/v1/rotations` (FR-3.7, FR-6.1).
  *  - `GET` — every rotation with its supervisor's name.
  *  - `POST` — add a rotation.
  * Scope `session:configure` (admin only) for both.
