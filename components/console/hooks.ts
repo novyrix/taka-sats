@@ -126,3 +126,15 @@ export function usePaged<T>(
     reload: first.reload,
   };
 }
+
+/**
+ * id -> name for staff accounts, for showing who did something instead of a bare id. Only
+ * admins may read the roster; for anyone else the map is empty and the caller shows a short id.
+ */
+export function useStaffNames(enabled: boolean): (id: string | null | undefined) => string {
+  const roster = useApi<{ supervisors: { id: string; name: string }[] }>(
+    enabled ? '/supervisors?includeInactive=1' : null,
+  );
+  const map = new Map((roster.data?.supervisors ?? []).map((p) => [p.id, p.name]));
+  return (id) => (id ? (map.get(id) ?? id.slice(0, 8)) : '');
+}

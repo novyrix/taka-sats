@@ -6,13 +6,12 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useConsoleUser } from '@/components/console/context';
-import { usePaged } from '@/components/console/hooks';
+import { usePaged, useStaffNames } from '@/components/console/hooks';
 import {
   ActionButton,
   DataState,
   DomainPill,
   LoadMore,
-  Mono,
   PageHeader,
   Panel,
   Select,
@@ -59,6 +58,7 @@ export function Anomalies() {
   const tf = useTranslations('Console.events.flagTypes');
   const user = useConsoleUser();
   const [status, setStatus] = useState<(typeof STATUSES)[number]>('open');
+  const nameOf = useStaffNames(true);
   const list = usePaged<Anomaly>(`/anomalies${query({ status, limit: 50 })}`, 'anomalies');
 
   return (
@@ -92,6 +92,7 @@ export function Anomalies() {
           {list.items.map((a) => (
             <li key={a.id}>
               <AnomalyCard
+                nameOf={nameOf}
                 anomaly={a}
                 tz={user.timeZone}
                 label={tf.has(a.type) ? tf(a.type) : a.type}
@@ -113,11 +114,13 @@ export function Anomalies() {
 
 function AnomalyCard({
   anomaly: a,
+  nameOf,
   tz,
   label,
   onChanged,
 }: {
   readonly anomaly: Anomaly;
+  readonly nameOf: (id: string | null | undefined) => string;
   readonly tz: string;
   readonly label: string;
   readonly onChanged: () => void;
@@ -165,8 +168,7 @@ function AnomalyCard({
       {a.reviewedAt ? (
         <p className="mt-2 text-sm">
           {t('reviewed', { when: formatDateTime(a.reviewedAt, tz) })}
-          {a.reviewNote ? `: ${a.reviewNote}` : ''}{' '}
-          {a.reviewedBy ? <Mono>{a.reviewedBy}</Mono> : null}
+          {a.reviewNote ? `: ${a.reviewNote}` : ''} {a.reviewedBy ? nameOf(a.reviewedBy) : null}
         </p>
       ) : null}
       {history.length > 0 ? (

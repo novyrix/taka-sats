@@ -543,7 +543,11 @@
       "openProposalsHint": "Pool refills that still need a vote, a transfer or an arrival check.",
       "hotWallet": "Hot wallet",
       "hotWalletUnreadable": "The hot wallet balance cannot be read right now.",
-      "lowBalance": "Low balance"
+      "lowBalance": "Low balance",
+      "awaitingRate": "Payouts waiting for a rate",
+      "awaitingRateHint": "New collections wait here until the worker prices them. If this stays above zero, the worker or the exchange rate feed needs a look.",
+      "awaitingFloat": "Payouts waiting for funds",
+      "awaitingFloatHint": "The hot wallet is too low. A confirmed treasury refill wakes them."
     },
     "status": {
       "collector": {

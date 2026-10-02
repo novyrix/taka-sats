@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useConsoleUser } from '@/components/console/context';
-import { useApi } from '@/components/console/hooks';
+import { useApi, useStaffNames } from '@/components/console/hooks';
 import { DataState, DomainPill, KeyValue, Mono, PageHeader, Panel } from '@/components/console/kit';
 import {
   PayoutActions,
@@ -21,6 +21,7 @@ export function PayoutDetail({ id }: { readonly id: string }) {
   const { data, error, loading, reload } = useApi<{ payout: PayoutRow }>(`/payouts/${id}`);
   const payout = data?.payout;
   const tz = user.timeZone;
+  const nameOf = useStaffNames(user.can('session:configure'));
 
   return (
     <div className="space-y-6">
@@ -92,7 +93,7 @@ export function PayoutDetail({ id }: { readonly id: string }) {
                     k: t('approvedBy'),
                     v: payout.approvedBy ? (
                       <>
-                        <Mono>{payout.approvedBy}</Mono>{' '}
+                        {nameOf(payout.approvedBy)}{' '}
                         <span className="text-muted-foreground">
                           {formatDateTime(payout.approvedAt, tz)}
                         </span>

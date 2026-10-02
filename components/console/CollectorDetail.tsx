@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
 import { useConsoleUser } from '@/components/console/context';
-import { useApi } from '@/components/console/hooks';
+import { useApi, useStaffNames } from '@/components/console/hooks';
 import {
   ActionButton,
   DataState,
@@ -84,6 +84,7 @@ export function CollectorDetail({ id }: { readonly id: string }) {
   const collector = one.data?.collector;
   const destination = one.data?.destination ?? null;
   const tz = user.timeZone;
+  const nameOf = useStaffNames(user.can('session:configure'));
 
   function reloadAll(): void {
     one.reload();
@@ -134,13 +135,13 @@ export function CollectorDetail({ id }: { readonly id: string }) {
                   { k: t('enrolledAt'), v: formatDateTime(collector.enrolledAt, tz) },
                   {
                     k: t('registeredBy'),
-                    v: <Mono>{collector.registeredBy ?? t('unknown')}</Mono>,
+                    v: collector.registeredBy ? nameOf(collector.registeredBy) : t('unknown'),
                   },
                   {
                     k: t('authorizedBy'),
                     v: collector.authorizedBy ? (
                       <>
-                        <Mono>{collector.authorizedBy}</Mono>
+                        {nameOf(collector.authorizedBy)}
                         {collector.authorizedAt ? (
                           <span className="ml-2 text-muted-foreground">
                             {formatDateTime(collector.authorizedAt, tz)}

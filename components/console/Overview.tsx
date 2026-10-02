@@ -138,6 +138,24 @@ export function Overview() {
               attention={count('awaiting_destination') > 0}
             />
             <Card
+              testId="count-awaiting-rate"
+              label={t('awaitingRate')}
+              hint={t('awaitingRateHint')}
+              href="/payouts?status=awaiting_rate"
+              value={String(count('awaiting_rate'))}
+              loading={summary.loading}
+              attention={count('awaiting_rate') > 0}
+            />
+            <Card
+              testId="count-awaiting-float"
+              label={t('awaitingFloat')}
+              hint={t('awaitingFloatHint')}
+              href="/payouts?status=pending_float"
+              value={String(count('pending_float'))}
+              loading={summary.loading}
+              attention={count('pending_float') > 0}
+            />
+            <Card
               testId="count-failed"
               label={t('failedPayouts')}
               hint={t('failedPayoutsHint')}
