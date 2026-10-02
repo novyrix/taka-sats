@@ -138,7 +138,8 @@ threshold (e.g. `50000`) once you trust the flow.
   showcase; switch to `blink` for the real thing.
 - **Float.** Keep the Blink float small — a few days of expected payouts. The admin can see it at
   `GET /api/v1/treasury/float`; the system flags it when it drops below `float_low_balance_alert_sats`.
-- **First real payment.** Before any collector: register your own Paybee card as a collector, weigh a
+- **First real payment.** Run `pnpm provider:check` first (see `GETTING_STARTED.md`): it proves the key, the
+  BTC wallet and a receive address, and can send ONE supervised 1 sat payment with a typed `yes`. Then, before any collector: register your own Paybee card as a collector, weigh a
   small amount (50 g of PET ≈ 9 sats at today's rate), approve it, and watch the sats land in the
   card. Only then invite real collectors.
 - **Who can pay?** Nobody. There is no "execute payout" button or endpoint for any role — the worker
