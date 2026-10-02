@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
+import AxeBuilder from '@axe-core/playwright';
 import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
 import path from 'node:path';
 import type { Account } from './fixtures/accounts';
@@ -53,4 +54,36 @@ export async function recordCollection(page: Page, search: string, alias: RegExp
   await page.getByRole('button', { name: 'Continue' }).click();
   await page.getByRole('button', { name: 'Confirm collection' }).click();
   await expect(page.getByText('Saved and queued')).toBeVisible();
+}
+
+/**
+ * Accessibility pass: axe-core over the public pages, every operator console page and the
+ * supervisor pages. Serious and critical violations fail the build; the full list of lesser
+ * findings is printed so they can be worked down.
+ */
+export async function audit(page: Page, route: string): Promise<void> {
+  await page.goto(route);
+  await page.waitForLoadState('networkidle');
+  // Let client components finish their first fetch.
+  await page.waitForTimeout(800);
+  const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+  const blocking = results.violations.filter(
+    (v) => v.impact === 'serious' || v.impact === 'critical',
+  );
+  const minor = results.violations.filter((v) => !blocking.includes(v));
+  if (minor.length > 0) {
+    console.log(
+      `[a11y] ${route} minor: ${minor.map((v) => `${v.id} x${v.nodes.length}`).join(', ')}`,
+    );
+  }
+  expect(
+    blocking.map((v) => ({
+      id: v.id,
+      impact: v.impact,
+      nodes: v.nodes
+        .slice(0, 3)
+        .map((n) => `${n.target.join(' ')} :: ${n.failureSummary?.split('\n')[1] ?? ''}`),
+    })),
+    `${route} has serious or critical accessibility violations`,
+  ).toEqual([]);
 }

@@ -8,7 +8,7 @@ import { collectors, payouts } from '@/lib/db/schema';
 import { processPayoutJob } from '@/lib/jobs';
 import { FakeLightningProvider } from '@/lib/lightning/FakeLightningProvider';
 import { ADMINS, HUB_LEAD, STORY_SUPERVISOR } from './fixtures/accounts';
-import { expectNoErrorNotice, localInput, personContext } from './helpers';
+import { audit, expectNoErrorNotice, localInput, personContext } from './helpers';
 
 const SHOT = path.join(__dirname, 'fixtures', 'shot.png');
 const ALIAS = 'Story Collector';
@@ -130,7 +130,8 @@ test('the full story: session, enrolment, authorization, offline weigh, sync, ap
         async () => {
           const sync = page.getByTestId('sync-now');
           if (await sync.isEnabled()) {
-            await sync.click();
+            // The button can turn disabled between the check and the click: never wait on it.
+            await sync.click({ timeout: 1_000 }).catch(() => undefined);
           }
           return items.first().getAttribute('data-state');
         },
@@ -188,6 +189,17 @@ test('the full story: session, enrolment, authorization, offline weigh, sync, ap
     await expect(page.getByTestId('verify-result')).toHaveAttribute('data-ok', 'true');
     await expect(page.getByRole('cell', { name: 'Payout', exact: true }).first()).toBeVisible();
   }
+
+  // Accessibility with real data on the page: the pages a person actually works in.
+  {
+    const page = admin.page;
+    await audit(page, '/payouts');
+    await audit(page, '/collectors?x=1');
+    await audit(page, '/events');
+    await audit(page, '/anomalies');
+    await audit(page, '/reconciliation');
+  }
+  await audit(sup.page, '/session');
 
   for (const person of [admin, hub, second, sup]) {
     await person.context.close();

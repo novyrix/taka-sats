@@ -51,7 +51,8 @@ test('a 401 on sync keeps the queue; signing in again drains it', async ({ page,
       async () => {
         const sync = page.getByTestId('sync-now');
         if (await sync.isEnabled()) {
-          await sync.click();
+          // The button can turn disabled between the check and the click: never wait on it.
+          await sync.click({ timeout: 1_000 }).catch(() => undefined);
         }
         return item.getAttribute('data-state');
       },

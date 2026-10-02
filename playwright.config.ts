@@ -21,6 +21,12 @@ const E2E_ENV = {
   TAKASATS_ALLOW_FAKE_PROVIDER: 'true',
   TAKASATS__PAYOUTS__SECOND_SIGNOFF_THRESHOLD_SATS: '0',
   TAKASATS__TREASURY__TOPUP_APPROVALS_REQUIRED: '2',
+  // Never touch any object storage from a test run, even if a developer's .env configures one:
+  // photo uploads then answer 503 storage_unconfigured at once and the PWA keeps them queued.
+  S3_ENDPOINT: '',
+  S3_BUCKET: '',
+  S3_ACCESS_KEY_ID: '',
+  S3_SECRET_ACCESS_KEY: '',
 } as const;
 Object.assign(process.env, E2E_ENV);
 
