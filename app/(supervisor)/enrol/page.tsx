@@ -2,6 +2,7 @@
 
 import { getTranslations } from 'next-intl/server';
 import { EnrolFlow } from '@/components/enrol/EnrolFlow';
+import { MyRegistrations } from '@/components/enrol/MyRegistrations';
 import { SessionGate } from '@/components/supervisor/session-context';
 import { getSettings } from '@/lib/config';
 
@@ -23,6 +24,7 @@ export default async function EnrolPage() {
       <SessionGate>
         <EnrolFlow provisioningEnabled={provisioningEnabled} />
       </SessionGate>
+      <MyRegistrations />
     </div>
   );
 }

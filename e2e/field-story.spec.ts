@@ -76,6 +76,9 @@ test('the full story: session, enrolment, authorization, offline weigh, sync, ap
     await page.getByTestId('finish-pending').click();
     await expect(page.getByTestId('public-code')).toHaveText(/^TS-/);
     await expect(page.getByTestId('pending-note')).toBeVisible();
+    // The supervisor can see the registration is waiting.
+    await page.goto('/enrol');
+    await expect(page.getByTestId('my-pending')).toContainText(ALIAS);
   }
 
   // 3. Hub lead: the collector is in the pending queue; authorize it.

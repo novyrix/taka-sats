@@ -213,6 +213,16 @@
       "not_your_collector": "Only the supervisor who registered this collector can add a wallet.",
       "collector_not_authorized": "This collector is not authorized.",
       "invalid_request": "Check the details and try again."
+    },
+    "mine": {
+      "title": "Waiting for authorization",
+      "refresh": "Refresh",
+      "loading": "Loading...",
+      "offline": "You are offline. This list needs a connection.",
+      "error": "Could not load your registrations. Try again.",
+      "none": "None of your registrations are waiting.",
+      "waiting": "Waiting",
+      "hint": "When a hub lead authorizes a collector they leave this list. Tap Sync data on the weigh screen to see them there."
     }
   },
   "Lookup": {
