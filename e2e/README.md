@@ -2,12 +2,13 @@
 
 Playwright end-to-end specs:
 
-| Suite              | File                    | What it proves                                                                                                     |
-| ------------------ | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Offline weigh flow | `offline-weigh.spec.ts` | a collection is saved on the phone with no network                                                                 |
-| The full story     | `field-story.spec.ts`   | session, enrolment, authorization, offline weigh, sync, approval, payout (demo rail), verification picture, ledger |
-| Treasury vote      | `treasury-vote.spec.ts` | three admins: propose, two others approve, transfer recorded, arrival checked                                      |
-| Accessibility      | `a11y.spec.ts`          | axe finds no serious or critical violation on the public, console and supervisor pages                             |
+| Suite              | File                      | What it proves                                                                                                     |
+| ------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Signed-out sync    | `signed-out-sync.spec.ts` | a 401 on sync keeps the queue; it drains after signing in again                                                    |
+| Offline weigh flow | `offline-weigh.spec.ts`   | a collection is saved on the phone with no network                                                                 |
+| The full story     | `field-story.spec.ts`     | session, enrolment, authorization, offline weigh, sync, approval, payout (demo rail), verification picture, ledger |
+| Treasury vote      | `treasury-vote.spec.ts`   | three admins: propose, two others approve, transfer recorded, arrival checked                                      |
+| Accessibility      | `a11y.spec.ts`            | axe finds no serious or critical violation on the public, console and supervisor pages                             |
 
 ## Running
 
