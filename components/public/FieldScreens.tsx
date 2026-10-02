@@ -265,7 +265,7 @@ export function ScreenPay() {
       <h4 className="font-display text-xl font-bold tracking-[-0.03em]">{t('screenPayTitle')}</h4>
       <div className="rounded-lg border border-border bg-background p-4">
         <p className="font-mono text-3xl font-bold tabular-nums">
-          3,360 <span className="text-base text-primary">{t('satsUnit')}</span>
+          1,530 <span className="text-base text-primary">{t('satsUnit')}</span>
         </p>
         <p className="mt-1 text-sm text-muted-foreground">{t('screenPayTo')}</p>
         <p className="mt-3 font-mono text-xs text-muted-foreground">
