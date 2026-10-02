@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import path from 'node:path';
 import type { Account } from './fixtures/accounts';
+
+const SHOT = path.join(__dirname, 'fixtures', 'shot.png');
 
 /** Sign in through the real login form. Returns once the redirect after sign-in has happened. */
 export async function login(page: Page, account: Account, landing: string): Promise<void> {
@@ -32,4 +35,22 @@ export function localInput(date: Date): string {
 
 export async function expectNoErrorNotice(page: Page): Promise<void> {
   await expect(page.getByTestId('error-notice')).toHaveCount(0);
+}
+
+/** Record one 2.5 kg PET collection through the five-screen flow (works with the network off). */
+export async function recordCollection(page: Page, search: string, alias: RegExp): Promise<void> {
+  await page.getByRole('textbox', { name: 'Search name or code' }).fill(search);
+  await page.getByRole('button', { name: alias }).click();
+  await page.getByRole('button', { name: 'Use selected collector' }).click();
+  await page.getByRole('button', { name: /PET/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  for (const key of ['2', '.', '5']) {
+    await page.getByRole('button', { name: key, exact: true }).click();
+  }
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.setInputFiles('input[type="file"]', SHOT);
+  await page.locator('#geo-reason').fill('e2e: headless, no GPS');
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await page.getByRole('button', { name: 'Confirm collection' }).click();
+  await expect(page.getByText('Saved and queued')).toBeVisible();
 }
