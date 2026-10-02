@@ -150,6 +150,14 @@ threshold (e.g. `50000`) once you trust the flow.
 - **A payout stuck in `sending`** for longer than `payouts.sending_stale_minutes` is **never retried
   automatically** — the payment may have gone out. It raises a `payout_uncertain` flag for an admin to
   check against the wallet. This is rare and by design.
+  **To resolve it** (admin, and not the person who recorded the weigh or approved the payout):
+  1. `GET /api/v1/payouts/:id/check` asks the provider what it recorded. `paid` with
+     `proofVerified: true` is conclusive; `pending` means wait; `not_found` is **not** proof that
+     nothing was sent, so also look in the wallet's own transaction list (the payout id is the memo).
+  2. `POST /api/v1/payouts/:id/resolve` with `{"outcome":"paid","reference":"<payment hash>"}` if the
+     money left, or `{"outcome":"failed"}` if you are sure it did not, plus a `note`. The provider's
+     own answer can veto a decision that contradicts it. A `failed` payout is not re-queued: use
+     **Retry** as a separate step once you are certain.
 
 ## 7. A field day
 
@@ -207,6 +215,7 @@ Run it on two phones and a laptop, with the demo rail or a tiny real payout. Nar
 | Event stuck "needs attention: collector_not_authorized" | the collector was revoked/pending when it synced | authorize them, then re-record (the old event is kept as evidence) |
 | Payout stays `awaiting_destination` | the wallet is `pending_validation` / `invalid` | check the wallet via `GET /collectors/:id`; re-attach the Receive address |
 | Payout stays `awaiting_rate` | the exchange feed couldn't reach ≥2 sources | `docker compose … logs worker`; it retries on its own; check outbound internet |
+| Payout stuck in `sending` / flagged `payout_uncertain` | the provider never confirmed the payment | check, then resolve it (section 6) |
 | Payout `pending_float` | the float is below the amount | top up the Blink float; the sweep resumes it |
 | Scanning a card is refused: "spend/pay code" | the Pay side was scanned | flip the card and scan **Receive** |
 | `verify` says `ok: false` | **stop.** Do not restart or edit anything | keep the database, run `verify-ledger.ts`, call the maintainers |

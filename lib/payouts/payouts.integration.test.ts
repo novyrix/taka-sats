@@ -497,6 +497,22 @@ describe.skipIf(!hasDatabase)('lib/payouts (integration)', () => {
   });
 
   describe('provider failures', () => {
+    it('a rail that refuses for lack of funds parks the payout in pending_float (not failed), and it pays once funded', async () => {
+      const payout = await newPayout();
+      const parked = await processPayout(
+        db,
+        failingProvider(new PaymentFailedError('no funds', 'INSUFFICIENT_BALANCE')),
+        payout.id,
+        NOW,
+      );
+      expect(parked.status).toBe('pending_float');
+      expect(parked.lastError).toBe('insufficient_float');
+      expect(await sweepablePayoutIds(db)).toContain(payout.id);
+      const paid = await processPayout(db, fake, payout.id, NOW);
+      expect(paid.status).toBe('paid');
+      expect(fake.paymentsSent()).toHaveLength(1);
+    });
+
     it('a payment failure fails the payout with a short code, and retry sends it', async () => {
       const payout = await newPayout();
       const failed = await processPayout(

@@ -881,6 +881,8 @@ Newest first. Anything here may need a UI change.
   `400 invalid_request` and `409 invalid_state` are reused.
 - **New `lastError`:** `resolved_failed`. A payout resolved as `paid` shows `providerPaymentRef` and `settledAt` like any other.
 - **New config:** `[payouts] resolution_requires_distinct_actor` (default true).
+- **Behaviour:** a payment the rail refuses for lack of funds (Blink `INSUFFICIENT_BALANCE`) now parks the payout in
+  `pending_float` with `lastError: insufficient_float` (it used to become `failed`) and resumes when the float is refilled.
 - **Behaviour:** a `payout_uncertain` anomaly flag that was closed re-opens if the same payout is retried and gets stuck again.
 - **UI to build:** on a stuck payout (admin): **Check with provider**, **Mark paid** (reference required) and **Mark failed**, each with a note.
 

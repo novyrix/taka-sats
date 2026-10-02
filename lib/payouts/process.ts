@@ -235,7 +235,15 @@ export async function flagStaleSendingPayouts(db: Database, now = new Date()): P
 /** How a provider error maps to the payout: definitely not sent (fail / retry later) or unknown. */
 function classifyPayError(
   error: unknown,
-): { kind: 'failed' | 'retry'; code: string } | { kind: 'unknown' } {
+): { kind: 'failed' | 'retry' | 'float'; code: string } | { kind: 'unknown' } {
+  // The rail refused for lack of funds (the float moved between our balance read and the send, or
+  // routing fees pushed it over): nothing was sent, so park it like any other float shortfall.
+  if (
+    error instanceof PaymentFailedError &&
+    (error.providerCode === 'INSUFFICIENT_BALANCE' || error.providerCode === 'INSUFFICIENT_FLOAT')
+  ) {
+    return { kind: 'float', code: 'insufficient_float' };
+  }
   if (error instanceof PaymentFailedError) {
     return { kind: 'failed', code: 'payment_failed' };
   }
@@ -428,7 +436,12 @@ async function evaluate(
     const [row] = await db
       .update(payouts)
       .set({
-        status: outcome.kind === 'retry' ? 'queued' : 'failed',
+        status:
+          outcome.kind === 'retry'
+            ? 'queued'
+            : outcome.kind === 'float'
+              ? 'pending_float'
+              : 'failed',
         lastError: outcome.code,
       })
       .where(and(eq(payouts.id, claimed.id), eq(payouts.status, 'sending')))
