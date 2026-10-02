@@ -1016,12 +1016,12 @@ Newest first. Anything here may need a UI change.
 
 **Built and tested:** everything marked ✅ above (544 tests at the time of writing).
 
-**Frontend work these changes create** (none of it is blocked on the backend):
+**Frontend work these changes create** (none of it is blocked on the backend). Status: 1, 2 and 5 are built (the enrol flow, the operator console in `docs/CONSOLE.md`, the sync loop and its states); 3 is partly built (offline search by public code works; the `by_code` index does not exist); 4, 6 and 7 are not built.
 1. Enrol flow: public code, optional tag step, "waiting for authorization", scan **Receive** (reject Pay nicely).
 2. Authorization queue for hub_lead/admin (`GET /collectors?status=pending` + `POST …/authorization`).
 3. Weigh flow: search by `publicCode`; QR scan of `takasats:` references; add the `by_code` index (IndexedDB v3).
 4. Offline enrolment (`collector` outbox kind drained before `collection_event`) — still online-only today.
-5. The sync loop (`lib/sync/syncLoop.ts`, uncommitted) and the SyncStatus UI states (M4-4/5).
+5. The sync loop (`lib/sync/syncLoop.ts`) and the SyncStatus UI states (M4-4/5).
 6. Scale-photo capture guidance (waste + scale + display in frame) for the verification slice.
 7. A public `/c/<code>` landing page (optional; must reveal nothing).
 
