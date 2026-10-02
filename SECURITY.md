@@ -77,6 +77,9 @@ each preserves or alters (Code Style Guide §12). Newest first.
   `script-src` keeps `'unsafe-inline'` (Next's inline bootstrap, no nonce middleware yet), so the CSP
   limits where code can load from but is not a full XSS barrier; the sandboxing CSP on served photos
   still applies on top. Checked in a headless browser: no violations on `/`, `/login`, `/about`.
+- 2026-10-02: Account creation refuses a weak password (`weakPasswordReason`: at least 12 characters, more than
+  a few distinct characters, not a known placeholder) in `create-supervisor` and `create-partner`. Residual:
+  it is a floor, not a strength meter, and existing accounts are not re-checked.
 - 2026-10-02: Credential login hardening (`auth.ts`, `lib/auth/throttle.ts`) and a route guard test.
   Login was not throttled: an attacker could guess passwords at full speed. Now `auth.login_max_failures`
   (default 8) failed attempts for one identifier inside `auth.login_window_minutes` (15) lock that

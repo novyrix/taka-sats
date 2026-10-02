@@ -18,7 +18,7 @@
 
 import { eq } from 'drizzle-orm';
 import { isRole } from '@/lib/auth/permissions';
-import { hashPassword } from '@/lib/auth/password';
+import { hashPassword, weakPasswordReason } from '@/lib/auth/password';
 import { closeDb, getDb } from '@/lib/db/client';
 import { supervisors } from '@/lib/db/schema';
 
@@ -58,6 +58,12 @@ async function main(): Promise<void> {
       return;
     }
 
+    const weak = weakPasswordReason(password);
+    if (weak) {
+      console.error(`Refusing a weak password: ${weak}.`);
+      process.exitCode = 1;
+      return;
+    }
     const passwordHash = await hashPassword(password);
     const [row] = await db
       .insert(supervisors)
