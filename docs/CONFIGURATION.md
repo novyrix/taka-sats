@@ -43,7 +43,7 @@ Every key there carries a comment. Summary of the sections:
 | `[programme]` | Name, timezone, fiat currency (ISO 4217), UI locales, default locale, `public_base_url` (where this deployment is served — builds credential URLs) |
 | `[custody]` | `byo` vs `provisioned` address source; the provisioning enable flag + G1 acknowledgement |
 | `[collectors]` | The authorization gate (`authorization_required`), and the `public_code` format (`code_prefix`, `default_site_code`) — ADR-0017 |
-| `[auth]` | Supervisor session lifetime (JWT-based, survives offline) |
+| `[auth]` | `login_max_failures` / `login_window_minutes` (failed sign-ins per identifier before a lockout of one window; 0 disables), supervisor session lifetime (JWT-based, survives offline) |
 | `[lightning]` | `float_provider` (`blink` \| `lnbits` \| `fedimint` \| `fake` — a demo rail that pays nothing; refused in production unless `TAKASATS_ALLOW_FAKE_PROVIDER=true`), each provider's non-secret settings, and `provider_hints` (a label per Lightning-address domain — display only), `spend_link_hosts` (hosts whose URLs are spend credentials — rejected before any network call), `lnurl_timeout_ms` (per-request LNURL timeout, 1000–60000), `provider_timeout_ms` (per-request timeout to the wallet provider, 1000–120000; a timeout on a payment is an unknown outcome, never a failure) |
 | `[money]` | BTC rate staleness TTL; the ordered list of exchange-rate sources (≥2); the agreement tolerance (an outlier source is set aside; ≥2 must agree within it) |
 | `[rates]` | `seed` rows for `material_rates` on the first migration only — history lives in the DB afterwards |

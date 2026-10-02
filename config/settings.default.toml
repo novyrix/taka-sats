@@ -43,6 +43,12 @@ default_site_code      = ""              # site segment when an enrolment names 
 # only place the duration is decided. Balance re-auth friction in the field
 # against a lost/stolen-device window (see docs/THREAT_MODEL.md T6/R1).
 session_max_age_days = 30
+# Credential login throttle: after this many FAILED attempts for one identifier inside the window,
+# every attempt for it (even with the right password) is refused until the oldest failure ages out.
+# Per identifier, not per IP (behind a proxy every caller shares an address). In memory, per
+# process: it resets on restart. 0 turns it off.
+login_max_failures = 8
+login_window_minutes = 15
 
 [lightning]
 float_provider = "blink"                 # blink | lnbits | fedimint | fake — the operating-float rail. "fake" is a DEMO rail that pays nothing; the app refuses it in production unless TAKASATS_ALLOW_FAKE_PROVIDER=true

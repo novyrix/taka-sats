@@ -59,6 +59,10 @@ const collectorsSchema = z.object({
 const authSchema = z.object({
   /** How long a supervisor's signed-in session survives, incl. fully offline (§3.1, ADR-0002). */
   session_max_age_days: z.int().positive(),
+  /** Failed logins per identifier per window before it is locked out. 0 disables the throttle. */
+  login_max_failures: z.int().nonnegative(),
+  /** The sliding window (minutes) failures are counted in, and the lockout length. */
+  login_window_minutes: z.int().positive(),
 });
 
 const lightningSchema = z.object({

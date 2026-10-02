@@ -61,6 +61,18 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Credential login hardening (`auth.ts`, `lib/auth/throttle.ts`) and a route guard test.
+  Login was not throttled: an attacker could guess passwords at full speed. Now `auth.login_max_failures`
+  (default 8) failed attempts for one identifier inside `auth.login_window_minutes` (15) lock that
+  identifier, even for the right password, until the oldest failure ages out; the refusal looks like a
+  wrong password and a success clears the count. It is per identifier, not per IP (behind the proxy every
+  caller shares an address and a forwarded header is attacker controlled), in memory per process (a
+  restart resets it), and bounded in size. Residual: an attacker can lock a known identifier out for one
+  window (a nuisance, not a breach), and the lock does not span several app instances. Unknown
+  identifiers now cost the same time as known ones (a decoy hash is verified), so response time no longer
+  reveals which accounts exist. `app/api/route-guard.test.ts` walks every route file and requires 401
+  without a session unless the route is on an explicit allow list (health, meta, public stats, Auth.js),
+  so a new route cannot ship unguarded.
 - 2026-10-02: Resolving a payout stuck in `sending` (`lib/payouts/resolve.ts`, migration 0012). Adds the
   scope `payout:resolve`, held by `admin` only (matrix test updated; `hub_lead` can approve and retry but
   cannot settle an uncertain payment). `payout:execute` is still in no role and nothing here sends money:
