@@ -111,6 +111,12 @@ pnpm backup:objects backup ./photo-backup     # incremental; a damaged object is
 DATABASE_URL=... pnpm backup:objects check ./photo-backup   # re-hash; lists photos the database needs but the backup lacks
 ```
 
+A nightly cron entry on the host (adjust paths, and put the variables in a file only the backup user can read):
+
+```cron
+15 2 * * *  cd /srv/taka-sats && . ./backup.env && bash scripts/backup/pg.sh backup /srv/backups             && pnpm -s backup:objects backup /srv/backups/photos && rsync -a /srv/backups/ backup-host:/taka-sats/
+```
+
 **Schedule.** Back up the database at least nightly and after every field day, and the photos at the
 same time. **Copy both off the server** (another machine, another provider): a backup on the same
 disk dies with it. Both hold participant data; keep them as private as the database. Keep the last
