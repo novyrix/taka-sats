@@ -66,7 +66,9 @@ point.
    can back only one proposal.
 4. **Arrival.** Taka Sats does not take anyone's word that the money arrived. It confirms the
    proposal when the hot wallet's own balance shows the funds (counting what payouts spent in the
-   meantime). Payouts waiting for funds then resume at once.
+   meantime). One deposit never confirms two proposals: refills are credited in the order their
+   transfers were recorded, so a later refill waits for its own funds on top of the earlier ones.
+   Payouts waiting for funds then resume at once.
 5. **Record.** The proposal, each approval, the transaction id and the result are written to the
    ledger, so a funder can see who agreed to what.
 

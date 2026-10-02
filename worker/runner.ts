@@ -11,7 +11,9 @@ import { getBoss, registerWorkers, stopBoss } from '@/lib/jobs';
 
 async function main(): Promise<void> {
   const boss = await getBoss();
-  boss.on('error', (error: unknown) => console.error('[worker] pg-boss error', error));
+  boss.on('error', (error: unknown) =>
+    console.error('[worker] pg-boss error', error instanceof Error ? error.name : typeof error),
+  );
   await registerWorkers(boss);
   console.log('[worker] ready — handlers registered');
 }
@@ -26,6 +28,6 @@ process.on('SIGINT', () => void shutdown('SIGINT'));
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 
 main().catch((error: unknown) => {
-  console.error('[worker] failed to start', error);
+  console.error('[worker] failed to start', error instanceof Error ? error.name : typeof error);
   process.exitCode = 1;
 });

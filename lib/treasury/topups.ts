@@ -24,7 +24,7 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { and, eq, gte, inArray, sql } from 'drizzle-orm';
+import { and, eq, gt, gte, inArray, isNotNull, lt, ne, or, sql } from 'drizzle-orm';
 import { roleHasScope, type Role, type Scope } from '@/lib/auth/permissions';
 import { getSettings } from '@/lib/config';
 import type { Database, Tx } from '@/lib/db/client';
@@ -433,6 +433,42 @@ export type ConfirmOutcome = TopupOutcome & {
 };
 
 /**
+ * Sats claimed on the float's rise by OTHER proposals transferred before this one: those still
+ * waiting, and those confirmed after this proposal's baseline was taken (their funds may be part
+ * of the rise this proposal would otherwise take credit for). Conservative on purpose: if in doubt
+ * a confirmation waits for more funds, it never confirms on evidence that belongs to another.
+ */
+async function claimsAheadOf(db: Database, topup: TopupRecord): Promise<number> {
+  if (!topup.transferredAt || !topup.floatBaselineAt) {
+    return 0;
+  }
+  const [row] = await db
+    .select({ total: sql<string>`coalesce(sum(${treasuryTopups.amountSats}), 0)::text` })
+    .from(treasuryTopups)
+    .where(
+      and(
+        ne(treasuryTopups.id, topup.id),
+        isNotNull(treasuryTopups.transferredAt),
+        or(
+          lt(treasuryTopups.transferredAt, topup.transferredAt),
+          and(
+            eq(treasuryTopups.transferredAt, topup.transferredAt),
+            lt(treasuryTopups.id, topup.id),
+          ),
+        ),
+        or(
+          eq(treasuryTopups.status, 'transferred'),
+          and(
+            eq(treasuryTopups.status, 'confirmed'),
+            gt(treasuryTopups.outcomeAt, topup.floatBaselineAt),
+          ),
+        ),
+      ),
+    );
+  return Number(row?.total ?? 0);
+}
+
+/**
  * Check whether a `transferred` proposal's funds reached the hot wallet and, if so, confirm it.
  * Evidence: the float now, plus what payouts have spent since the baseline, is at least the
  * baseline plus the amount. A person's say-so is never enough. Called by a steward
@@ -473,7 +509,10 @@ export async function confirmTopup(
       ),
     );
   const spentSinceBaseline = Number(spent?.total ?? 0);
-  if (available + spentSinceBaseline < topup.floatBaselineSats + topup.amountSats) {
+  const claimsAhead = await claimsAheadOf(db, topup);
+  // One deposit can never confirm two proposals: every proposal transferred before this one,
+  // and still waiting or confirmed after this baseline was taken, claims its share of the rise first.
+  if (available + spentSinceBaseline < topup.floatBaselineSats + topup.amountSats + claimsAhead) {
     return { topup, changed: false, arrived: false };
   }
 

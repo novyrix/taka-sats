@@ -681,6 +681,56 @@ describe.skipIf(!hasDatabase)('treasury funding vote: integration', () => {
       return topup;
     }
 
+    it('one deposit can never confirm two proposals (each claims its own share of the rise)', async () => {
+      const { rail, state } = makeRail(500);
+      const first = await transferred(rail, 50_000);
+      const second = await transferred(rail, 50_000); // same baseline: nothing had arrived yet
+      state.balance = 500 + 50_000; // ONE deposit lands
+      // Asking about the later one first changes nothing: the earlier one has the first claim.
+      expect(
+        await confirmTopup(db, rail, { topupId: second.id, actor: steward(s.b) }),
+      ).toMatchObject({
+        changed: false,
+        arrived: false,
+      });
+      expect(
+        await confirmTopup(db, rail, { topupId: first.id, actor: steward(s.b) }),
+      ).toMatchObject({
+        changed: true,
+        arrived: true,
+      });
+      // Confirming the first did not free the same funds for the second.
+      expect(
+        await confirmTopup(db, rail, { topupId: second.id, actor: steward(s.b) }),
+      ).toMatchObject({
+        changed: false,
+        arrived: false,
+      });
+      expect(await statusOf(second.id)).toBe('transferred');
+      state.balance += 50_000; // the second deposit lands
+      expect(
+        await confirmTopup(db, rail, { topupId: second.id, actor: steward(s.b) }),
+      ).toMatchObject({
+        changed: true,
+        arrived: true,
+      });
+    });
+
+    it('a refill confirmed and spent BEFORE the next one is approved does not hold the next one back', async () => {
+      const { rail, state } = makeRail(500);
+      const first = await transferred(rail, 50_000);
+      state.balance = 500 + 50_000;
+      await confirmTopup(db, rail, { topupId: first.id, actor: steward(s.b) });
+      const second = await transferred(rail, 50_000); // baseline taken after the first arrived (50_500)
+      state.balance += 50_000;
+      expect(
+        await confirmTopup(db, rail, { topupId: second.id, actor: steward(s.b) }),
+      ).toMatchObject({
+        changed: true,
+        arrived: true,
+      });
+    });
+
     it('does not confirm on anyone saying so: the balance must show the funds', async () => {
       const { rail, state } = makeRail(500);
       const topup = await transferred(rail);
@@ -774,7 +824,9 @@ describe.skipIf(!hasDatabase)('treasury funding vote: integration', () => {
       expect(first.confirmed).toBe(1);
       expect(await statusOf(arrived.id)).toBe('confirmed');
       expect(await statusOf(waiting.id)).toBe('transferred');
-      state.balance = 2000;
+      state.balance = 2000; // the same 1000 again is not enough: the first refill's share comes first
+      expect((await confirmTreasuryTopups(db, rail, enqueue)).confirmed).toBe(0);
+      state.balance = 3000; // 1000 + 2000 deposited in all
       expect((await confirmTreasuryTopups(db, rail, enqueue)).confirmed).toBe(1);
     });
 

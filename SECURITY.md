@@ -61,6 +61,14 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Treasury arrival accounting (`lib/treasury/topups.ts:claimsAheadOf`), found in an attacker
+  review. Two proposals in flight shared one baseline, so a SINGLE deposit made the hot-wallet balance
+  satisfy both and both were confirmed, recording twice the funds that arrived. Confirmation now
+  requires the rise to cover this proposal plus every proposal transferred before it that is still
+  waiting or was confirmed after this baseline was taken. Conservative: when in doubt a confirmation
+  waits for more funds rather than claiming evidence that belongs to another proposal. Residual:
+  nothing ties a deposit to the pool wallet's transaction, so an admin who tops up the hot wallet from
+  elsewhere can still make a proposal confirm; the recorded transfer reference is the audit trail.
 - 2026-10-02: Browser security headers (`next.config.ts`, `app/security-headers.test.ts`). The app sent
   none. Every response now carries a CSP (default-src self; no remote scripts, frames, plugins or
   foreign form targets; connect-src self; blob: images for photo previews), `X-Frame-Options: DENY` and
