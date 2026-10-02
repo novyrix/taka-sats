@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
 import { useConsoleUser } from '@/components/console/context';
-import { useApi, usePaged } from '@/components/console/hooks';
+import { useApi, useAutoRefresh, usePaged } from '@/components/console/hooks';
 import {
   ActionButton,
   DataState,
@@ -68,6 +68,7 @@ export function Treasury() {
     overview.reload();
     list.reload();
   }
+  useAutoRefresh(changed);
 
   return (
     <div className="space-y-6">

@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useConsoleUser } from '@/components/console/context';
-import { useApi } from '@/components/console/hooks';
+import { useApi, useAutoRefresh } from '@/components/console/hooks';
 import { ErrorNotice, Loading, PageHeader, Panel } from '@/components/console/kit';
 import { Button } from '@/components/ui/button';
 import { formatSats } from '@/lib/console/format';
@@ -101,6 +101,8 @@ export function Overview() {
     meta.reload();
     stats.reload();
   };
+
+  useAutoRefresh(refreshAll);
 
   const count = (status: string) =>
     summary.data?.byStatus.find((row) => row.status === status)?.count ?? 0;

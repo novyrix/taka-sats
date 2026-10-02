@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
-import { useApi } from '@/components/console/hooks';
+import { useApi, useAutoRefresh } from '@/components/console/hooks';
 import {
   ActionButton,
   DataState,
@@ -46,6 +46,7 @@ export function Collectors() {
     needsQuery ? null : `/collectors${query({ status, q: q.trim(), limit: 100 })}`,
   );
   const rows = data?.collectors ?? [];
+  useAutoRefresh(reload);
 
   return (
     <div>

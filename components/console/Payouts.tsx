@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { useConsoleUser } from '@/components/console/context';
-import { useApi, usePaged } from '@/components/console/hooks';
+import { useApi, useAutoRefresh, usePaged } from '@/components/console/hooks';
 import {
   DataState,
   DomainPill,
@@ -44,6 +44,7 @@ export function Payouts() {
     summary.reload();
     list.reload();
   }
+  useAutoRefresh(changed);
 
   return (
     <div>

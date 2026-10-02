@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import { type ApiFail, type ApiResult, api } from '@/lib/console/api';
 
 type Loaded<T> = { readonly key: string; readonly result: ApiResult<T>; readonly data: T | null };
@@ -137,4 +137,20 @@ export function useStaffNames(enabled: boolean): (id: string | null | undefined)
   );
   const map = new Map((roster.data?.supervisors ?? []).map((p) => [p.id, p.name]));
   return (id) => (id ? (map.get(id) ?? id.slice(0, 8)) : '');
+}
+
+/**
+ * Call `reload` every `everyMs` while the tab is visible, so a screen several people act on at
+ * once (the treasury vote, the approval queue) stays current without a manual refresh.
+ */
+export function useAutoRefresh(reload: () => void, everyMs = 15_000): void {
+  const tick = useEffectEvent(() => {
+    if (document.visibilityState === 'visible') {
+      reload();
+    }
+  });
+  useEffect(() => {
+    const timer = window.setInterval(() => tick(), everyMs);
+    return () => window.clearInterval(timer);
+  }, [everyMs]);
 }
