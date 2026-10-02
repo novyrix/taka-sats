@@ -1,8 +1,9 @@
 # Blink
 
 Role: hot wallet
-Status: unverified. The request and response shapes were checked against Blink's published GraphQL
-schema on 2 October 2026. It has never been run against a live account.
+Status: partly verified live on 2 October 2026 (balance, receive check, one real 1 sat payment, lookup
+with proof of payment, and the ALREADY_PAID behaviour). Error codes for an empty wallet and an
+unroutable invoice, the memo scan and rate limits are still unverified.
 Credentials needed: a Blink account with a **BTC wallet**, and an API key with the **Read** and
 **Write** scopes (Write sends payments). Do not give it more. Create it in the Blink dashboard
 under API keys. The key is set as `BLINK_API_KEY` in the environment, never in a settings file.
@@ -36,7 +37,7 @@ Blink's open source repository, plus `dev.blink.sv`.
 | `FAILURE` with only these codes: `INSUFFICIENT_BALANCE`, `ROUTE_FINDING_ERROR`, `INVALID_INPUT`, `INVOICE_DECODE_ERROR`, `CANT_PAY_SELF`, `TRANSACTION_RESTRICTED`, `OPERATION_RESTRICTED`, `NEW_ACCOUNT_WITHDRAWAL_RESTRICTED`, `ENTERED_DUST_AMOUNT`, `NOT_AUTHENTICATED`, `NOT_AUTHORIZED`, `TOO_MANY_REQUEST` | **failed** (may be retried by staff) | These mean nothing was sent |
 | `FAILURE` with any other code, or no code | **unknown** | Blink also returns `FAILURE` for internal faults (database, node offline, unexpected error), and those can happen after the payment left the node |
 | `PENDING` | **unknown** | It may still settle |
-| `ALREADY_PAID` | **unknown** | It says that invoice was paid, not that our payout was |
+| `ALREADY_PAID` | **unknown** | It says that invoice was paid, not that our payout was. Seen live: it comes back with a NEW transaction whose status is `FAILURE`, and no funds move. The earlier send stands. `provider:check` or the payout check tool proves which payment it was by hash |
 | A payload with errors and no status | **failed** | Blink rejects invalid input before doing anything |
 | HTTP 4xx (not 408, 429) | **failed** | The request was rejected |
 | HTTP 5xx, 408, 429, timeout, lost connection, unreadable answer | **unknown** | The request may have been processed |
@@ -85,9 +86,9 @@ From Blink's public help pages (read 2 October 2026, not yet seen in a live acco
 Run `pnpm provider:check` (see [`../GETTING_STARTED.md`](../GETTING_STARTED.md)) with a real key.
 Until that has been done and recorded below, assume any of these can still differ:
 
-1. The balance query and the BTC wallet id against a real account.
-2. A real 1 sat payment: the status returned, that `settlementFee` and the preimage are filled, and
-   that the payment hash we compute from the invoice equals the one Blink reports.
+1. ~~The balance query and the BTC wallet id against a real account.~~ Done 2 Oct 2026.
+2. ~~A real 1 sat payment.~~ Done 2 Oct 2026: status SUCCESS, the fee and preimage were filled, and
+   the payment hash matched.
 3. That the memo appears on the sent transaction, so the memo scan works.
 4. The exact error codes Blink returns for an empty wallet and an unroutable invoice.
 5. Rate limits under a burst of payouts.
@@ -97,4 +98,6 @@ Until that has been done and recorded below, assume any of these can still diffe
 | Date | What | Result |
 |---|---|---|
 | 2 Oct 2026 | Schema and resolver review, unit tests with documented response shapes | Passed. No live account |
+| 2 Oct 2026 | Live account: balance read, receive address check, one real 1 sat payment (PAID, proof of payment verified, lookup by hash found 1 matching send), balance fell by the amount plus fee | Passed. The routing fee was 10 sats on a 1 sat payment, so very small payments cost more in fees than they carry |
+| 2 Oct 2026 | Live account: paying the same invoice twice | The second send returned `ALREADY_PAID` with a new `FAILURE` transaction. The balance did not change a second time, so no double spend. Paying your own account is refused with `User tried to pay themselves` and classified as failed |
 | 2 Oct 2026 | All five GraphQL documents we send (pay, balance, wallets, lookup by hash, recent transactions) validated with graphql-js against the public schema from Blink's repository (`main`) | 0 errors. Proves the query shapes, not the live behaviour |
