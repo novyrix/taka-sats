@@ -41,8 +41,9 @@ pnpm db:seed-team --out ./team-credentials.txt   # test staff accounts, password
 pnpm dev                         # http://localhost:3000
 ```
 
-`./team-credentials.txt` is refused unless git ignores it. Use a path outside the repository, for
-example `~/team-credentials.txt`. Sign in at `/login` with a staff code from that file (for example
+The script refuses an `--out` file inside the repository unless git ignores it. A file named
+`team-credentials*.txt` in the repository root is ignored; any other path should be outside the
+repository. Sign in at `/login` with a staff code from that file (for example
 `TESTADM01`). By default payouts use the demo rail, so no real money can move.
 
 Photo upload needs an S3 compatible store. Without one the weigh flow still records, but the photo

@@ -69,3 +69,6 @@ docs/AFRIBIT_BLOG_TAKA_SATS.md
 
 # Internal deliverables: runbooks, audits, reports, test-day kits. Never published.
 /internal/
+
+# local test credentials written by pnpm db:seed-team
+/team-credentials*.txt
