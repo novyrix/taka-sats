@@ -13,6 +13,16 @@ import type { Scope } from '@/lib/auth/permissions';
 
 type Payout = { lastError: string | null };
 type Summary = { byStatus: { status: string; count: number }[] };
+type Meta = {
+  lightning: { floatProvider: string; demo: boolean };
+  build: string | null;
+};
+type Stats = {
+  events: number;
+  collectors: number;
+  kgByMaterial: { material: string; kg: number }[];
+  satsPaid: number | { bucket: { min: number; max: number } } | null;
+};
 type Treasury = {
   hotWallet: { available: number | null; lowBalance: boolean | null; error: string | null };
   pendingTopups: unknown[];
@@ -77,6 +87,9 @@ export function Overview() {
     can('anomaly:review') ? `/anomalies?status=open&limit=${CAP}` : null,
   );
   const treasury = useApi<Treasury>(can('treasury:read') ? '/treasury' : null);
+  const health = useApi<{ ok: boolean; database: string }>('/health');
+  const meta = useApi<Meta>('/meta');
+  const stats = useApi<Stats>('/stats/summary');
 
   const refreshAll = () => {
     pending.reload();
@@ -84,6 +97,9 @@ export function Overview() {
     sending.reload();
     flags.reload();
     treasury.reload();
+    health.reload();
+    meta.reload();
+    stats.reload();
   };
 
   const count = (status: string) =>
@@ -217,6 +233,39 @@ export function Overview() {
           )}
         </Panel>
       ) : null}
+      <div className="mt-6 grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <Panel title={t('system')}>
+          <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm" data-testid="system-panel">
+            <dt className="text-muted-foreground">{t('database')}</dt>
+            <dd>{health.error ? t('down') : health.data?.ok ? t('up') : '...'}</dd>
+            <dt className="text-muted-foreground">{t('rail')}</dt>
+            <dd>
+              {meta.data
+                ? meta.data.lightning.demo
+                  ? t('railDemo')
+                  : t('railLive', { name: meta.data.lightning.floatProvider })
+                : '...'}
+            </dd>
+            <dt className="text-muted-foreground">{t('build')}</dt>
+            <dd className="font-mono text-xs">{meta.data?.build ?? t('unknown')}</dd>
+          </dl>
+        </Panel>
+        <Panel title={t('totals')}>
+          <dl className="grid grid-cols-[10rem_1fr] gap-y-1 text-sm">
+            <dt className="text-muted-foreground">{t('collections')}</dt>
+            <dd>{stats.data?.events ?? '...'}</dd>
+            <dt className="text-muted-foreground">{t('collectors')}</dt>
+            <dd>{stats.data?.collectors ?? '...'}</dd>
+            <dt className="text-muted-foreground">{t('kg')}</dt>
+            <dd>
+              {stats.data
+                ? stats.data.kgByMaterial.map((m) => `${m.material} ${m.kg}`).join(', ') ||
+                  t('none')
+                : '...'}
+            </dd>
+          </dl>
+        </Panel>
+      </div>
       {anyLoading && !firstError ? <Loading /> : null}
     </div>
   );

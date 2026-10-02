@@ -557,7 +557,21 @@
       "awaitingRate": "Payouts waiting for a rate",
       "awaitingRateHint": "New collections wait here until the worker prices them. If this stays above zero, the worker or the exchange rate feed needs a look.",
       "awaitingFloat": "Payouts waiting for funds",
-      "awaitingFloatHint": "The hot wallet is too low. A confirmed treasury refill wakes them."
+      "awaitingFloatHint": "The hot wallet is too low. A confirmed treasury refill wakes them.",
+      "system": "System",
+      "database": "Database",
+      "up": "Up",
+      "down": "Not reachable",
+      "rail": "Payment rail",
+      "railDemo": "Demo (no real sats)",
+      "railLive": "Live ({name})",
+      "build": "Build",
+      "unknown": "Unknown",
+      "totals": "Programme so far",
+      "collections": "Collections",
+      "collectors": "Collectors",
+      "kg": "Kilograms",
+      "none": "None yet"
     },
     "status": {
       "collector": {
