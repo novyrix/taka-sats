@@ -6,7 +6,8 @@ schema on 2 October 2026. It has never been run against a live account.
 Credentials needed: a Blink account with a **BTC wallet**, and an API key with the **Read** and
 **Write** scopes (Write sends payments). Do not give it more. Create it in the Blink dashboard
 under API keys. The key is set as `BLINK_API_KEY` in the environment, never in a settings file.
-The BTC wallet id goes in `lightning.blink.float_wallet_id` (not secret).
+The BTC wallet id goes in `lightning.blink.float_wallet_id` (not secret), or in the environment as
+`TAKASATS__LIGHTNING__BLINK__FLOAT_WALLET_ID` (the Docker Compose stack passes it through).
 
 ## What was checked, and where
 
