@@ -41,6 +41,8 @@
     "check:design": "node scripts/check-colour-pairing.mjs",
     "worker": "tsx worker/runner.ts",
     "commitlint": "commitlint",
+    "ci:local": "bash scripts/ci/run.sh",
+    "ci:receiver:test": "node --test ci/receiver/receiver.test.mjs",
     "prepare": "husky"
   },
   "dependencies": {
