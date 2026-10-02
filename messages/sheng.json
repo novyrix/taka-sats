@@ -254,7 +254,8 @@
       "staff": "Staff",
       "ledger": "Ledger",
       "menu": "Menu",
-      "label": "Operator console"
+      "label": "Operator console",
+      "rates": "Rates"
     },
     "sessions": {
       "title": "Sessions",
@@ -412,7 +413,8 @@
     "syncNow": "Sync now ({count})",
     "allSynced": "Everything is synced",
     "empty": "Nothing recorded yet.",
-    "unknownCollector": "Collector"
+    "unknownCollector": "Collector",
+    "signOutNote": "Signing out keeps every saved collection on this phone. They send after you sign in again."
   },
   "translationStatus": "TODO(afribit)",
   "About": {
@@ -1069,6 +1071,26 @@
       "save": "Save changes",
       "saving": "Saving...",
       "saved": "Saved."
+    },
+    "rates": {
+      "title": "Rates",
+      "intro": "What each material pays per kilogram. A rate is never edited: a new rate closes the old one, and each collection is paid at the rate in force when it was recorded.",
+      "current": "Rates in force now",
+      "none": "No rates yet.",
+      "material": "Material",
+      "perKg": "Per kg",
+      "since": "In force since",
+      "setTitle": "Set a rate",
+      "setIntro": "Applies from now. Collections already recorded keep the rate they were recorded with.",
+      "priceLabel": "Price per kg",
+      "invalid": "Enter a material and a price greater than zero.",
+      "set": "Set rate",
+      "saving": "Saving...",
+      "saved": "Rate set.",
+      "history": "History",
+      "from": "From",
+      "until": "Until",
+      "open": "Still in force"
     }
   },
   "Sync": {

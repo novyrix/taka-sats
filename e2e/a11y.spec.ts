@@ -57,6 +57,7 @@ test.describe('operator console', () => {
     '/ledger',
     '/sessions',
     '/sessions/new',
+    '/rates',
     '/rotations',
     '/staff',
   ];

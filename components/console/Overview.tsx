@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl';
 import { useConsoleUser } from '@/components/console/context';
 import { useApi } from '@/components/console/hooks';
 import { ErrorNotice, Loading, PageHeader, Panel } from '@/components/console/kit';
+import { Button } from '@/components/ui/button';
 import { formatSats } from '@/lib/console/format';
 import type { Scope } from '@/lib/auth/permissions';
 
@@ -61,6 +62,7 @@ function countText(n: number): string {
 
 export function Overview() {
   const t = useTranslations('Console.overview');
+  const tc = useTranslations('Console');
   const user = useConsoleUser();
   const can = (scope: Scope) => user.can(scope);
 
@@ -76,6 +78,14 @@ export function Overview() {
   );
   const treasury = useApi<Treasury>(can('treasury:read') ? '/treasury' : null);
 
+  const refreshAll = () => {
+    pending.reload();
+    summary.reload();
+    sending.reload();
+    flags.reload();
+    treasury.reload();
+  };
+
   const count = (status: string) =>
     summary.data?.byStatus.find((row) => row.status === status)?.count ?? 0;
   const stuck = sending.data?.payouts.filter((p) => p.lastError === 'outcome_unknown').length ?? 0;
@@ -85,7 +95,15 @@ export function Overview() {
 
   return (
     <div>
-      <PageHeader title={t('title')} description={t('intro')} />
+      <PageHeader
+        title={t('title')}
+        description={t('intro')}
+        actions={
+          <Button type="button" variant="outline" size="sm" onClick={refreshAll}>
+            {tc('refresh')}
+          </Button>
+        }
+      />
       {firstError ? <ErrorNotice error={firstError} /> : null}
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {can('collector:authorize') ? (

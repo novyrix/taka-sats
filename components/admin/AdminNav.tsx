@@ -25,6 +25,7 @@ const ITEMS: readonly { key: string; href: string; scope: Scope | null }[] = [
   { key: 'reconciliation', href: '/reconciliation', scope: 'report:generate:all' },
   { key: 'ledger', href: '/ledger', scope: 'ledger:read' },
   { key: 'sessions', href: '/sessions', scope: 'session:configure' },
+  { key: 'rates', href: '/rates', scope: 'session:configure' },
   { key: 'rotations', href: '/rotations', scope: 'session:configure' },
   { key: 'staff', href: '/staff', scope: 'session:configure' },
 ];
