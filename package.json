@@ -30,6 +30,7 @@
     "db:seed-demo-supervisors": "tsx scripts/seed-demo-supervisors.ts",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed-pilot": "tsx scripts/seed-pilot.ts",
+    "db:seed-team": "tsx scripts/seed-team.ts",
     "pilot:smoke": "tsx scripts/pilot-smoke.ts",
     "provider:check": "tsx scripts/provider-check.ts",
     "backup:pg": "bash scripts/backup/pg.sh backup",
