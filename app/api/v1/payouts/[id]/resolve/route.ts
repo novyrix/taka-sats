@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `POST /api/v1/payouts/:id/resolve` — record a person's decision on a payout stuck in `sending`
+ * `POST /api/v1/payouts/:id/resolve`: record a person's decision on a payout stuck in `sending`
  * (outcome unknown). Scope `payout:resolve` (`admin` only). Body
  * `{ outcome: 'paid' | 'failed', reference?, note? }`; `reference` (the provider payment hash or
  * transaction id) proves a `paid` resolution. Idempotent: repeating the same resolution returns

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `PATCH /api/v1/supervisors/:id` — deactivate or reactivate a staff account (a lost phone, someone
+ * `PATCH /api/v1/supervisors/:id`: deactivate or reactivate a staff account (a lost phone, someone
  * leaving). Scope `session:configure` (admin only). Body `{ active: boolean }`. Takes effect on the
  * account's very next request. `403 self_change` for your own account, `409 last_admin` when it is
  * the only active admin, `404 not_found`. Idempotent (`changed: false`).

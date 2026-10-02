@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 /**
- * `GET /api/v1/payouts/:id/check` — read only: ask the payment provider what it recorded for this
+ * `GET /api/v1/payouts/:id/check`: read only: ask the payment provider what it recorded for this
  * payout (by the stored payment hash, else by the payout id in the memo). Scope `payout:resolve`
  * (`admin` only). It changes nothing: resolving stays a person's decision
  * (`POST /payouts/:id/resolve`). `check.state` is `paid | failed | pending | not_found`;
