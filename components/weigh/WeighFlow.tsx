@@ -176,6 +176,7 @@ export function WeighFlow({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const confirming = useRef(false);
 
   const refreshSummary = useCallback((sessionId?: string) => {
     void sessionSummary(sessionId).then(setSummary);
@@ -256,6 +257,8 @@ export function WeighFlow({
 
   async function confirm(): Promise<void> {
     if (!collector || !rate || !config || !photoSha256 || !photoFile) return;
+    // A double tap must never record two collections: the first call owns the save.
+    if (confirming.current) return;
     const resolvedGeo: GeoFix =
       geo && geo.kind === 'fix'
         ? geo
@@ -266,6 +269,7 @@ export function WeighFlow({
       return;
     }
 
+    confirming.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -291,6 +295,7 @@ export function WeighFlow({
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t('saveFailed'));
     } finally {
+      confirming.current = false;
       setBusy(false);
     }
   }

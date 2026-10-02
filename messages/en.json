@@ -193,7 +193,27 @@
     "nfcFailed": "Tag write failed. Try again, or enter the ID by hand.",
     "skipTag": "Skip, attach a tag later",
     "doneTitle": "{alias} is enrolled.",
-    "enrolAnother": "Enrol another"
+    "enrolAnother": "Enrol another",
+    "pendingTitle": "{alias} is registered. Waiting for authorization.",
+    "pendingBody": "They cannot be weighed or paid until a hub lead authorizes them. Give the hub lead this code.",
+    "finishPending": "Done. Wait for authorization",
+    "noWalletYet": "No wallet is attached yet. You can add one later while they are waiting for authorization.",
+    "walletChecking": "The wallet host could not be reached, so the wallet will be checked again shortly.",
+    "skipWallet": "Skip. Add the wallet later",
+    "errors": {
+      "unauthorized": "You are signed out. Sign in again, then try once more.",
+      "forbidden": "Your account is not allowed to do this.",
+      "no_active_session": "You have no active session right now, so you cannot register collectors.",
+      "spend_credential_rejected": "That was the Pay side of the card. Flip the card over and scan the Receive side.",
+      "not_receive_capable": "That code cannot receive payments. Ask for their Receive QR.",
+      "unsafe_lnurl_target": "That code points somewhere unsafe, so it was refused.",
+      "invalid_lightning_address": "That is not a working Lightning address. Check it and try again.",
+      "destination_in_use": "That wallet already belongs to another collector.",
+      "destination_replace_forbidden": "The wallet can no longer be changed here. Ask your hub lead.",
+      "not_your_collector": "Only the supervisor who registered this collector can add a wallet.",
+      "collector_not_authorized": "This collector is not authorized.",
+      "invalid_request": "Check the details and try again."
+    }
   },
   "Lookup": {
     "title": "Find a collector",
@@ -232,7 +252,8 @@
     "walkIns": "Walk-ins",
     "syncNow": "Sync now ({count})",
     "allSynced": "Everything is synced",
-    "empty": "Nothing recorded yet."
+    "empty": "Nothing recorded yet.",
+    "unknownCollector": "Collector"
   },
   "Weigh": {
     "title": "Weigh",
@@ -1028,6 +1049,38 @@
       "deactivate": "Switch off",
       "deactivateConfirm": "Switch off {name}? They will be signed out on their next request.",
       "reactivate": "Switch on"
+    }
+  },
+  "Sync": {
+    "bar": {
+      "signedOut": "Signed out. {count} saved on this phone. Tap to sign in.",
+      "needsAttention": "{count, plural, one {# collection needs attention} other {# collections need attention}}. Tap to see why.",
+      "syncing": "Syncing {count}...",
+      "queued": "{count} waiting to sync",
+      "allSynced": "All synced"
+    },
+    "offlineNow": "You are offline. Your collections are saved and will send when you are back online.",
+    "signedOutNow": "You are signed out. Nothing is lost: your collections are saved on this phone and will send after you sign in.",
+    "signInAgain": "Sign in again",
+    "serverUnreachable": "The server could not be reached. Your collections are saved and will be tried again.",
+    "someNeedAttention": "{count, plural, one {# collection was refused} other {# collections were refused}}. See why below.",
+    "syncing": "Syncing...",
+    "tryAgain": "Try again",
+    "reasons": {
+      "unknown": "The server refused this collection. Ask your hub lead.",
+      "content_hash_mismatch": "This record changed after it was saved, so it cannot be trusted. Ask your hub lead.",
+      "invalid_timestamp": "The time on this record is not valid.",
+      "collector_not_found": "The server does not know this collector yet. Register the collector first, then try again.",
+      "collector_not_authorized": "This collector is not authorized yet. Ask your hub lead to authorize them, then try again.",
+      "no_rate": "There was no rate for this material at that time. Ask an admin.",
+      "rate_mismatch": "The rate on this record was not the rate in force. Ask an admin.",
+      "supervisor_not_assigned": "You were not assigned to this session. Ask an admin.",
+      "event_not_yours": "This collection was recorded by someone else.",
+      "invalid_event": "This record is not valid (for example the weight is too large). It cannot be sent as it is.",
+      "session_not_found": "The session for this record was not found. Ask an admin.",
+      "outside_session_window": "This was recorded outside the session hours. Ask an admin to widen the session, then try again.",
+      "future_timestamp": "The clock on this phone was ahead of the real time. Check the phone's date and time.",
+      "invalid_data": "The server could not store these values. Tell an admin."
     }
   }
 }

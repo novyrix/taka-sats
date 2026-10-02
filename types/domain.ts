@@ -82,7 +82,7 @@ export type SyncStatus =
   | { readonly state: 'queued' }
   | { readonly state: 'syncing' }
   | { readonly state: 'confirmed'; readonly syncedAt: Iso8601; readonly seq: number }
-  | { readonly state: 'needs_attention'; readonly reason: string }
+  | { readonly state: 'needs_attention'; readonly reason: string; readonly code?: string }
   | { readonly state: 'failed'; readonly reason: string; readonly attempts: number };
 
 /** A collector row cached in IndexedDB for offline lookup (M3-3). */

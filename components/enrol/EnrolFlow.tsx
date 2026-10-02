@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-
 'use client';
-
 import { CircleCheck, OctagonX, ScanLine } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useCallback, useState } from 'react';
@@ -11,13 +9,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { isWebNfcAvailable, writeTagAndReadSerial } from '@/lib/nfc';
 import { QrScanner } from './QrScanner';
-
 type Step = 'alias' | 'scanning' | 'validated' | 'rejected' | 'done';
-
 type CollectorResponse = {
-  collector: { id: string; lightningAddress: string | null; lnurlPayRaw: string | null };
+  collector: {
+    id: string;
+    publicCode: string;
+    status: string;
+    lightningAddress: string | null;
+    lnurlPayRaw: string | null;
+  };
+  destination?: { address: string | null; status: string };
 };
 
+type ApiErrorBody = { error?: { code?: string } } | null;
+
+/** Error codes we have a specific, friendly message for (Enrol.errors.*). */
+const KNOWN_ERRORS = new Set([
+  'no_active_session',
+  'forbidden',
+  'spend_credential_rejected',
+  'not_receive_capable',
+  'unsafe_lnurl_target',
+  'invalid_lightning_address',
+  'destination_in_use',
+  'destination_replace_forbidden',
+  'not_your_collector',
+  'collector_not_authorized',
+  'invalid_request',
+]);
 async function postJson(url: string, body: unknown): Promise<Response> {
   return fetch(url, {
     method: 'POST',
@@ -25,7 +44,6 @@ async function postJson(url: string, body: unknown): Promise<Response> {
     body: JSON.stringify(body),
   });
 }
-
 export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnabled: boolean }) {
   const t = useTranslations('Enrol');
   const [step, setStep] = useState<Step>('alias');
@@ -36,21 +54,37 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
   const [manualTagId, setManualTagId] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [publicCode, setPublicCode] = useState<string | null>(null);
+  const [pendingAuth, setPendingAuth] = useState(false);
+  const [walletChecking, setWalletChecking] = useState(false);
+  const [hasWallet, setHasWallet] = useState(false);
 
+  const errorText = useCallback(
+    async (res: Response, fallback: string): Promise<string> => {
+      if (res.status === 401) {
+        return t('errors.unauthorized');
+      }
+      const body = (await res.json().catch(() => null)) as ApiErrorBody;
+      const code = body?.error?.code;
+      return code && KNOWN_ERRORS.has(code) ? t(`errors.${code}`) : fallback;
+    },
+    [t],
+  );
   const startScan = useCallback(async () => {
     setBusy(true);
     setMessage(null);
     const res = await postJson('/api/v1/collectors', { alias: alias.trim() });
     setBusy(false);
     if (!res.ok) {
-      setMessage(t('enrolFailed'));
+      setMessage(await errorText(res, t('enrolFailed')));
       return;
     }
     const { collector } = (await res.json()) as CollectorResponse;
     setCollectorId(collector.id);
+    setPublicCode(collector.publicCode);
+    setPendingAuth(collector.status !== 'active');
     setStep('scanning');
-  }, [alias, t]);
-
+  }, [alias, errorText, t]);
   const submitCode = useCallback(
     async (raw: string) => {
       if (!collectorId || !raw.trim()) {
@@ -58,26 +92,23 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
       }
       setBusy(true);
       setMessage(null);
-      const res = await postJson(`/api/v1/collectors/${collectorId}/address`, {
+      const res = await postJson(`/api/v1/collectors/${collectorId}/destinations`, {
         rawCode: raw.trim(),
       });
       setBusy(false);
-
       if (res.ok) {
-        const { collector } = (await res.json()) as CollectorResponse;
-        setPayTarget(collector.lnurlPayRaw ?? collector.lightningAddress);
+        const { collector, destination } = (await res.json()) as CollectorResponse;
+        setPayTarget(destination?.address ?? collector.lnurlPayRaw ?? collector.lightningAddress);
+        setWalletChecking(res.status === 202);
+        setHasWallet(true);
         setStep('validated');
         return;
       }
-      const body = (await res.json().catch(() => null)) as { error?: { code?: string } } | null;
-      setMessage(
-        body?.error?.code === 'not_receive_capable' ? t('withdrawRejected') : t('addressInvalid'),
-      );
+      setMessage(await errorText(res, t('addressInvalid')));
       setStep('rejected');
     },
-    [collectorId, t],
+    [collectorId, errorText, t],
   );
-
   const registerTag = useCallback(
     async (tagId: string) => {
       if (!collectorId || !tagId.trim()) {
@@ -97,7 +128,6 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
     },
     [collectorId, t],
   );
-
   const writeViaNfc = useCallback(async () => {
     if (!payTarget) {
       return;
@@ -112,7 +142,6 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
       setMessage(t('nfcFailed'));
     }
   }, [payTarget, registerTag, t]);
-
   const reset = useCallback(() => {
     setStep('alias');
     setAlias('');
@@ -121,20 +150,38 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
     setManualCode('');
     setManualTagId('');
     setMessage(null);
+    setPublicCode(null);
+    setPendingAuth(false);
+    setWalletChecking(false);
+    setHasWallet(false);
   }, []);
-
   if (step === 'done') {
     return (
       <div className="space-y-6 text-center">
         <CircleCheck aria-hidden="true" className="mx-auto size-12 text-primary" />
-        <p className="font-display text-lg font-medium">{t('doneTitle', { alias })}</p>
+        <p className="font-display text-lg font-medium">
+          {pendingAuth ? t('pendingTitle', { alias }) : t('doneTitle', { alias })}
+        </p>
+        {publicCode ? (
+          <p className="font-mono text-2xl font-bold" data-testid="public-code">
+            {publicCode}
+          </p>
+        ) : null}
+        {pendingAuth ? (
+          <p className="text-sm text-muted-foreground" data-testid="pending-note">
+            {t('pendingBody')}
+          </p>
+        ) : null}
+        {!hasWallet ? <p className="text-sm text-muted-foreground">{t('noWalletYet')}</p> : null}
+        {walletChecking ? (
+          <p className="text-sm text-muted-foreground">{t('walletChecking')}</p>
+        ) : null}
         <Button size="pwa" onClick={reset}>
           {t('enrolAnother')}
         </Button>
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       <div className="space-y-1.5">
@@ -149,7 +196,6 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
           disabled={step !== 'alias'}
         />
       </div>
-
       {(step === 'alias' || step === 'rejected') && (
         <div className="space-y-3">
           <Button
@@ -167,14 +213,12 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
           ) : null}
         </div>
       )}
-
       {step === 'rejected' ? (
         <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
           <OctagonX aria-hidden="true" className="size-4 shrink-0" />
           {message}
         </p>
       ) : null}
-
       {step === 'validated' && payTarget ? (
         <div className="space-y-4">
           <p className="flex items-center gap-2 font-display text-sm font-medium text-primary">
@@ -182,8 +226,14 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
             {t('receiveOnlyOk')}
           </p>
           <p className="break-all font-mono text-xs text-muted-foreground">{payTarget}</p>
-
-          {isWebNfcAvailable() ? (
+          {walletChecking ? (
+            <p className="text-sm text-muted-foreground">{t('walletChecking')}</p>
+          ) : null}
+          {pendingAuth ? (
+            <Button size="pwa" onClick={() => setStep('done')} data-testid="finish-pending">
+              {t('finishPending')}
+            </Button>
+          ) : isWebNfcAvailable() ? (
             <Button size="pwa" onClick={writeViaNfc} disabled={busy}>
               {t('writeTagButton')}
             </Button>
@@ -207,18 +257,18 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
               </Button>
             </form>
           )}
-          <Button variant="ghost" onClick={() => setStep('done')}>
-            {t('skipTag')}
-          </Button>
+          {pendingAuth ? null : (
+            <Button variant="ghost" onClick={() => setStep('done')}>
+              {t('skipTag')}
+            </Button>
+          )}
         </div>
       ) : null}
-
       {message && step !== 'rejected' ? (
         <p role="status" className="text-sm text-muted-foreground">
           {message}
         </p>
       ) : null}
-
       <Drawer.Root open={step === 'scanning'} onOpenChange={(open) => !open && setStep('alias')}>
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 z-40 bg-foreground/40" />
@@ -229,6 +279,11 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
             </Drawer.Title>
             <div className="space-y-4 overflow-y-auto">
               <QrScanner onResult={(raw) => void submitCode(raw)} />
+              {message ? (
+                <p role="alert" className="text-sm text-destructive">
+                  {message}
+                </p>
+              ) : null}
               <form
                 className="space-y-2"
                 onSubmit={(e: FormEvent<HTMLFormElement>) => {
@@ -252,6 +307,15 @@ export function EnrolFlow({ provisioningEnabled }: { readonly provisioningEnable
                   {t('useCodeButton')}
                 </Button>
               </form>
+              <Button
+                type="button"
+                variant="ghost"
+                size="pwa"
+                onClick={() => setStep('done')}
+                data-testid="skip-wallet"
+              >
+                {t('skipWallet')}
+              </Button>
             </div>
           </Drawer.Content>
         </Drawer.Portal>

@@ -18,7 +18,7 @@ export {
 } from './events';
 export { captureCollectionEvent, type CapturePhoto } from './capture';
 export { drainPhotoQueue, type PhotoDrainResult } from './photoQueue';
-export { drainEventQueue, type SyncDrainResult } from './syncLoop';
+export { drainEventQueue, SIGN_IN_REQUIRED_EVENT, type SyncDrainResult } from './syncLoop';
 export { primeWeighCache, type PrimeResult } from './prime';
 export { sessionSummary, type SessionSummary } from './summary';
 export {
@@ -42,6 +42,7 @@ export {
   putPhoto,
   putSessionConfig,
   removeOutbox,
+  requeueEvent,
   searchCachedCollectors,
   setEventSyncStatus,
   type StoredEvent,

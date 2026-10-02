@@ -135,6 +135,21 @@ export async function setEventSyncStatus(id: string, syncStatus: SyncStatus): Pr
   return updated;
 }
 
+/**
+ * Put a `needs_attention` (or `failed`) event back in the queue after its cause was fixed
+ * (an admin authorized the collector, the session window was widened). The server re-validates
+ * it on the next drain, so this cannot get a bad event accepted.
+ */
+export async function requeueEvent(id: string): Promise<StoredEvent | undefined> {
+  const existing = await getEvent(id);
+  if (!existing || existing.syncStatus.state === 'confirmed') {
+    return existing;
+  }
+  const updated = await setEventSyncStatus(id, { state: 'queued' });
+  await enqueueOutbox({ id, kind: 'collection_event', refId: id });
+  return updated;
+}
+
 export async function countEventsByState(state: SyncStatus['state']): Promise<number> {
   return (await openSyncDb()).countFromIndex('events', 'by_sync_state', state);
 }

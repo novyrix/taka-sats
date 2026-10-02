@@ -11,6 +11,10 @@
  * The server is idempotent by client UUID, so a re-run after an interrupted
  * drain re-POSTs the same events and gets their stored results — no
  * duplicates. Only one drain runs at a time; a re-entrant call is a no-op.
+ *
+ * A 401 means the session is gone (expired, or the account was switched off): the events are
+ * put back to `queued` and KEPT, the drain stops, and `SIGN_IN_REQUIRED_EVENT` is announced so
+ * the UI can ask the person to sign in again. They drain after sign-in.
  * Browser only.
  */
 
@@ -33,11 +37,21 @@ export type SyncDrainResult = {
   readonly retryable: number;
   /** Outbox entries whose event was gone. */
   readonly skipped: number;
+  /** The server answered 401: nothing was lost, the person must sign in again. */
+  readonly signedOut: boolean;
 };
+
+/** Fired on `window` with `detail: { required: boolean }` whenever a drain learns the sign-in state. */
+export const SIGN_IN_REQUIRED_EVENT = 'takasats:sign-in-required';
 
 type ServerResult =
   | { readonly id: string; readonly status: 'confirmed'; readonly seq: number }
-  | { readonly id: string; readonly status: 'needs_attention'; readonly reason: string };
+  | {
+      readonly id: string;
+      readonly status: 'needs_attention';
+      readonly reason: string;
+      readonly code?: string;
+    };
 
 const BATCH = 50;
 
@@ -65,11 +79,17 @@ function toInput(e: StoredEvent): Record<string, unknown> {
   };
 }
 
+function announceSignIn(required: boolean): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(SIGN_IN_REQUIRED_EVENT, { detail: { required } }));
+  }
+}
+
 let running = false;
 
 /** @param fetchImpl injectable for tests. */
 export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<SyncDrainResult> {
-  const total = { confirmed: 0, needsAttention: 0, retryable: 0, skipped: 0 };
+  const total = { confirmed: 0, needsAttention: 0, retryable: 0, skipped: 0, signedOut: false };
   if (running) {
     return total;
   }
@@ -106,6 +126,10 @@ export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ events: events.map(toInput) }),
         });
+        if (res.status === 401) {
+          total.signedOut = true;
+          throw new Error('signed out');
+        }
         if (!res.ok) {
           throw new Error(`sync HTTP ${res.status}`);
         }
@@ -118,6 +142,9 @@ export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<
           await markOutboxAttempt(event.id);
         }
         total.retryable += events.length;
+        if (total.signedOut) {
+          announceSignIn(true);
+        }
         break;
       }
 
@@ -134,7 +161,11 @@ export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<
           await removeOutbox(result.id);
           total.confirmed += 1;
         } else {
-          await setEventSyncStatus(result.id, { state: 'needs_attention', reason: result.reason });
+          await setEventSyncStatus(result.id, {
+            state: 'needs_attention',
+            reason: result.reason,
+            ...(result.code && { code: result.code }),
+          });
           await removeOutbox(result.id);
           total.needsAttention += 1;
         }
@@ -146,6 +177,9 @@ export async function drainEventQueue(fetchImpl: typeof fetch = fetch): Promise<
           await setEventSyncStatus(event.id, { state: 'queued' });
         }
       }
+    }
+    if (total.confirmed + total.needsAttention > 0) {
+      announceSignIn(false);
     }
     return total;
   } finally {
