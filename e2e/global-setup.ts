@@ -74,7 +74,9 @@ export default async function globalSetup(): Promise<void> {
     await db.insert(collectors).values({
       alias: 'Amina E2E',
       addressSource: 'byo',
-      publicCode: 'TS-0001',
+      // Not the shape the code sequence produces: other suites restart that sequence at 1, and a
+      // collision with a collector registered during the run would fail its enrolment.
+      publicCode: 'TS-E2E-0001',
       status: 'active',
     });
 
