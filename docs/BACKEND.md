@@ -704,6 +704,33 @@ A plain **supervisor sees only the events they recorded**; `hub_lead`/`admin` se
 - Render the photo with `photoPath` (`<img src>`); there is no `photoUrl` field. `payout` is `null`
   until a payout exists. `openFlags` = unreviewed anomaly flags on the event — show a warning badge.
 
+#### `GET /events/:id`: one event and its verification picture · scope `collector:read`
+
+The "how do we know" view. Same scoping as the list: a plain supervisor can open only an event they recorded
+(anything else is `404 not_found`) and gets no coordinates. The reply is `{ "event": EventView & { … } }` with these
+extras:
+
+```json
+{ "event": { "…": "everything in the list item, plus:",
+    "rate": { "id": "…", "fiatMinorPerKg": 2000 }, "registrationType": "tap",
+    "session": { "id": "…", "location": "…", "scheduledStart": "…", "scheduledEnd": "…", "status": "active" },
+    "supervisor": { "id": "…", "name": "Brian" },
+    "photoStored": true,
+    "ledger": { "seq": 17, "entryHash": "…64 hex", "payloadHash": "…64 hex" },
+    "flags": [ { "id": "…", "type": "duplicate_photo", "status": "open|confirmed|dismissed", "detectedAt": "…" } ],
+    "checks": [ { "key": "collector_authorized", "status": "pass|fail|warn|unknown", "detail": { } } ] } }
+```
+
+`checks` is always these nine, in this order: `collector_authorized` (the collector is `active` now),
+`session_window` (inside the session window ± `anomaly.off_hours_grace_minutes`), `rate_in_force` (the signed
+`rateId` is the rate that was active at `recordedAt`), `photo_stored` (the photo upload has arrived; `warn` until it
+does), `gps_inside` (the fix against the session's `geoBounds`; `warn` with `detail.reason` when there was no fix,
+`unknown` when the session has no boundary), `duplicate_photo` and `weight_outlier` (from the anomaly flags: `warn`
+while open, `fail` once a reviewer confirmed it), `payout` (`pass` when paid, `fail` when failed, `warn` while in
+progress, `unknown` when none exists) and `ledger_anchor`. Translate by `key` and `status`; `detail` carries the
+numbers to interpolate. Whether the stored photo still hashes to `photoSha256` is checked by the browser against
+`photoPath` (the server cannot add trust by hashing its own copy again).
+
 ### 5.9 Anomalies ✅ (admin)
 
 A flag is a **note for a human**; it never blocked the sync or the payout. Detectors run right
@@ -877,6 +904,11 @@ no real sats are sent" banner. Fetch it once on load; it does not change while t
 ## 8. Changelog for the frontend
 
 Newest first. Anything here may need a UI change.
+
+**2026-10-02 (events): one event with its verification checks**
+- **New endpoint:** `GET /events/:id` (§5.8) returns the event plus `checks`, `flags`, `rate`, `session`, `supervisor`, `ledger`
+  and `photoStored`. No new scope, error code or enum values: `404 not_found` is reused. The operator console builds its
+  "how do we know" screen from it.
 
 **2026-10-02 (auth): sessions follow the account**
 - Deactivating a staff or partner account, or changing a staff role, now takes effect on the very next request

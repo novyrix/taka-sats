@@ -54,6 +54,7 @@ export type EventView = {
 };
 
 export type EventFilter = {
+  readonly id?: string | undefined;
   readonly sessionId?: string | undefined;
   readonly collectorId?: string | undefined;
   readonly material?: string | undefined;
@@ -78,6 +79,7 @@ export async function listEvents(
 ): Promise<EventPage> {
   const size = Math.min(Math.max(limit, 1), PAGE_MAX);
   const conditions: (SQL | undefined)[] = [
+    filter.id ? eq(collectionEvents.id, filter.id) : undefined,
     filter.sessionId ? eq(collectionEvents.sessionId, filter.sessionId) : undefined,
     filter.collectorId ? eq(collectionEvents.collectorId, filter.collectorId) : undefined,
     filter.material ? eq(collectionEvents.material, filter.material) : undefined,

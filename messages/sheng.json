@@ -759,6 +759,140 @@
       "checkArrival": "Check arrival",
       "arrived": "The funds arrived. Waiting payouts were woken.",
       "notArrived": "The funds have not shown up in the hot wallet yet. Nothing changed."
+    },
+    "events": {
+      "title": "Collections",
+      "intro": "Every weigh that reached the server. Open one to see how we know it happened as claimed.",
+      "material": "Material",
+      "from": "From",
+      "to": "Until",
+      "empty": "No collections match.",
+      "col": {
+        "when": "Recorded",
+        "collector": "Collector",
+        "weight": "Material and weight",
+        "payout": "Payout",
+        "flags": "Flags"
+      },
+      "noPayout": "No payout yet",
+      "none": "None",
+      "flags": "{count, plural, one {# open flag} other {# open flags}}",
+      "detailTitle": "Collection",
+      "detailIntro": "Each line below is a question the system answered from stored facts. A warning is a note for a person, not a block.",
+      "backToList": "Back to collections",
+      "verification": "How do we know",
+      "statusLabel": {
+        "pass": "Passed",
+        "fail": "Failed",
+        "warn": "Needs a look",
+        "unknown": "Cannot tell"
+      },
+      "checks": {
+        "collector_authorized": {
+          "label": "Was the collector authorized?",
+          "pass": "Yes. The collector is authorized now, and the server refuses events from collectors that are not.",
+          "fail": "No. The collector is {status} now.",
+          "warn": "Needs a look.",
+          "unknown": "Cannot tell."
+        },
+        "session_window": {
+          "label": "Was it recorded inside the session window?",
+          "pass": "Yes. The session ran {start} to {end}, with {grace} minutes of grace.",
+          "fail": "No. The session ran {start} to {end}, with {grace} minutes of grace.",
+          "warn": "Needs a look.",
+          "unknown": "The event has no session."
+        },
+        "rate_in_force": {
+          "label": "Was the signed rate the one in force?",
+          "pass": "Yes. The rate on the event ({rate} per kg) was the active rate at the moment of recording.",
+          "fail": "No. A different rate was active when this was recorded.",
+          "warn": "Needs a look.",
+          "unknown": "No rate could be found for that material and time."
+        },
+        "photo_stored": {
+          "label": "Did the scale photo arrive?",
+          "pass": "Yes. The photo is stored under its fingerprint.",
+          "fail": "No.",
+          "warn": "Not yet. Photos upload on their own and can arrive after the event.",
+          "unknown": "Cannot tell."
+        },
+        "gps_inside": {
+          "label": "Was the phone inside the session boundary?",
+          "pass": "Yes. The fix is inside the boundary.",
+          "fail": "No. The fix is outside the session boundary.",
+          "warn": "There was no location fix. The supervisor gave this reason: {reason}",
+          "unknown": "The session has no boundary, so the fix cannot be judged."
+        },
+        "duplicate_photo": {
+          "label": "Was this photo used before?",
+          "pass": "No sign of a reused photo.",
+          "fail": "A reviewer confirmed the same photo was filed on another collection.",
+          "warn": "The same photo was filed on an earlier collection. Review the flag.",
+          "unknown": "Cannot tell."
+        },
+        "weight_outlier": {
+          "label": "Is the weight unusual for this material?",
+          "pass": "No sign of an unusual weight.",
+          "fail": "A reviewer confirmed this weight is out of line.",
+          "warn": "The weight is far from what this material usually weighs. Review the flag.",
+          "unknown": "Cannot tell."
+        },
+        "payout": {
+          "label": "What happened to the payout?",
+          "pass": "Paid.",
+          "fail": "The payout failed.",
+          "warn": "The payout is in progress: {status}.",
+          "unknown": "No payout exists for this collection."
+        },
+        "ledger_anchor": {
+          "label": "Is it on the ledger?",
+          "pass": "Yes. It is entry number {seq} on the append-only chain.",
+          "fail": "No ledger entry was found.",
+          "warn": "Needs a look.",
+          "unknown": "Cannot tell."
+        }
+      },
+      "fingerprint": {
+        "label": "Does the stored photo still match its signed fingerprint?",
+        "checking": "Checking in your browser...",
+        "match": "Yes. Your browser re-hashed the stored photo and it equals the fingerprint signed on the phone.",
+        "mismatch": "No. The stored photo does not match its fingerprint. Treat this collection as suspect.",
+        "missing": "The photo has not arrived, so there is nothing to compare.",
+        "error": "The photo could not be fetched. Try again."
+      },
+      "photo": "Scale photo",
+      "photoAlt": "Photo of the {material} on the scale",
+      "photoMissing": "The photo has not arrived yet.",
+      "photoGuide": "The photo should show the waste, the scale and the scale's display.",
+      "record": "Record",
+      "supervisor": "Recorded by",
+      "session": "Session",
+      "rateUsed": "Rate used",
+      "indicative": "Indicative amount",
+      "recordedAt": "Recorded on the phone",
+      "syncedAt": "Received by the server",
+      "registrationType": "How the collector was found",
+      "verificationLevel": "Verification level",
+      "gps": "Location",
+      "gpsFix": "A fix was recorded",
+      "gpsNone": "No fix",
+      "openPayout": "Open the payout",
+      "ledgerEntry": "Ledger entry",
+      "ledgerHint": "The entry hash links this collection into the chain. Verify the chain on the Ledger screen.",
+      "flagsTitle": "Anomaly flags",
+      "reviewFlags": "Review flags",
+      "flagTypes": {
+        "duplicate_photo": "Duplicate photo",
+        "identical_weight_repeat": "Identical weight repeated",
+        "gps_outlier": "Location outside the session boundary",
+        "weight_outlier": "Unusual weight",
+        "payout_concentration": "Payouts concentrated on few collectors",
+        "mass_balance_variance": "Mass balance variance",
+        "revoked_tag_tap": "Revoked tag tapped",
+        "payout_uncertain": "Payout outcome unknown",
+        "off_hours": "Outside session hours",
+        "rate_change_during_queue": "Rate changed while queued"
+      }
     }
   }
 }

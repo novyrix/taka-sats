@@ -24,6 +24,7 @@ import {
   TagAlreadyActiveError,
   TagRevokedError,
 } from '@/lib/collectors';
+import { EventNotFoundError } from '@/lib/collection-events/detail';
 import { AnomalyNotFoundError, AnomalyReviewError } from '@/lib/fraud';
 import { LedgerKeyError } from '@/lib/ledger/signing';
 import {
@@ -222,7 +223,7 @@ export function errorResponse(error: unknown): NextResponse<ApiErrorBody> {
   if (error instanceof PayoutCursorError || error instanceof CursorError) {
     return json(400, 'invalid_cursor', error.message);
   }
-  if (error instanceof AnomalyNotFoundError) {
+  if (error instanceof AnomalyNotFoundError || error instanceof EventNotFoundError) {
     return json(404, 'not_found', error.message);
   }
   if (error instanceof AnomalyReviewError) {
