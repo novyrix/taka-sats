@@ -61,6 +61,14 @@ one of them must say so (see "Notes" below).
 Chronological log of changes to money-handling or RBAC-enforcement code and the property
 each preserves or alters (Code Style Guide §12). Newest first.
 
+- 2026-10-02: Browser security headers (`next.config.ts`, `app/security-headers.test.ts`). The app sent
+  none. Every response now carries a CSP (default-src self; no remote scripts, frames, plugins or
+  foreign form targets; connect-src self; blob: images for photo previews), `X-Frame-Options: DENY` and
+  `frame-ancestors 'none'`, `nosniff`, a strict referrer policy, COOP same-origin, HSTS, and a
+  Permissions-Policy that allows camera, location and Bluetooth for this origin only. Residual:
+  `script-src` keeps `'unsafe-inline'` (Next's inline bootstrap, no nonce middleware yet), so the CSP
+  limits where code can load from but is not a full XSS barrier; the sandboxing CSP on served photos
+  still applies on top. Checked in a headless browser: no violations on `/`, `/login`, `/about`.
 - 2026-10-02: Credential login hardening (`auth.ts`, `lib/auth/throttle.ts`) and a route guard test.
   Login was not throttled: an attacker could guess passwords at full speed. Now `auth.login_max_failures`
   (default 8) failed attempts for one identifier inside `auth.login_window_minutes` (15) lock that
