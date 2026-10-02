@@ -84,6 +84,54 @@ docker compose down
 
 Use `docker compose down --volumes` only when local Postgres, MinIO, relay, and regtest data may be deleted.
 
+## Backups and the restore rehearsal
+
+A backup you have never restored is a hope, not a backup. Two scripts do the work and one of them
+proves the result. They run on the host (bash and the Docker CLI), not inside a container.
+
+```bash
+# What to back up: the live database and the photo store.
+export PG_CONTAINER=$(docker compose ps -q postgres)   # or the name of your Postgres container
+export PGUSER=<POSTGRES_USER> PGDATABASE=<POSTGRES_DB>
+
+pnpm backup:pg ./backups            # writes backups/postgres-<time>.sql.gz and its .sha256 (mode 0600)
+pnpm backup:check ./backups/postgres-<time>.sql.gz
+```
+
+`backup:check` restores the dump into a scratch database, recomputes every ledger entry hash in SQL,
+checks the chain from genesis and prints `PASS` or `FAIL` per step, then drops the scratch database.
+It exits non zero on any failure. Without Docker, set `DATABASE_URL` and `PG_ADMIN_URL` (the URL of
+the maintenance database) and the same scripts use the host's `pg_dump` and `psql`.
+
+Photos are named by the SHA-256 of their bytes, so their backup proves itself:
+
+```bash
+export S3_ENDPOINT=... S3_BUCKET=... S3_ACCESS_KEY_ID=... S3_SECRET_ACCESS_KEY=...
+pnpm backup:objects backup ./photo-backup     # incremental; a damaged object is reported, never copied
+DATABASE_URL=... pnpm backup:objects check ./photo-backup   # re-hash; lists photos the database needs but the backup lacks
+```
+
+**Schedule.** Back up the database at least nightly and after every field day, and the photos at the
+same time. **Copy both off the server** (another machine, another provider): a backup on the same
+disk dies with it. Both hold participant data; keep them as private as the database. Keep the last
+7 daily and 4 weekly copies, and run `backup:check` on the newest one every week.
+
+**Restore rehearsal (do it once before real data, then every quarter).**
+
+1. On a different machine or a scratch Postgres, restore into a NEW database:
+   `bash scripts/backup/pg.sh restore backups/postgres-<time>.sql.gz taka_sats_restored`.
+   The script refuses to restore over the live database name and refuses a bad checksum.
+2. Point a copy of the app at it (`DATABASE_URL`) and run
+   `pnpm exec tsx scripts/verify-ledger.ts --public-key <the programme public key>`: the chain and
+   the signed checkpoints must verify.
+3. Restore the photos into a new bucket (create it first): `pnpm backup:objects restore ./photo-backup`.
+   It uploads only what is missing and never overwrites. Open a recent collection in the admin
+   console and confirm its photo loads.
+4. Write down how long it took. That is your real recovery time.
+
+To go live on the restored copy, stop the app and worker, point `DATABASE_URL` at the restored
+database, and start them. Migrations on a restored database run as usual.
+
 ## Custodial development overlay
 
 The optional overlay adds LNbits and a Bitcoin regtest node. It does not enable custody in application settings. G1 requires Afribit Africa's recorded legal-review outcome before the mode may hold real collector funds.

@@ -146,7 +146,8 @@ day is [`PILOT.md`](PILOT.md).
    several people must approve, as described in [`TREASURY.md`](TREASURY.md).
 5. Make the first payment yourself: register your own wallet, weigh a tiny amount, approve it,
    and watch it arrive. Only then invite collectors.
-6. Set up off host backups for Postgres and the photo storage before you collect real data.
+6. Set up off host backups for Postgres and the photo storage before you collect real data, and
+   rehearse a restore ([`SELF_HOSTING.md`](SELF_HOSTING.md), Backups).
 
 ### Checking your provider with `provider:check`
 

@@ -189,9 +189,9 @@ Run it on two phones and a laptop, with the demo rail or a tiny real payout. Nar
 
 ## 9. Backups and monitoring
 
-- **Database:** a nightly dump — `docker compose exec -T postgres pg_dump -U taka_sats taka_sats | gzip > backup-$(date +%F).sql.gz`.
-  Copy it off the server. (The ledger is append-only, but a disk failure is still a disk failure.)
-- **Photos:** back up the `minio-data` volume (or sync the bucket to R2 / another disk).
+- **Database and photos:** `pnpm backup:pg` and `pnpm backup:objects`, and **prove** the newest one with
+  `pnpm backup:check`. Copy both off the server (the ledger is append-only, but a disk failure is still a
+  disk failure). The full procedure and a restore rehearsal are in `docs/SELF_HOSTING.md` (Backups).
 - **Ledger:** nightly `scripts/verify-ledger.ts --export ledger-$(date +%F).json` — a portable proof you
   can hand to anyone, verifiable offline with the public key from `GET /api/v1/ledger/checkpoints`.
 - **Health:** point an uptime check at `/api/v1/health`. `docker compose … logs --follow app worker`.
