@@ -263,7 +263,7 @@ export function Ledger() {
         <p className="text-sm">{t('outsiderIntro')}</p>
         <pre className="mt-2 overflow-x-auto rounded-lg bg-muted p-3 font-mono text-xs">
           {
-            'pnpm exec tsx scripts/verify-ledger.ts --export ledger.json\npnpm exec tsx scripts/verify-ledger.ts ledger.json --public-key <base64 key above>'
+            'pnpm exec tsx scripts/verify-ledger.ts ledger-export.json --public-key <base64 key above>'
           }
         </pre>
         <div className="mt-3">
