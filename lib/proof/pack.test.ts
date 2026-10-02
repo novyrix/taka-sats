@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { sql } from 'drizzle-orm';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { getDb } from '@/lib/db/client';
 import { createCheckpoint } from '@/lib/ledger/checkpoints';
@@ -43,6 +44,7 @@ describe.skipIf(!hasDatabase)('buildProofPack (database)', () => {
 
   it('writes a readable, verifiable, personal data free pack and notices tampering', async () => {
     const world = await seedPayoutWorld(db);
+    await db.execute(sql`truncate ledger_checkpoints`);
     await seedCollectionEvent(db, world);
     await seedCollectionEvent(db, world, { weightKg: '1.0' });
     const key = loadSigningKey(randomBytes(32).toString('base64'));
@@ -94,5 +96,6 @@ describe.skipIf(!hasDatabase)('buildProofPack (database)', () => {
 
   it('cleans up', async () => {
     await db.execute(PAYOUT_TRUNCATE);
+    await db.execute(sql`truncate ledger_checkpoints`);
   });
 });
