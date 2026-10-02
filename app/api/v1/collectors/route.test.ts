@@ -72,6 +72,8 @@ describe.skipIf(!hasDatabase)('POST /api/v1/collectors — success (integration)
 
   beforeEach(async () => {
     await db.execute(TRUNCATE);
+    // `truncate ... restart identity` does not reset this standalone sequence.
+    await db.execute(sql`alter sequence collector_public_code_seq restart with 1`);
     // M2-7: a plain supervisor enrols only inside an active assigned session.
     const [sup] = await db
       .insert(supervisors)
