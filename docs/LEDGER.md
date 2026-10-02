@@ -173,6 +173,14 @@ console.log(verify(null, Buffer.from(`${seq}|${hash}`), key, Buffer.from(sig, "b
 It prints `true` for a valid signature. The long hex string is the fixed DER header that
 wraps a raw Ed25519 public key.
 
+## A proof pack for one session
+
+`pnpm proof:pack --session <id> --out <folder>` writes the ledger export, its checkpoints and public
+key, the verification result, a spreadsheet of the session's collections (collector public codes
+only) and a manifest of file hashes, with a README on how to re-verify. See
+[`VERIFICATION.md`](VERIFICATION.md). The ledger part is the same file format `verify-ledger.ts`
+accepts, so the pack can be checked with no database.
+
 ## What this proves - and what it does not
 
 **Proves** (given a pinned public key):

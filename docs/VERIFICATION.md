@@ -165,3 +165,19 @@ success is decided in advance rather than after the results.
 - Flags raised per 100 collections, and the share confirmed after review.
 - Difference between recorded and recycler-accepted weight, by material.
 - Share of records at each verification level.
+
+## Handing an auditor a proof pack
+
+An operator can produce a folder for one session that a funder or auditor can read and re-check:
+
+```bash
+pnpm proof:pack --session <session id> --out ./proof-pack
+# on a server: docker compose run --rm tools scripts/proof-pack.ts --session <id> --out /tmp/proof
+```
+
+It contains `events.csv` (each collection by collector public code, material, weight, time, photo
+fingerprint, payout state and sats, and ledger entry number), `ledger.json` (hashes and signed
+checkpoints only), `verification.json`, a `manifest.json` of file hashes and a `README.md` that
+explains how to re-verify with `scripts/verify-ledger.ts`. It never includes wallet addresses, phone
+numbers or names. Set `LEDGER_SIGNING_KEY` (or pass `--public-key`) so checkpoint signatures are
+checked as well as the hash links.
