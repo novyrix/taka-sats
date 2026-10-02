@@ -89,7 +89,9 @@ accountable and visible.
 
 - **The hot wallet is a single point of failure by design.** Keep it small. If it is a custodial
   service, its operator can freeze it. A small float limits that risk and does not remove it.
-- **A refill is a real transaction with a fee.** Refill weekly or monthly, not per payment.
+- **A refill is a real transaction with a fee.** Refill weekly or monthly, not per payment. Some hot
+  wallets also take a deposit fee out of the arriving funds (Blink: a fixed 2,500 sats on chain). The
+  arrival check needs the balance to rise by the proposed amount, so send the amount plus that fee.
 - **Waiting is a feature.** When the hot wallet runs dry, payouts show as waiting for funds. The
   collector's record is safe and the payment is made after the next vote.
 - **Stewards must be reachable.** A quorum that cannot meet cannot refill. Plan for holidays and

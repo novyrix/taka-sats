@@ -70,6 +70,16 @@ The pool funds the wallet by sending bitcoin to a Blink on chain address, or by 
 invoice created in the Blink app. The recorded treasury transfer is the audit trail; the app does
 not move pool funds.
 
+From Blink's public help pages (read 2 October 2026, not yet seen in a live account):
+
+- An on chain deposit needs 2 confirmations before it can be spent.
+- Blink charges a fixed fee on each on chain deposit: 2,500 sats up to 1,000,000 sats, 5,000 sats
+  above that. The smallest deposit that is credited is about 3,046 sats.
+- **Plan for the fee.** Taka Sats confirms a refill only when the hot wallet balance has risen by the
+  proposed amount. If the pool sends exactly the proposed amount on chain, Blink credits less and the
+  arrival check keeps waiting. Send the proposed amount plus the Blink deposit fee, or fund the wallet
+  over Lightning, which has no such fee.
+
 ## Not verified yet (do these before real money)
 
 Run `pnpm provider:check` (see [`../GETTING_STARTED.md`](../GETTING_STARTED.md)) with a real key.
