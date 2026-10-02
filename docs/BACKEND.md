@@ -167,9 +167,8 @@ before approving; a supervisor can list *their own* pending registrations.
 - `publicCode` looks like `TS-KBR-0042` (`TS` = `collectors.code_prefix`, `KBR` = optional site, `0042` =
   a global sequence). Search finds it by the full code or any substring (`0042`).
 - `reference.payload` = `takasats:TS-KBR-0042` — put exactly this in a QR code or an NFC text record.
-  `reference.url` = `https://taka.afribit.africa/c/TS-KBR-0042` (the same thing as a link; **there is no page
-  at `/c/…` yet** — if you want phones to open something when they tap a tag, build a minimal public
-  page that reveals nothing).
+  `reference.url` = `https://taka.afribit.africa/c/TS-KBR-0042` (the same thing as a link; `/c/<code>` is a public page that reveals nothing: it does not look the code up, shows no name or
+  wallet, and is `noindex`).
 - **Parsing a scan:** import `parseCollectorRef` from `@/lib/collectors/reference` (pure, safe in the
   browser — do **not** import the `@/lib/collectors` barrel, it pulls in the database). It accepts
   `takasats:…`, a `…/c/<code>` link, or a bare code and returns the normalised code or `null`. On
@@ -1016,14 +1015,14 @@ Newest first. Anything here may need a UI change.
 
 **Built and tested:** everything marked ✅ above (544 tests at the time of writing).
 
-**Frontend work these changes create** (none of it is blocked on the backend). Status: 1, 2 and 5 are built (the enrol flow, the operator console in `docs/CONSOLE.md`, the sync loop and its states); 3 is partly built (offline search by public code works; the `by_code` index does not exist); 4, 6 and 7 are not built.
+**Frontend work these changes create** (none of it is blocked on the backend). Status: 1, 2 and 5 are built (the enrol flow, the operator console in `docs/CONSOLE.md`, the sync loop and its states); 3 is partly built (offline search by public code works; the `by_code` index does not exist); 4 and 6 are not built; 7 is built.
 1. Enrol flow: public code, optional tag step, "waiting for authorization", scan **Receive** (reject Pay nicely).
 2. Authorization queue for hub_lead/admin (`GET /collectors?status=pending` + `POST …/authorization`).
 3. Weigh flow: search by `publicCode`; QR scan of `takasats:` references; add the `by_code` index (IndexedDB v3).
 4. Offline enrolment (`collector` outbox kind drained before `collection_event`) — still online-only today.
 5. The sync loop (`lib/sync/syncLoop.ts`) and the SyncStatus UI states (M4-4/5).
 6. Scale-photo capture guidance (waste + scale + display in frame) for the verification slice.
-7. A public `/c/<code>` landing page (optional; must reveal nothing).
+7. ~~A public `/c/<code>` landing page~~ (built: it reveals nothing).
 
 **Known gaps (backend):** a read-only balance view of the multisig pool (📋; `GET /treasury` reports `pool.configured: false`), OCR/AI verification of the scale
 photo (📋), Nostr/OpenTimestamps anchoring (📋), a scheduled (periodic) reconciliation run and hub_lead read access to reconciliation (📋), a minimum-n suppression on the public summary (📋). The real Blink/LNbits `pay()` has never been exercised against a

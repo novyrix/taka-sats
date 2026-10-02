@@ -5,7 +5,7 @@ import { ADMINS, FIELD_SUPERVISOR } from './fixtures/accounts';
 import { audit, login } from './helpers';
 
 test.describe('public pages', () => {
-  for (const route of ['/', '/about', '/login']) {
+  for (const route of ['/', '/about', '/login', '/c/TS-KBR-0042']) {
     test(`axe: ${route}`, async ({ page }) => {
       await audit(page, route);
     });

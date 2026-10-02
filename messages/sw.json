@@ -1163,5 +1163,11 @@
       "future_timestamp": "The clock on this phone was ahead of the real time. Check the phone's date and time.",
       "invalid_data": "The server could not store these values. Tell an admin."
     }
+  },
+  "CollectorLanding": {
+    "title": "Taka Sats collector card",
+    "body": "This is a collector credential for the Taka Sats recycling programme. Collection staff scan it in the Taka Sats app to find the collector and record a weigh.",
+    "privacy": "This page shows no personal details and cannot be used to pay anyone.",
+    "home": "About Taka Sats"
   }
 }
