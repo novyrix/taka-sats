@@ -265,7 +265,8 @@
       "ledger": "Ledger",
       "menu": "Menu",
       "label": "Operator console",
-      "rates": "Rates"
+      "rates": "Rates",
+      "fieldApp": "Field app (enrol, weigh)"
     },
     "sessions": {
       "title": "Sessions",

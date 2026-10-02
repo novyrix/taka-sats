@@ -28,6 +28,7 @@ const ITEMS: readonly { key: string; href: string; scope: Scope | null }[] = [
   { key: 'rates', href: '/rates', scope: 'session:configure' },
   { key: 'rotations', href: '/rotations', scope: 'session:configure' },
   { key: 'staff', href: '/staff', scope: 'session:configure' },
+  { key: 'fieldApp', href: '/enrol', scope: 'collector:enrol' },
 ];
 
 export function AdminNav({ role }: { readonly role: Role }) {
