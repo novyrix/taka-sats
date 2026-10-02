@@ -4,11 +4,22 @@ The Vercel path runs the same Next.js project as Docker Compose. Neon supplies P
 
 ## Frontend on Vercel, backend on the VM
 
-The canonical site can remain on Vercel while its stateful routes run on the self-hosted stack.
+The canonical site can remain on Vercel while everything stateful runs on the self-hosted stack.
 Set `TAKASATS_API_ORIGIN=https://taka.novyrix.com` in the Vercel Production environment. At build
-time, `next.config.ts` installs a `beforeFiles` rewrite for `/api/:path*`, including Auth.js. The
-browser therefore sees one origin (`taka.afribit.africa`), so cookies, photo uploads and sync calls
-remain same-origin. Leave this variable unset on the VM; setting it there would create a proxy loop.
+time, `next.config.ts` then installs rewrites:
+
+- Vercel itself serves only the public pages (home, about), the crawler and icon files, and its own
+  static assets.
+- Every other path is forwarded to the VM: the API and Auth.js, and also every signed-in page
+  (login, the supervisor app, the admin console, `/c/<code>`, the service worker). Those pages read
+  the database and verify the session on the server, which only the VM can do. A new signed-in route
+  needs no configuration change.
+- A browser asset that the Vercel build does not have (a script chunk of a page the VM rendered)
+  falls through to the VM.
+
+The browser therefore sees one origin (`taka.afribit.africa`), so cookies, photo uploads and sync
+calls remain same-origin. Leave this variable unset on the VM; setting it there would create a
+proxy loop.
 
 The backend's public base URL should be the canonical browser origin when this becomes the permanent
 production topology. Verify `/api/v1/health`, the CSRF endpoint, credential sign-in, session cookies,

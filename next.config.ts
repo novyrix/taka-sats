@@ -6,6 +6,24 @@ import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
+/**
+ * Paths the Vercel frontend serves itself. Anything else is forwarded to the stateful origin. Keep
+ * this list to public, database-free files; a new signed-in route needs no change here.
+ */
+const PUBLIC_PATHS = [
+  'about(?:/|$)',
+  '_next/',
+  String.raw`robots\.txt$`,
+  String.raw`sitemap\.xml$`,
+  'opengraph-image',
+  String.raw`favicon\.ico$`,
+  String.raw`icon(?:-\d+)?\.png$`,
+  String.raw`apple-touch-icon\.png$`,
+  String.raw`taka-sats-logo\.png$`,
+  String.raw`manifest\.webmanifest$`,
+].join('|');
+const PROXIED_SOURCE = `/:path((?!${PUBLIC_PATHS}).+)`;
+
 const apiOrigin = process.env.TAKASATS_API_ORIGIN?.replace(/\/$/, '');
 if (apiOrigin && !URL.canParse(apiOrigin)) {
   throw new Error('TAKASATS_API_ORIGIN must be an absolute URL');
@@ -75,18 +93,23 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     '/**/*': ['./config/**/*'],
   },
-  // Keep the canonical browser origin on Vercel while the stateful API, Auth.js,
-  // Postgres, worker and object store run together on the VM. `beforeFiles` is
-  // deliberate: it forwards even though equivalent route handlers exist in the
-  // Vercel bundle. The VM leaves this unset, so it serves those handlers locally
-  // and cannot proxy-loop back to itself.
+  // Keep the canonical browser origin on Vercel while the stateful parts run on the VM. Vercel
+  // serves only the public pages (home, about, crawler and icon files) and its own static assets.
+  // Everything else is forwarded to the VM: the API and Auth.js, and also every signed-in page,
+  // because those pages read the database and verify the session on the server. `beforeFiles` is
+  // deliberate: it forwards even though equivalent routes exist in the Vercel bundle. A browser
+  // asset the Vercel build does not have (a chunk of a VM-rendered page) falls through to the VM.
+  // The VM leaves TAKASATS_API_ORIGIN unset, so it serves everything itself and cannot proxy-loop.
   ...(apiOrigin
     ? {
         async rewrites() {
           return {
-            beforeFiles: [{ source: '/api/:path*', destination: `${apiOrigin}/api/:path*` }],
+            beforeFiles: [
+              { source: PROXIED_SOURCE, destination: `${apiOrigin}/:path` },
+              { source: '/api/:path*', destination: `${apiOrigin}/api/:path*` },
+            ],
             afterFiles: [],
-            fallback: [],
+            fallback: [{ source: '/_next/:path*', destination: `${apiOrigin}/_next/:path*` }],
           };
         },
       }
