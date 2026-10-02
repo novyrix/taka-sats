@@ -5,6 +5,7 @@
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { type FormEvent, useState } from 'react';
+import { CredentialQr } from '@/components/console/CredentialQr';
 import { useConsoleUser } from '@/components/console/context';
 import { useApi, useStaffNames } from '@/components/console/hooks';
 import {
@@ -214,6 +215,14 @@ export function CollectorDetail({ id }: { readonly id: string }) {
                   ) : null}
                 </div>
               </div>
+            </Panel>
+
+            <Panel title={t('credential')}>
+              <CredentialQr
+                payload={collector.reference.payload}
+                publicCode={collector.publicCode}
+                alias={collector.alias}
+              />
             </Panel>
 
             <Panel title={t('wallet')}>

@@ -374,6 +374,7 @@ All licences below are permissive and compatible with the project's **AGPL-3.0-o
 | **Serwist** | Service worker toolkit for Next App Router | MIT | **Yes — PWA offline layer.** |
 | **idb** | IndexedDB promise wrapper | ISC | **Yes.** |
 | **@zxing/browser** | QR/barcode decoding in the browser | MIT / Apache-2.0 | **Yes** — BYO Paycode scan, with the native `BarcodeDetector` used first where available. |
+| **qrcode** | Generates QR codes (SVG) locally in the browser | MIT | **Yes, Admin only.** Renders a collector's printable credential QR (`takasats:<publicCode>`, identity only). Nothing is sent to a third party. |
 | **class-variance-authority**, **tailwind-merge**, **clsx** | shadcn styling utilities | MIT | **Yes** (come with shadcn). |
 | **date-fns** + **@internationalized/date** | Date math + i18n-safe dates | MIT | **Yes.** Africa/Nairobi from `settings.programme.timezone`. |
 

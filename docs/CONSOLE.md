@@ -28,7 +28,8 @@ button is a convenience, never the control.
   place), `ActionButton` (runs an API action, disables itself, asks first when `confirm` is set, shows the
   failure beside the button), `DomainPill` (a status chip that is icon, colour and text), tables, fields.
 - `components/console/hooks.ts` has `useApi` (GET and keep the last good data while reloading) and
-  `usePaged` (cursor pagination with Load more).
+  `usePaged` (cursor pagination with Load more), `useStaffNames` (id to name for admins).
+- A collector's printable credential QR is drawn locally with `qrcode` (`components/console/CredentialQr.tsx`).
 - Every user-facing string is a `messages/{en,sw,sheng}.json` key under `Console.*`. `sw` and `sheng`
   carry English placeholders until translated.
 

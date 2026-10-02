@@ -659,7 +659,11 @@
       "eventPayout": "Payout",
       "amount": "Amount",
       "none": "None",
-      "notFound": "That collector was not found."
+      "notFound": "That collector was not found.",
+      "credential": "Credential",
+      "qrAlt": "QR code for {code}",
+      "qrHint": "Print this for the collector. Scanning it finds them in the weigh screen. It identifies them only. It never pays anyone.",
+      "print": "Print"
     },
     "payouts": {
       "title": "Payouts",
