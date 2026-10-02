@@ -216,6 +216,7 @@ Run it on two phones and a laptop, with the demo rail or a tiny real payout. Nar
 | Event stuck "needs attention: collector_not_authorized" | the collector was revoked/pending when it synced | authorize them, then re-record (the old event is kept as evidence) |
 | Payout stays `awaiting_destination` | the wallet is `pending_validation` / `invalid` | check the wallet via `GET /collectors/:id`; re-attach the Receive address |
 | Payout stays `awaiting_rate` | the exchange feed couldn't reach ≥2 sources | `docker compose … logs worker`; it retries on its own; check outbound internet |
+| Sign-in says wrong password but it is right | the account was locked after `auth.login_max_failures` failed attempts (someone guessing, or typos) | wait `auth.login_window_minutes`, or restart the app (the lock is in memory) |
 | Payout stuck in `sending` / flagged `payout_uncertain` | the provider never confirmed the payment | check, then resolve it (section 6) |
 | Payout `pending_float` | the float is below the amount | top up the Blink float; the sweep resumes it |
 | Scanning a card is refused: "spend/pay code" | the Pay side was scanned | flip the card and scan **Receive** |
