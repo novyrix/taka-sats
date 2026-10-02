@@ -13,7 +13,7 @@ export default async function SessionPage() {
   const t = await getTranslations('SessionSummary');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-5 py-6">
       <h1 className="font-display text-xl font-bold tracking-[-0.02em]">{t('title')}</h1>
       <SessionSummary />
       <div className="border-t border-border pt-4">
