@@ -55,6 +55,7 @@ export function CredentialQr({
           type="button"
           variant="outline"
           size="sm"
+          className="print:hidden"
           onClick={() => {
             // Print only this card: the global print rule hides the rest of the page.
             document.body.classList.add('printing-area');
