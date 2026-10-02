@@ -25,23 +25,26 @@ test('offline: weigh a collector end to end → event is queued in IndexedDB', a
 
   // ── prime the weigh cache (online) ────────────────────────────────────────
   await page.goto('/weigh');
-  await expect(page.getByLabel('Search by name')).toBeVisible();
+  await page.getByRole('button', { name: /Record a collection/ }).click();
+  await expect(page.getByRole('textbox', { name: 'Search name or code' })).toBeVisible();
 
   // ── network off ──────────────────────────────────────────────────────────
   await context.setOffline(true);
 
   // collector — from the cached list, no network
-  await page.getByLabel('Search by name').fill('Amina');
+  await page.getByRole('textbox', { name: 'Search name or code' }).fill('Amina');
   await page.getByRole('button', { name: /Amina E2E/ }).click();
+  await page.getByRole('button', { name: 'Use selected collector' }).click();
 
   // material
   await page.getByRole('button', { name: /PET/ }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
 
   // weight — 2.5 kg on the keypad
   for (const key of ['2', '.', '5']) {
     await page.getByRole('button', { name: key, exact: true }).click();
   }
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Next' }).click(); // the keypad's submit
 
   // photo — set the hidden file input directly
   await page.setInputFiles('input[type="file"]', SHOT);
@@ -51,7 +54,8 @@ test('offline: weigh a collector end to end → event is queued in IndexedDB', a
   await expect(reason).toBeVisible();
   await reason.fill('e2e: headless, no GPS');
 
-  await page.getByRole('button', { name: 'Confirm' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click(); // to the review screen
+  await page.getByRole('button', { name: 'Confirm collection' }).click();
   await expect(page.getByText('Saved and queued')).toBeVisible();
 
   // ── assert the offline store ─────────────────────────────────────────────
