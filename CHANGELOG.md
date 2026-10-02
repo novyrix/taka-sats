@@ -6,6 +6,17 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **CI that does not depend on GitHub Actions.** `pnpm ci:local` (`scripts/ci/run.sh`) runs every
+  check in order (install, format, lint, types, design rules, licence headers, commit sign off,
+  commit messages, build, tests with a throwaway Postgres container, migrations), with optional
+  browser tests and Docker image build, a pass or fail line per step and a JSON report. It works
+  in Git Bash on Windows, Linux and macOS. See `docs/CI.md`.
+- **A self-hosted CI receiver** (`ci/`): a small dependency free service that runs the checks on
+  every push to `main` and pull request, reports a commit status to GitHub and sends Telegram or
+  email notices on failure, with an install guide, a systemd unit and tests (`pnpm ci:receiver:test`).
+
 ## [0.1.0] - not yet released
 
 The first version, ready for a supervised pilot. It runs in demo mode by default: payments are

@@ -57,6 +57,17 @@ Without it payouts stay at "waiting for a rate".
 
 ## Check your changes
 
+The one command that runs every check CI runs (formatting, lint, types, design rules, licence
+headers, commit sign off and message format, build, tests against a throwaway Postgres):
+
+```bash
+pnpm ci:local
+```
+
+It needs Docker for the database steps (`--no-db` skips them), never touches your own database,
+and prints a pass or fail line per step. See [`CI.md`](CI.md) for the options and what each step
+checks. For a quick loop while you work:
+
 ```bash
 pnpm lint && pnpm typecheck && pnpm check:design && pnpm test && pnpm build
 ```
@@ -91,4 +102,5 @@ process. See [`CONFIGURATION.md`](CONFIGURATION.md).
 | Understand the product requirements | [`REQUIREMENTS.md`](REQUIREMENTS.md) |
 | Build against the API | [`BACKEND.md`](BACKEND.md) |
 | Follow the design system | [`DESIGN.md`](DESIGN.md) |
+| Run or host the CI checks | [`CI.md`](CI.md) |
 | Understand a past decision | [`adr/`](adr/README.md) |

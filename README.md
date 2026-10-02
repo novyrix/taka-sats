@@ -112,6 +112,7 @@ simulated and no real money moves.
 | [Threat model](docs/THREAT_MODEL.md)          | [Self hosting](docs/SELF_HOSTING.md)                 | [Requirements](docs/REQUIREMENTS.md)              |
 | [Treasury](docs/TREASURY.md)                  | [Configuration](docs/CONFIGURATION.md)               | [Design system](docs/DESIGN.md)                   |
 | [Decisions](docs/adr/README.md)               | [Hardware](docs/HARDWARE.md)                         | [Provider requirements](docs/providers/README.md) |
+|                                               |                                                      | [Continuous integration](docs/CI.md)              |
 
 ## Licence
 
